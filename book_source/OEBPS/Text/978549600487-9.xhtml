@@ -1,0 +1,524 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Чистый код: создание, анализ и рефакторинг. Библиотека программиста</title>
+  <link href="../Styles/template.css" rel="stylesheet" type="text/css"/>
+</head>
+
+<body id="x978549600487" xml:lang="ru-RU">
+  <div>
+    <h1 id="toc_marker-9">7. Обработка ошибок</h1>
+
+    <p class="Epigraph-avtor">Майкл Физерс</p>
+
+    <p class="Pic-yakor"><span><img alt="07_01.tif" class="frame-11" src="../Images/07_01_fmt.png"/></span>&nbsp;</p>
+
+    <p>На первый взгляд глава, посвященная обработке ошибок, в книге о чистом коде выглядит немного странно. Обработка ошибок — одна из тех рутинных вещей, которыми нам всем приходится заниматься при программировании. Программа может получить аномальные входные данные, на устройстве могут произойти сбои. Короче говоря, выполнение программы может пойти по неверному пути, и если это случается, мы, программисты, должны позаботиться, чтобы наш код сделал то, что ему положено сделать.</p>
+
+    <p>Однако связь этих двух тем — обработки ошибок и чистого кода — очевидна. Во многих кодовых базах обработка ошибок выходит на первый план. Я вовсе не хочу сказать, что код не делает ничего полезного, кроме обработки ошибок; я имею в виду, что из-за разбросанной повсюду обработки ошибок практически невозможно понять, что же делает код. Обработка ошибок важна, но если они заслоняют собой логику программы — значит, она реализована неверно.</p>
+
+    <p>В этой главе представлены некоторые соображения и приемы, которые помогают писать чистый и надежный код, то есть код, в котором ошибки обрабатываются стильно и элегантно.</p>
+
+    <h2 id="toc_marker-9-1">Используйте исключения&nbsp;&nbsp;вместо кодов ошибок</h2>
+
+    <p class="Normal0">В далеком прошлом многие языки программирования не поддерживали механизма обработки исключений. В таких языках возможности обработки и получения информации об ошибках были ограничены. Программа либо устанавливала флаг ошибки, либо возвращала код, который проверялся вызывающей стороной. Оба способа продемонстрированы в листинге 7.1.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/7 Обработка ошибок/7.1.DeviceController.java">📄 Открыть исходный код в IDE</a></p>Листинг 7.1.</strong> DeviceController.java</p>
+
+    <p class="listing-body">public class DeviceController {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;...</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void sendShutDown() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;DeviceHandle handle = getHandle(DEV1);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;// Проверить состояние устройства</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (handle != DeviceHandle.INVALID) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Сохранить состояние устройства в поле записи</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;retrieveDeviceRecord(handle);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Если устройство не приостановлено, отключить его</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (record.getStatus() != DEVICE_SUSPENDED) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pauseDevice(handle);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;clearDeviceWorkQueue(handle);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;closeDevice(handle);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} else {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;logger.log("Device suspended.&nbsp;&nbsp;Unable to shut down");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;} else {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;logger.log("Invalid handle for: " + DEV1.toString());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;...</p>
+
+    <p class="listing-body">}</p>
+
+    <p>У обоих решений имеется общий недостаток: они загромождают код на стороне вызова. Вызывающая сторона должна проверять ошибки немедленно после вызова. К сожалению, об этом легко забыть. По этой причине при обнаружении ошибки лучше инициировать исключение. Код вызова становится более понятным, а его логика не скрывается за кодом обработки ошибок.</p>
+
+    <p>В листинге 7.2 представлен тот же код с выдачей исключений в методах, способных обнаруживать ошибки.</p>
+
+    <p>Обратите внимание, насколько чище стал код. Причем дело даже не в эстетике. Качество кода возросло, потому что два аспекта, которые прежде были тесно переплетены — алгоритм отключения устройства и обработка ошибок, — теперь изолированы друг от друга. Вы можете рассмотреть их по отдельности и разобраться в каждом из них независимо.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/7 Обработка ошибок/7.2.DeviceController.java">📄 Открыть исходный код в IDE</a></p>Листинг 7.2.</strong> DeviceController.java (с исключениями)</p>
+
+    <p class="listing-body">public class DeviceController {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;...</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void sendShutDown() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tryToShutDown();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;} catch (DeviceShutDownError e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;logger.log(e);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void tryToShutDown() throws DeviceShutDownError {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;DeviceHandle handle = getHandle(DEV1);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;DeviceRecord record = retrieveDeviceRecord(handle);</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;pauseDevice(handle);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;clearDeviceWorkQueue(handle);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;closeDevice(handle);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private DeviceHandle getHandle(DeviceID id) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;...</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;throw new DeviceShutDownError("Invalid handle for: " + id.toString());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;...</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;...</p>
+
+    <p class="listing-body">}</p>
+
+    <h2 id="toc_marker-9-2">Начните с написания команды&nbsp;&nbsp;try-catch-finally</h2>
+
+    <p class="Normal0">У исключений есть одна интересная особенность: они определяют область видимости в вашей программе. Размещая код в секции <span class="command char-style-override-1">try</span> команды <span class="command char-style-override-1">try</span>-<span class="command char-style-override-1">catch</span>-<span class="command char-style-override-1">finally</span>, вы утверждаете, что выполнение программы может прерваться в любой точке, а затем продолжиться в секции <span class="command char-style-override-1">catch</span>.</p>
+
+    <p>Блоки <span class="command char-style-override-1">try</span> в каком-то отношении напоминают транзакции. Секция <span class="command char-style-override-1">catch</span> должна оставить программу в целостном состоянии, что бы и произошло в секции <span class="command char-style-override-1">try</span>. По этой причине написание кода, который может инициировать исключения, рекомендуется начинать с конструкции <span class="command char-style-override-1">try</span>-<span class="command char-style-override-1">catch</span>-<span class="command char-style-override-1">finally</span>. Это поможет вам определить, чего должен ожидать пользователь кода, что бы ни произошло в коде <span class="command char-style-override-1">try</span>.</p>
+
+    <p>Допустим, требуется написать код, который открывает файл и читает из него сериализованные объекты.</p>
+
+    <p>Начнем с модульного теста, который проверяет, что при неудачном обращении к файлу будет выдано исключение:</p>
+
+    <p class="listing-body">@Test(expected = StorageException.class)</p>
+
+    <p class="listing-body">public void retrieveSectionShouldThrowOnInvalidFileName() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;sectionStore.retrieveSection("invalid - file");</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Для теста необходимо создать следующую программную заглушку:</p>
+
+    <p class="listing-body">public List&lt;RecordedGrip&gt; retrieveSection(String sectionName) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;// Пусто, пока не появится реальная реализация</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return new ArrayList&lt;RecordedGrip&gt;();</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Тест завершается неудачей, потому что код не инициирует исключения. Затем мы изменяем свою реализацию так, чтобы она попыталась обратиться к несуществующему файлу. При попытке выполнения происходит исключение:</p>
+
+    <p class="listing-body">public List&lt;RecordedGrip&gt; retrieveSection(String sectionName) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;FileInputStream stream = new FileInputStream(sectionName)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;} catch (Exception e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;throw new StorageException("retrieval error", e);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return new ArrayList&lt;RecordedGrip&gt;();</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Теперь тест проходит успешно, потому что мы перехватили исключение. На этой стадии можно переработать код. Тип перехватываемого исключения сужается до типа, реально инициируемого конструктором <span class="command char-style-override-1">FileInputStream</span>, то есть <span class="command char-style-override-1">FileNotFoundException</span>:</p>
+
+    <p class="listing-body">public List&lt;RecordedGrip&gt; retrieveSection(String sectionName) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;FileInputStream stream = new FileInputStream(sectionName);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;stream.close();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;} catch (FileNotFoundException e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;throw new StorageException("retrieval error", e);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return new ArrayList&lt;RecordedGrip&gt;();</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Определив область видимости при помощи структуры <span class="command char-style-override-1">try</span>-<span class="command char-style-override-1">catch</span>, мы можем использовать методологию TDD для построения остальной необходимой логики. Эта логика размещается между созданием <span class="command char-style-override-1">FileInputStream</span> и закрытием, а в ее коде можно считать, что все операции были выполнены без ошибок.</p>
+
+    <p>Попробуйте написать тесты, принудительно инициирующие исключения, а затем включите в обработчик поведение, обеспечивающее прохождение тестов. Это заставит вас построить транзакционную область видимости блока <span class="command char-style-override-1">try</span> и поможет сохранить ее транзакционную природу.</p>
+
+    <h2 id="toc_marker-9-3">Используйте непроверяемые исключения</h2>
+
+    <p class="Normal0">Время споров прошло. Java-программисты годами обсуждали преимущества и недостатки проверяемых исключений (checked exceptions). Когда проверяемые исключения появились в первой версии Java, всем казалось, что это отличная идея. В сигнатуре каждого метода должны быть перечислены все исключения, которые могут передаваться вызывающей стороне. Фактически исключения становились частью типа метода. Если сигнатура не соответствовала тому, что происходит в коде, то программа просто не компилировалась.</p>
+
+    <p>В то время мы с энтузиазмом относились к проверяемым исключениям; в самом деле, они бывают полезными. Но сейчас стало ясно, что они не являются необходимыми для создания надежных программ. В C# нет проверяемых исключений, и несмотря на все доблестные попытки, в C++ они так и не появились. Их также нет в Python и Ruby. Тем не менее на всех этих языках можно писать надежные программы. А раз так, нам приходится решать, оправдывают ли проверяемые исключения ту цену, которую за них приходится платить.</p>
+
+    <p>Какую цену, спросите вы? Цена проверяемых исключений — нарушение принципа открытости/закрытости [Martin]. Если вы инициируете проверяемое исключение из метода своего кода, а <span class="command char-style-override-1">catch</span> находится тремя уровнями выше, то это исключение должно быть объявлено в сигнатурах всех методов между вашим методом и <span class="command char-style-override-1">catch</span>. Следовательно, изменение на низком уровне программного продукта приводит к изменениям сигнатур на многих более высоких уровнях. Измененные модули приходится строить и развертывать заново, притом что в программе не изменилось ничего, что было бы существенно для них.</p>
+
+    <p>Представьте иерархию вызовов большой системы. Функции верхнего уровня вызывают функции нижележащего уровня, которые, в свою очередь, вызывают функции низких уровней и т.д. Теперь допустим, что одна из низкоуровневых функций изменилась таким образом, что она должна инициировать исключение. Если это исключение является проверяемым, то в сигнатуру функции должна быть добавлена секция <span class="command char-style-override-1">throws</span>. Но тогда каждая функция, вызывающая нашу измененную функцию, тоже должна быть изменена с перехватом нового исключения или присоединением соответствующей секции <span class="command char-style-override-1">throws</span> к ее сигнатуре. И так до бесконечности. В итоге мы имеем каскад изменений, пробивающихся с нижних уровней программного продукта на верхние уровни! При этом нарушается инкапсуляция, потому что все функции на пути инициирования должны располагать подробной информацией об этом низкоуровневом исключении. Учитывая, что главной целью исключений является возможность обработки ошибок «на расстоянии», такое нарушение инкапсуляции проверяемыми исключениями выглядит особенно постыдно.</p>
+
+    <p>Проверяемые исключения иногда могут пригодиться при написании особо важных библиотек: программист обязан перехватить их. Но в общем случае разработки приложений проблемы, создаваемые зависимостями, перевешивают преимущества.</p>
+
+    <h2 id="toc_marker-9-4">Передавайте контекст с исключениями</h2>
+
+    <p class="Normal0">Каждое исключение, инициируемое в программе, должно содержать достаточно контекстной информации для определения источника и местонахождения ошибки. В Java из любого исключения можно получить данные трассировки стека; однако по трассировке невозможно узнать, с какой целью выполнялась операция, завершившаяся неудачей.</p>
+
+    <p>Создавайте содержательные сообщения об ошибках и передавайте их со своими исключениями. Включайте в них сведения о сбойной операции и типе сбоя. Если в приложении ведется журнал, передайте информацию, достаточную для регистрации ошибки из секции <span class="command char-style-override-1">catch</span>.</p>
+
+    <h2 id="toc_marker-9-5">Определяйте классы исключений в контексте потребностей&nbsp;&nbsp;вызывающей стороны</h2>
+
+    <p class="Normal0">Существует много способов классификации ошибок. Например, ошибки можно классифицировать по источнику, то есть по компоненту, в котором они произошли. Также возможна классификация по типу: сбои устройств, сетевые сбои, ошибки программирования и т.д. Однако при определении классов исключений в при­ложениях думать необходимо прежде всего о том, <em>как они будут перехватываться</em>.</p>
+
+    <p>Рассмотрим пример неудачной классификации исключений. Далее приводится конструкция <span class="command char-style-override-1">try</span>-<span class="command char-style-override-1">catch</span>-<span class="command char-style-override-1">finally</span> для сторонней библиотечной функции. Она учитывает все исключения, которые могут быть инициированы при вызовах:</p>
+
+    <p class="listing-body">ACMEPort port = new ACMEPort(12);</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;port.open();</p>
+
+    <p class="listing-body">} catch (DeviceResponseException e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;reportPortError(e);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;logger.log("Device response exception", e);</p>
+
+    <p class="listing-body">} catch (ATM1212UnlockedException e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;reportPortError(e);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;logger.log("Unlock exception", e);</p>
+
+    <p class="listing-body">} catch (GMXError e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;reportPortError(e);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;logger.log("Device response exception");</p>
+
+    <p class="listing-body">} finally {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;…</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Конструкция содержит множество повторений, и это неудивительно. В большинстве ситуаций при обработке исключений выполняются относительно стандартные действия, не зависящие от их реальной причины. Мы должны сохранить ошибку и убедиться в том, что работа программы может быть продолжена. В этом случае, поскольку выполняемая работа остается более или менее постоянной независимо от исключения, код можно существенно упростить — для этого мы создаем «обертку» для вызываемой функции API и обеспечиваем возвращение стандартного типа исключения:</p>
+
+    <p class="listing-body">&nbsp;&nbsp;LocalPort port = new LocalPort(12);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;port.open();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;} catch (PortDeviceFailure e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;reportError(e);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;logger.log(e.getMessage(), e);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;} finally {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;…</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p>Класс <span class="command char-style-override-1">LocalPort</span> представляет собой простую обертку, которая перехватывает и преобразует исключения, инициированные классом <span class="command char-style-override-1">ACMEPort</span>:</p>
+
+    <p class="listing-body">public class LocalPort {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private ACMEPort innerPort;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public LocalPort(int portNumber) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;innerPort = new ACMEPort(portNumber);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void open() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;innerPort.open();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;} catch (DeviceResponseException e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throw new PortDeviceFailure(e);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;} catch (ATM1212UnlockedException e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throw new PortDeviceFailure(e);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;} catch (GMXError e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throw new PortDeviceFailure(e);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;…</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Обертки — вроде той, которую мы определили для <span class="command char-style-override-1">ACMEPort</span>, — бывают очень полезными. Более того, инкапсуляция вызовов сторонних API принадлежит к числу стандартных приемов. Создавая обертку для стороннего вызова, вы сокращаете до минимума зависимость от него в своем коде: в будущем вы можете переключиться на другую библиотеку без сколько-нибудь заметных проблем. Обертки также упрощают имитацию сторонних вызовов в ходе тестирования кода.</p>
+
+    <p>Последнее преимущество оберток заключается в том, что вы не ограничиваетесь архитектурными решениями разработчика API. Вы можете определить тот API, который вам удобен. В предыдущем примере мы определили для всех сбоев порта один тип исключения, и код от этого стал намного чище.</p>
+
+    <p>Часто в определенной области кода бывает достаточно одного класса исключения. Информация, передаваемая с исключением, позволяет различать разные виды ошибок. Используйте разные классы исключений только в том случае, если вы намерены перехватывать одни исключения, разрешая прохождение других типов.</p>
+
+    <h2 id="toc_marker-9-6">Определите нормальный путь выполнения</h2>
+
+    <div class="frame-4"><img alt="07_02.tif" class="frame-13" src="../Images/07_02_fmt.png"/></div>
+
+    <p class="Normal0">Выполнение рекомендаций из преды-</p>
+
+    <p>дущих разделов обеспечивает хорошее разделение бизнес-логики и кода обработки ошибок. Основной код программы начинает выглядеть как простой алгоритм, не отягощенный посторонними вставками. Однако в результате код обнаружения ошибок смещается на периферию вашей программы. Вы создаете обертки для внешних API, чтобы иметь возможность инициировать собственные исключения, и определяете обработчик, который находится над основным кодом и позволяет справиться с любым прерыванием вычислений. Обычно такое решение отлично работает, но в некоторых ситуациях прерывание нежелательно.</p>
+
+    <p>Рассмотрим конкретный пример. В следующем, довольно неуклюжем фрагменте суммируются командировочные расходы на питание:</p>
+
+    <p class="listing-body">try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;MealExpenses expenses = expenseReportDAO.getMeals(employee.getID());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;m_total += expenses.getTotal();</p>
+
+    <p class="listing-body">} catch(MealExpensesNotFound e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;m_total += getMealPerDiem();</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Если работник предъявил счет по затратам на питание, то сумма включается в общий итог. Если счет отсутствует, то работнику за этот день начисляется определенная сумма. Исключение загромождает логику программы. А если бы удалось обойтись без обработки особого случая? Это позволило бы заметно упростить код:</p>
+
+    <p class="listing-body">MealExpenses expenses = expenseReportDAO.getMeals(employee.getID());</p>
+
+    <p class="listing-body">m_total += expenses.getTotal();</p>
+
+    <p>Можно ли упростить код до такой формы? Оказывается, можно. Мы можем изменить класс <span class="command char-style-override-1">ExpenseReportDAO</span>, чтобы он всегда возвращал объект <span class="command char-style-override-1">MealExpense</span>. При отсутствии предъявленного счета возвращается объект <span class="command char-style-override-1">MealExpense</span>, у которого в качестве затрат указана стандартная сумма, начисляемая за день:</p>
+
+    <p class="listing-body">public class PerDiemMealExpenses implements MealExpenses {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public int getTotal() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;// Вернуть стандартные ежедневные затраты на питание</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Такое решение представляет собой реализацию паттерна ОСОБЫЙ СЛУЧАЙ [Fowler]. Программист создает класс или настраивает объект так, чтобы он обрабатывал особый случай за него. Это позволяет избежать обработки исключительного поведения в клиентском коде. Все необходимое поведение инкапсулируется в объекте особого случая.</p>
+
+    <h2 id="toc_marker-9-7">Не возвращайте null</h2>
+
+    <p class="Normal0">На мой взгляд, при любых обсуждениях обработки ошибок необходимо упомянуть о неправильных действиях программистов, провоцирующих ошибки. На первом месте в этом списке стоит возвращение <span class="command char-style-override-1">null</span>. Я видел бесчисленное множество приложений, в которых едва ли не каждая строка начиналась с проверки <span class="command char-style-override-1">null</span>. Характерный пример:</p>
+
+    <p class="listing-body">public void registerItem(Item item) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;if (item != null) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;ItemRegistry registry = persistentStore.getItemRegistry();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (registry != null) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Item existing = registry.getItem(item.getID());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (existing.getBillingPeriod().hasRetailOwner()) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;existing.register(item);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Если ваша кодовая база содержит подобный код, возможно, вы не видите в нем ничего плохого, но это не так! Возвращая <span class="command char-style-override-1">null</span>, мы фактически создаем для себя лишнюю работу, а для вызывающей стороны — лишние проблемы. Стоит пропустить всего одну проверку <span class="command char-style-override-1">null</span>, и приложение «уходит в штопор».</p>
+
+    <p>А вы заметили, что во второй строке вложенной команды <span class="command char-style-override-1">if</span> проверка <span class="command char-style-override-1">null</span> отсутствует? Что произойдет во время выполнения, если значение <span class="command char-style-override-1">persistentStore</span> окажется равным <span class="command char-style-override-1">null</span>? Произойдет исключение <span class="command char-style-override-1">NullPointerException</span>; либо кто-то перехватит его на верхнем уровне, либо не перехватит. В обоих случаях все будет плохо. Как реагировать на исключение <span class="command char-style-override-1">NullPointerException</span>, возникшее где-то в глубинах вашего приложения?</p>
+
+    <p>Легко сказать, что проблемы в приведенном коде возникли из-за пропущенной проверки <span class="command char-style-override-1">null</span>. В действительности причина в другом: этих проверок <em>слишком много</em>. Если у вас возникает желание вернуть <span class="command char-style-override-1">null</span> из метода, рассмотрите возможность выдачи исключения или возвращения объекта «особого случая». Если ваш код вызывает метод стороннего API, способный вернуть <span class="command char-style-override-1">null</span>, создайте для него обертку в виде метода, который инициирует исключение или возвращает объект особого случая.</p>
+
+    <p>Довольно часто объекты особых случаев легко решают проблему. Допустим, у вас имеется код следующего вида:</p>
+
+    <p class="listing-body">List&lt;Employee&gt; employees = getEmployees();</p>
+
+    <p class="listing-body">if (employees != null) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;for(Employee e : employees) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;totalPay += e.getPay();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Сейчас метод <span class="command char-style-override-1">getEmployees</span> может возвращать <span class="command char-style-override-1">null</span>, но так ли это необходимо? Если изменить <span class="command char-style-override-1">getEmployee</span> так, чтобы метод возвращал пустой список, код станет чище:</p>
+
+    <p class="listing-body">List&lt;Employee&gt; employees = getEmployees();</p>
+
+    <p class="listing-body">for(Employee e : employees) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;totalPay += e.getPay();</p>
+
+    <p class="listing-body">}</p>
+
+    <p>К счастью, в Java существует метод <span class="command char-style-override-1">Collections</span><span class="command char-style-override-1">.</span><span class="command char-style-override-1">emptyList</span><span class="command char-style-override-1">()</span>, который возвращает заранее определенный неизменяемый список, и мы можем воспользоваться им для своих целей:</p>
+
+    <p class="listing-body">public List&lt;Employee&gt; getEmployees() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;if( .. there are no employees .. )</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return Collections.emptyList();</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Такое решение сводит к минимуму вероятность появления <span class="command char-style-override-1">NullPointerException</span>, а код становится намного чище.</p>
+
+    <h2 id="toc_marker-9-8">Не передавайте null</h2>
+
+    <p class="Normal0">Возвращать <span class="command char-style-override-1">null</span> из методов плохо, но передавать <span class="command char-style-override-1">null</span> при вызове еще хуже. По возможности избегайте передачи <span class="command char-style-override-1">null</span> в своем коде (исключение составляют разве что методы сторонних API, при вызове которых без нее не обойтись).</p>
+
+    <p>Следующий пример поясняет, почему не следует передавать <span class="command char-style-override-1">null</span>. Возьмем простой метод для вычисления метрики по двум точкам:</p>
+
+    <p class="listing-body">public class MetricsCalculator</p>
+
+    <p class="listing-body">{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public double xProjection(Point p1, Point p2) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return (p2.x — p1.x) * 1.5;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;…</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Что произойдет, если при вызове будет передан аргумент <span class="command char-style-override-1">null</span>?</p>
+
+    <p class="listing-body">calculator.xProjection(null, new Point(12, 13));</p>
+
+    <p>Конечно, возникнет исключение <span class="command char-style-override-1">NullPointerException</span>.</p>
+
+    <p>Как исправить его? Можно создать новый тип исключения и инициировать его в методе:</p>
+
+    <p class="listing-body">public class MetricsCalculator</p>
+
+    <p class="listing-body">{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public double xProjection(Point p1, Point p2) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (p1 == null || p2 == null) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throw InvalidArgumentException(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"Invalid argument for MetricsCalculator.xProjection");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return (p2.x — p1.x) * 1.5;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Стало лучше? Пожалуй, лучше, чем <span class="command char-style-override-1">NullPointerException</span>, но вспомните: для <span class="command char-style-override-1">InvalidArgumentException</span> приходится определять обработчик. Что должен делать этот обработчик? Возьметесь предложить хорошую идею?</p>
+
+    <p>Существует другая альтернатива: можно воспользоваться набором проверочных директив <span class="command char-style-override-1">assert</span>:</p>
+
+    <p class="listing-body">public class MetricsCalculator</p>
+
+    <p class="listing-body">{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public double xProjection(Point p1, Point p2) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assert p1 != null : "p1 should not be null";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assert p2 != null : "p2 should not be null";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return (p2.x — p1.x) * 1.5;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Неплохо с точки зрения документирования, но проблема не решена. Если при вызове передать <span class="command char-style-override-1">null</span>, произойдет ошибка времени выполнения.</p>
+
+    <p>В большинстве языков программирования не существует хорошего способа справиться со случайной передачей <span class="command char-style-override-1">null</span> с вызывающей стороны. А раз так, разумно запретить передачу <span class="command char-style-override-1">null</span> по умолчанию. В этом случае вы будете знать, что присутствие <span class="command char-style-override-1">null</span> в списке аргументов свидетельствует о возникшей проблеме; это будет способствовать уменьшению количества ошибок, сделанных по неосторожности.</p>
+
+    <h2 id="toc_marker-9-9">Заключение</h2>
+
+    <p class="Normal0">Чистый код хорошо читается, но он также должен быть надежным. Эти цели не конфликтуют друг с другом. Чтобы написать надежный и чистый код, следует рассматривать обработку ошибок как отдельную задачу, решаемую независимо от основной логики программы. В зависимости от того, насколько нам это удастся, мы сможем прорабатывать ее реализацию независимо от основной логики программы, а это окажет существенное положительное влияние на удобство сопровождения нашего кода.</p>
+
+    <h2 id="toc_marker-9-10">Литература</h2>
+
+    <p class="Normal0">[Martin]: Agile Software Development: Principles, Patterns, and Practices, Robert C. Martin, Prentice Hall, 2002.</p>
+  </div>
+</body>
+</html>

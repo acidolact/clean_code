@@ -1,0 +1,1030 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Чистый код: создание, анализ и рефакторинг. Библиотека программиста</title>
+  <link href="../Styles/template.css" rel="stylesheet" type="text/css"/>
+</head>
+
+<body id="x978549600487" xml:lang="ru-RU">
+  <div>
+    <h1 id="toc_marker-12">10. Классы</h1>
+
+    <p class="Epigraph-avtor">Совместно с Джеффом Лангром</p>
+
+    <p class="Pic-yakor"><span><img alt="10_01.tif" class="frame-16" src="../Images/10_01_fmt.png"/></span>&nbsp;</p>
+
+    <p>До настоящего момента наше внимание было сосредоточено исключительно на том, как качественно написать строки и блоки кода. Мы разобрались с правильной композицией функций и их взаимосвязями. Но какими бы выразительными ни были функции и содержащиеся в них команды, мы не добьемся чистоты кода до тех пор, пока не обратим внимание на более высокие уровни организации кода. В этой главе речь пойдет о чистоте классов.</p>
+
+    <h2 id="toc_marker-12-1">Строение класса</h2>
+
+    <p class="Normal0">По стандартным правилам Java класс должен начинаться со списка переменных. Сначала перечисляются открытые статические константы. Далее следуют приватные статические переменные, а за ними идут приватные переменные экземпляров. Открытых переменных обычно нет, трудно найти веские причины для их использования.</p>
+
+    <p>За списком переменных обычно следуют открытые функции. Мы предпочитаем размещать приватные вспомогательные функции, вызываемые открытыми функциями, непосредственно за самой открытой функцией. Такое размещение соответствует правилу понижения, в результате чего программа читается как газетная статья.</p>
+
+    <h3>Инкапсуляция</h3>
+
+    <p class="Normal0">Мы предпочитаем объявлять переменные и вспомогательные функции приватными, но относимся к ним без фанатизма. Иногда переменную или вспомогательную функцию приходится объявлять защищенной, чтобы иметь возможность обратиться к ней из теста. С нашей точки зрения тесты исключительно важны. Если тест из того же пакета должен вызвать функцию или обратиться к переменной, мы используем защищенный или пакетный уровень доступа. Тем не менее начинать следует с поиска способа, сохраняющего приватность. Ослабление инкапсуляции всегда должно быть последней мерой.</p>
+
+    <h3>Классы должны быть компактными!</h3>
+
+    <p class="Normal0">Первое правило: классы должны быть компактными. Второе правило: классы должны быть еще компактнее. Нет, мы не собираемся повторять текст из главы 3. Но как и в случае с функциями, компактность должна стать основным правилом проектирования классов. И для классов начинать следует с вопроса: «А насколько компактными?»</p>
+
+    <p>Размер функций определяется количеством физических строк. В классах используется другая метрика; мы подсчитываем <em>ответственности</em> [RDD].</p>
+
+    <p>В листинге 10.1 представлен класс <span class="command char-style-override-1">SuperDashboard</span>, предоставляющий около 70 открытых методов. Большинство разработчиков согласится с тем, что это перебор.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/10 Классы/10.1.SuperDashboard.java">📄 Открыть исходный код в IDE</a></p>Листинг 10.1.</strong> Слишком много ответственностей</p>
+
+    <p class="listing-body">public class SuperDashboard extends JFrame implements MetaDataUser</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public String getCustomizerLanguagePath()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void setSystemConfigPath(String systemConfigPath)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public String getSystemConfigDocument()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void setSystemConfigDocument(String systemConfigDocument)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public boolean getGuruState()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public boolean getNoviceState()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public boolean getOpenSourceState()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void showObject(MetaObject object)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void showProgress(String s)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public boolean isMetadataDirty()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void setIsMetadataDirty(boolean isMetadataDirty)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public Component getLastFocusedComponent()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void setLastFocused(Component lastFocused)</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/10 Классы/10.1.SuperDashboard.java">📄 Открыть исходный код в IDE</a></p>Листинг 10.1</strong> (продолжение)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void setMouseSelectState(boolean isMouseSelected)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public boolean isMouseSelected()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public LanguageManager getLanguageManager()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public Project getProject()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public Project getFirstProject()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public Project getLastProject()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public String getNewProjectName()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void setComponentSizes(Dimension dim)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public String getCurrentDir()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void setCurrentDir(String newDir)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void updateStatus(int dotPos, int markPos)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public Class[] getDataBaseClasses()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public MetadataFeeder getMetadataFeeder()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void addProject(Project project)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public boolean setCurrentProject(Project project)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public boolean removeProject(Project project)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public MetaProjectHeader getProgramMetadata()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void resetDashboard()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public Project loadProject(String fileName, String projectName)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void setCanSaveMetadata(boolean canSave)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public MetaObject getSelectedObject()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void deselectObjects()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void setProject(Project project)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void editorAction(String actionName, ActionEvent event)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void setMode(int mode)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public FileManager getFileManager()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void setFileManager(FileManager fileManager)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public ConfigManager getConfigManager()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void setConfigManager(ConfigManager configManager)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public ClassLoader getClassLoader()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void setClassLoader(ClassLoader classLoader)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public Properties getProps()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public String getUserHome()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public String getBaseDir()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public int getMajorVersionNumber()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public int getMinorVersionNumber()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public int getBuildNumber()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public MetaObject pasting(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;MetaObject target, MetaObject pasted, MetaProject project)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void processMenuItems(MetaObject metaObject)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void processMenuSeparators(MetaObject metaObject)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void processTabPages(MetaObject metaObject)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void processPlacement(MetaObject object)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void processCreateLayout(MetaObject object)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void updateDisplayLayer(MetaObject object, int layerIndex)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void propertyEditedRepaint(MetaObject object)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void processDeleteObject(MetaObject object)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public boolean getAttachedToDesigner()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void processProjectChangedState(boolean hasProjectChanged)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void processObjectNameChanged(MetaObject object)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void runProject()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void setAçowDragging(boolean allowDragging)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public boolean allowDragging()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public boolean isCustomizing()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void setTitle(String title)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public IdeMenuBar getIdeMenuBar()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void showHelper(MetaObject metaObject, String propertyName)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;// ... и еще много других, не-открытых методов...</p>
+
+    <p class="listing-body">}</p>
+
+    <p>А если бы класс <span class="command char-style-override-1">SuperDashboard</span> содержал только методы, приведенные в листинге 10.2?</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/10 Классы/10.2.SuperDashboard.java">📄 Открыть исходный код в IDE</a></p>Листинг 10.2.</strong> Достаточно компактно?</p>
+
+    <p class="listing-body">public class SuperDashboard extends JFrame implements MetaDataUser</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public Component getLastFocusedComponent()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public void setLastFocused(Component lastFocused)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public int getMajorVersionNumber()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public int getMinorVersionNumber()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public int getBuildNumber()</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Пять методов — не слишком много, не так ли? В нашем случае слишком, потому что несмотря на малое количество методов, класс <span class="command char-style-override-1">SuperDashboard</span> по-прежнему имеет слишком много ответственностей.</p>
+
+    <p>Имя класса должно описывать его ответственности. В сущности, имя должно стать первым фактором, способствующим определению размера класса. Если для класса не удается подобрать четкое, короткое имя, вероятно, он слишком велик. Чем туманнее имя класса, тем больше вероятность, что он имеет слишком много ответственностей. В частности, присутствие в именах классов слов-проныр «Processor», «Manager» и «Super» часто свидетельствует о нежелательном объединении ответственностей.</p>
+
+    <p>Краткое описание класса должно укладываться примерно в 25 слов, без выражений «если», «и», «или» и «но». Как бы вы описали класс <span class="command char-style-override-1">SuperDashboard</span>? «Класс предоставляет доступ к компоненту, который последним имел фокус ввода, и позволяет отслеживать номера версии и сборки». Первое «и» указывает на то, что <span class="command char-style-override-1">SuperDashboard</span> имеет слишком много ответственностей.</p>
+
+    <h3>Принцип единой ответственности (SRP)</h3>
+
+    <p class="Normal0">Принцип единой ответственности (SRP<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-33" id="footnote-319-33-backlink">33</a></span>) утверждает, что класс или модуль должен иметь одну — и только одну — причину для изменения. Этот принцип дает нам как определение ответственности, так и критерий для оценки размера класса. Классы должны иметь одну ответственность, то есть одну причину для изменений.</p>
+
+    <p>Небольшой, казалось бы, класс <span class="command char-style-override-1">SuperDashboard</span> в листинге 10.2 имеет две причины для изменений. Во-первых, он отслеживает версию, которая, вероятно, будет изменяться при каждом обновлении продукта. Во-вторых, он управляет компонентами Java Swing (потомки класса <span class="command char-style-override-1">JFrame</span>, представляющего графическое окно верхнего уровня в Swing). Несомненно, номер версии должен обновляться при любых изменениях кода Swing, но обратное не всегда верно: номер версии также может изменяться вследствие изменений в другом коде системы.</p>
+
+    <p>Попытки идентификации ответственностей (причин для изменения) часто помогают выявить и создать более качественные абстракции для нашего кода. Все три метода <span class="command char-style-override-1">SuperDashboard</span>, относящиеся к версии, легко выделяются в отдельный класс с именем <span class="command char-style-override-1">Version</span> (листинг 10.3). Класс <span class="command char-style-override-1">Version</span> обладает хорошим потенциалом для повторного использования в других приложениях!</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/10 Классы/10.3.Version.java">📄 Открыть исходный код в IDE</a></p>Листинг 10.3.</strong> Класс с единой ответственностью</p>
+
+    <p class="listing-body">public class Version {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public int getMajorVersionNumber()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public int getMinorVersionNumber()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public int getBuildNumber()</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Принцип единой ответственности — одна из самых важных концепций в объектно-ориентированном проектировании. Кроме того, его относительно ­несложно понять и соблюдать. Но как ни странно, принцип единой ответствен­ности часто оказывается самым нарушаемым принципом проектирования классов. Мы постоянно встречаем классы, которые делают слишком много всего. Почему?</p>
+
+    <p>Заставить программу работать и написать чистый код — совершенно разные вещи. Обычно мы думаем прежде всего о том, чтобы наш код заработал, а не о его структуре и чистоте. И это абсолютно законно. Разделение ответственности в работе программиста играет не менее важную роль, чем в наших программах.</p>
+
+    <p>К сожалению, слишком многие из нас полагают, что после того, как программа заработает, их работа закончена. Мы не переключаемся на усовершенствование ее структуры и чистоты.&nbsp;&nbsp;Мы переходим к следующей задаче вместо того, чтобы сделать шаг назад и разделить разбухшие классы на отдельные блоки с единой ответственностью.</p>
+
+    <p>В то же время многие разработчики опасаются, что множество небольших узкоспециализированных классов затруднит понимание общей картины. Их беспокоит то, что им придется переходить от класса к классу, чтобы разобраться в том, как решается более крупная задача.</p>
+
+    <p>Однако система с множеством малых классов имеет не больше «подвижных частей», чем система с несколькими большими классами. В последней тоже придется разбираться, и это будет ничуть не проще. Так что вопрос заключается в следующем: хотите ли вы, чтобы ваши инструменты были разложены по ящикам с множеством небольших отделений, содержащих четко определенные и подписанные компоненты? Или вы предпочитаете несколько больших ящиков, в которые можно сваливать все подряд?</p>
+
+    <p>Каждая крупная система содержит большой объем рабочей логики и обладает высокой сложностью. Первоочередной целью управления этой сложностью является <em>формирование структуры</em>, при которой разработчик знает, где искать то, что ему требуется, и в любой момент времени может досконально знать только ту часть системы, которая непосредственно относится к его работе. Напротив, в системе с большими, многоцелевыми классами нам неизбежно приходится разбираться с множеством аспектов, которые в данный момент нас не интересуют.</p>
+
+    <p>Еще раз выделю основные моменты: система должна состоять из множества мелких классов, а не из небольшого числа больших. Каждый класс инкапсулирует одну ответственность, имеет одну причину для изменения и взаимодействует с другими классами для реализации желаемого поведения системы.</p>
+
+    <h3>Связность</h3>
+
+    <p class="Normal0">Классы должны иметь небольшое количество переменных экземпляров. Каждый метод класса должен оперировать с одной или несколькими из этих переменных. В общем случае, чем с большим количеством переменных работает метод, тем выше связность этого метода со своим классом. Класс, в котором каждая переменная используется каждым методом, обладает максимальной связностью.</p>
+
+    <p>Как правило, создавать классы с максимальной связностью не рекомендуется… а скорее всего, это нереально. С другой стороны, связность класса должна быть высокой. Высокая связность означает, что методы и переменные класса взаимозависимы и существуют как единое целое.</p>
+
+    <p>Рассмотрим реализацию стека из листинга 10.4. Этот класс обладает очень высокой связностью. Из трех его методов только <span class="command char-style-override-1">size()</span> не использует обе переменные.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/10 Классы/10.4.Stack.java">📄 Открыть исходный код в IDE</a></p>Листинг 10.4.</strong> Stack.java — класс с высокой связностью</p>
+
+    <p class="listing-body">public class Stack {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private int topOfStack = 0;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;List&lt;Integer&gt; elements = new LinkedList&lt;Integer&gt;();</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public int size() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return topOfStack;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void push(int element) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;topOfStack++;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;elements.add(element);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public int pop() throws PoppedWhenEmpty {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (topOfStack == 0)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throw new PoppedWhenEmpty();</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/10 Классы/10.4.Stack.java">📄 Открыть исходный код в IDE</a></p>Листинг 10.4</strong> (продолжение)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int element = elements.get(--topOfStack);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;elements.remove(topOfStack);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return element;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Стратегия компактных функций и коротких списков параметров иногда приводит к росту переменных экземпляров, используемых подмножеством методов. Это почти всегда свидетельствует о том, что по крайней мере один класс пытается выделиться из более крупного класса. Постарайтесь разделить переменные и методы на два и более класса, чтобы новые классы обладали более высокой связностью.</p>
+
+    <h3>Поддержание связности приводит&nbsp;&nbsp;к уменьшению классов</h3>
+
+    <p class="Normal0">Сам акт разбиения больших функций на меньшие приводит к росту количества классов. Допустим, имеется большая функция, в которой объявлено много переменных. Вы хотите выделить один небольшой фрагмент этой функции в отдельную функцию. Однако выделяемый код использует четыре переменные, объявленные в исходной функции. Может, передать все четыре переменные новой функции в виде аргументов?</p>
+
+    <p>Ни в коем случае! Преобразовав эти четыре переменные в переменные экземпляров класса, мы сможем выделить код без передачи переменных. Таким образом, разбиение функции на меньшие фрагменты упрощается.</p>
+
+    <p>К сожалению, это также означает, что наши классы теряют связность, потому что в них накапливается все больше переменных экземпляров, созданных исключительно для того, чтобы они могли совместно использоваться небольшим подмножеством функций. Но постойте! Если группа функций должна работать с некоторыми переменными, не образуют ли они класс сами по себе? Конечно, образуют. Если классы утрачивают связность, разбейте их!</p>
+
+    <p>Таким образом, разбиение большой функции на много мелких функций также часто открывает возможность для выделения нескольких меньших классов. В результате строение программы улучшается, а ее структура становится более прозрачной.</p>
+
+    <p>Для демонстрации мы воспользуемся проверенным временем примером из замечательной книги Кнута «Literate Programming» [Knuth92]. В листинге 10.5 представлена программа Кнута <span class="command char-style-override-1">PrintPrimes</span>, переведенная на Java. Справедливости ради стоит отметить, что это не та программа, которую написал Кнут, а та, которую выводит его утилита WEB. Я воспользуюсь ей, потому что она является отличной отправной точкой для разбиения большой функции на несколько меньших функций и классов.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/10 Классы/10.5.PrintPrimes.java">📄 Открыть исходный код в IDE</a></p>Листинг 10.5.</strong> PrintPrimes.java</p>
+
+    <p class="listing-body">package literatePrimes;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class PrintPrimes {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public static void main(String[] args) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;final int M = 1000;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;final int RR = 50;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;final int CC = 4;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;final int WW = 10;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;final int ORDMAX = 30;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int P[] = new int[M + 1];</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int PAGENUMBER;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int PAGEOFFSET;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int ROWOFFSET;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int C;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int J;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int K;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;boolean JPRIME;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int ORD;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int SQUARE;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int N;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int MULT[] = new int[ORDMAX + 1];</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;J = 1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;K = 1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;P[1] = 2;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;ORD = 2;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;SQUARE = 9;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;while (K &lt; M) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;do {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;J = J + 2;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (J == SQUARE) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ORD = ORD + 1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SQUARE = P[ORD] * P[ORD];</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;MULT[ORD - 1] = J;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;N = 2;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;JPRIME = true;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;while (N &lt; ORD &amp;&amp; JPRIME) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;while (MULT[N] &lt; J)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;MULT[N] = MULT[N] + P[N] + P[N];</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (MULT[N] == J)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;JPRIME = false;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;N = N + 1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} while (!JPRIME);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;K = K + 1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;P[K] = J;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;{</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/10 Классы/10.5.PrintPrimes.java">📄 Открыть исходный код в IDE</a></p>Листинг 10.5</strong> (продолжение)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PAGENUMBER = 1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PAGEOFFSET = 1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;while (PAGEOFFSET &lt;= M) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.println("The First " + M +</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" Prime Numbers --- Page " + PAGENUMBER);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.println("");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (ROWOFFSET = PAGEOFFSET; ROWOFFSET &lt; PAGEOFFSET + RR; ROWOFFSET++){</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (C = 0; C &lt; CC;C++)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (ROWOFFSET + C * RR &lt;= M)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.format("%10d", P[ROWOFFSET + C * RR]);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.println("");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.println("\f");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PAGENUMBER = PAGENUMBER + 1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PAGEOFFSET = PAGEOFFSET + RR * CC;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Записанная в виде одной функции, эта программа представляет собой полную неразбериху. Многоуровневая вложенность, множество странных переменных, структура с жесткой привязкой… По крайней мере, одну большую функцию следует разбить на несколько меньших функций.</p>
+
+    <p>В листингах 10.6–10.8 показано, что получается после разбиения кода из листинга 10.5 на меньшие классы и функции, с выбором осмысленных имен для классов, функций и переменных.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/10 Классы/10.6.PrimePrinter.java">📄 Открыть исходный код в IDE</a></p>Листинг 10.6.</strong> PrimePrinter.java (переработанная версия)</p>
+
+    <p class="listing-body">package literatePrimes;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class PrimePrinter {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public static void main(String[] args) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;final int NUMBER_OF_PRIMES = 1000;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int[] primes = PrimeGenerator.generate(NUMBER_OF_PRIMES);</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;final int ROWS_PER_PAGE = 50;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;final int COLUMNS_PER_PAGE = 4;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;RowColumnPagePrinter tablePrinter =</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;new RowColumnPagePrinter(ROWS_PER_PAGE,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;COLUMNS_PER_PAGE,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"The First " + NUMBER_OF_PRIMES +</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" Prime Numbers");</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;tablePrinter.print(primes);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/10 Классы/10.7.RowColumnPagePrinter.java">📄 Открыть исходный код в IDE</a></p>Листинг 10.7.</strong> RowColumnPagePrinter.java</p>
+
+    <p class="listing-body">package literatePrimes;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">import java.io.PrintStream;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class RowColumnPagePrinter {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private int rowsPerPage;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private int columnsPerPage;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private int numbersPerPage;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String pageHeader;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private PrintStream printStream;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public RowColumnPagePrinter(int rowsPerPage,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int columnsPerPage,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String pageHeader) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;this.rowsPerPage = rowsPerPage;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;this.columnsPerPage = columnsPerPage;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;this.pageHeader = pageHeader;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;numbersPerPage = rowsPerPage * columnsPerPage;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;printStream = System.out;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void print(int data[]) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int pageNumber = 1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;for (int firstIndexOnPage = 0;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;firstIndexOnPage &lt; data.length;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;firstIndexOnPage += numbersPerPage) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int lastIndexOnPage =</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Math.min(firstIndexOnPage + numbersPerPage - 1,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;data.length - 1);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;printPageHeader(pageHeader, pageNumber);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;printPage(firstIndexOnPage, lastIndexOnPage, data);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;printStream.println("\f");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pageNumber++;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void printPage(int firstIndexOnPage,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int lastIndexOnPage,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int[] data) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int firstIndexOfLastRowOnPage =</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;firstIndexOnPage + rowsPerPage - 1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;for (int firstIndexInRow = firstIndexOnPage;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;firstIndexInRow &lt;= firstIndexOfLastRowOnPage;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;firstIndexInRow++) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;printRow(firstIndexInRow, lastIndexOnPage, data);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;printStream.println("");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/10 Классы/10.7.RowColumnPagePrinter.java">📄 Открыть исходный код в IDE</a></p>Листинг 10.7</strong> (продолжение)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void printRow(int firstIndexInRow,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int lastIndexOnPage,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int[] data) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;for (int column = 0; column &lt; columnsPerPage; column++) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int index = firstIndexInRow + column * rowsPerPage;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (index &lt;= lastIndexOnPage)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;printStream.format("%10d", data[index]);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void printPageHeader(String pageHeader,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int pageNumber) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;printStream.println(pageHeader + " --- Page " + pageNumber);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;printStream.println("");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void setOutput(PrintStream printStream) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;this.printStream = printStream;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/10 Классы/10.8.PrimeGenerator.java">📄 Открыть исходный код в IDE</a></p>Листинг 10.8.</strong> PrimeGenerator.java</p>
+
+    <p class="listing-body">package literatePrimes;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">import java.util.ArrayList;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class PrimeGenerator {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static int[] primes;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static ArrayList&lt;Integer&gt; multiplesOfPrimeFactors;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected static int[] generate(int n) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;primes = new int[n];</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;multiplesOfPrimeFactors = new ArrayList&lt;Integer&gt;();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;set2AsFirstPrime();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;checkOddNumbersForSubsequentPrimes();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return primes;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static void set2AsFirstPrime() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;primes[0] = 2;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;multiplesOfPrimeFactors.add(2);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static void checkOddNumbersForSubsequentPrimes() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int primeIndex = 1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;for (int candidate = 3;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;primeIndex &lt; primes.length;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;candidate += 2) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (isPrime(candidate))</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;primes[primeIndex++] = candidate;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static boolean isPrime(int candidate) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (isLeastRelevantMultipleOfNextLargerPrimeFactor(candidate)) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;multiplesOfPrimeFactors.add(candidate);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return false;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return isNotMultipleOfAnyPreviousPrimeFactor(candidate);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static boolean</p>
+
+    <p class="listing-body">&nbsp;&nbsp;isLeastRelevantMultipleOfNextLargerPrimeFactor(int candidate) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int nextLargerPrimeFactor = primes[multiplesOfPrimeFactors.size()];</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int leastRelevantMultiple = nextLargerPrimeFactor * nextLargerPrimeFactor;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return candidate == leastRelevantMultiple;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static boolean</p>
+
+    <p class="listing-body">&nbsp;&nbsp;isNotMultipleOfAnyPreviousPrimeFactor(int candidate) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;for (int n = 1; n &lt; multiplesOfPrimeFactors.size(); n++) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (isMultipleOfNthPrimeFactor(candidate, n))</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return false;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return true;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static boolean</p>
+
+    <p class="listing-body">&nbsp;&nbsp;isMultipleOfNthPrimeFactor(int candidate, int n) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;candidate == smallestOddNthMultipleNotLessThanCandidate(candidate, n);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static int</p>
+
+    <p class="listing-body">&nbsp;&nbsp;smallestOddNthMultipleNotLessThanCandidate(int candidate, int n) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int multiple = multiplesOfPrimeFactors.get(n);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;while (multiple &lt; candidate)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;multiple += 2 * primes[n];</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;multiplesOfPrimeFactors.set(n, multiple);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return multiple;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Прежде всего бросается в глаза, что программа стала значительно длиннее. От одной с небольшим страницы она разрослась почти до трех страниц. Это объясняется несколькими причинами. Во-первых, в переработанной программе используются более длинные, более содержательные имена переменных. Во-вторых, объявления функций и классов в переработанной версии используются для комментирования кода. В третьих, пробелы и дополнительное форматирование обеспечивают удобочитаемость программы.</p>
+
+    <p>Обратите внимание на логическое разбиение программы в соответствии с тремя основными видами ответственности. Основной код программы содержится в классе <span class="command char-style-override-1">PrimePrinter</span>; он отвечает за управлении средой выполнения. Именно этот код изменится в случае смены механизма вызова. Например, если в будущем программа будет преобразована в службу SOAP, то изменения будут внесены в код <span class="command char-style-override-1">PrimePrinter</span>.</p>
+
+    <p>Класс <span class="command char-style-override-1">RowColumnPagePrinter</span> специализируется на форматировании списка чисел в страницы с определенным количеством строк и столбцов. Если потребуется изменить формат вывода, то изменения затронут только этот класс.</p>
+
+    <p>Класс <span class="command char-style-override-1">PrimeGenerator</span> специализируется на построении списка простых чисел. Со­здание экземпляров этого класса не предполагается. Класс всего лишь определяет удобную область видимости, в которой можно объявлять и скрывать ­переменные. Он изменится при изменении алгоритма вычисления простых чисел.</p>
+
+    <p>При этом программа не была переписана! Мы не начинали работу «с нуля» и не писали код заново. В самом деле, внимательно присмотревшись к двум программам, вы увидите, что они используют одинаковые алгоритмы и одинаковую механику для решения своих задач.</p>
+
+    <p>Модификация началась с написания тестового пакета, досконально проверявшего поведение первой программы. Далее в код последовательно вносились многочисленные мелкие изменения. После каждого изменения проводились тесты, которые подтверждали, что поведение программы не изменилось. Так, шаг за шагом, первая программа очищалась и трансформировалась во вторую.</p>
+
+    <h2 id="toc_marker-12-2">Структурирование с учетом изменений</h2>
+
+    <p class="Normal0">Большинство систем находится в процессе непрерывных изменений. Каждое изменение создает риск того, что остальные части системы будут работать не так, как мы ожидаем. В чистой системе классы организованы таким образом, чтобы риск от изменений был сведен к минимуму.</p>
+
+    <p>Класс <span class="command char-style-override-1">Sql</span> в листинге 10.9 используется для построения правильно сформированных строк SQL по соответствующим метаданным. Работа еще не завершена, поэтому класс не поддерживает многие функции SQL (например, команды <span class="command char-style-override-1">update</span>). Когда придет время включения в класс <span class="command char-style-override-1">Sql</span> поддержки <span class="command char-style-override-1">update</span>, придется «открыть» этот класс для внесения изменений. Но как уже говорилось, открытие класса создает риск. Любые изменения в этом классе создают потенциальную возможность для нарушения работы остального кода класса, поэтому весь код приходится полностью тестировать заново.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/10 Классы/10.9.Sql.java">📄 Открыть исходный код в IDE</a></p>Листинг 10.9.</strong> Класс, который необходимо открыть для внесения изменений</p>
+
+    <p class="listing-body">public class Sql {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public Sql(String table, Column[] columns)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public String create()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public String insert(Object[] fields)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public String selectAll()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public String findByKey(String keyColumn, String keyValue)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public String select(Column column, String pattern)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public String select(Criteria criteria)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public String preparedInsert()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;private String columnList(Column[] columns)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;private String valuesList(Object[] fields, final Column[] columns)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;private String selectWithCriteria(String criteria)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;private String placeholderList(Column[] columns)</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Класс <span class="command char-style-override-1">Sql</span> изменяется при добавлении нового типа команды. Кроме того, он будет изменяться при изменении подробностей реализации уже существующего типа команды — скажем, если нам понадобится изменить функциональность <span class="command char-style-override-1">select</span> для поддержки подчиненной выборки. Две причины для изменения означают, что класс <span class="command char-style-override-1">Sql</span> нарушает принцип единой ответственности.</p>
+
+    <p>Нарушение принципа единой ответственности проявляется и в структуре кода. Из набора методов <span class="command char-style-override-1">Sql</span> видно, что класс содержит приватные методы (например, <span class="command char-style-override-1">selectWithCriteria</span>), относящиеся только к командам <span class="command char-style-override-1">select</span>.</p>
+
+    <p>Приватные методы, действие которых распространяется только на небольшое подмножество класса, — хороший признак для поиска потенциальных усовершенствований. Тем не менее основные усилия следует направить на изменение самой системы. Если бы класс <span class="command char-style-override-1">Sql</span> выглядел логически завершенным, то нам не пришлось бы беспокоиться о разделении ответственности. Если бы в обозримом будущем функциональность <span class="command char-style-override-1">update</span> не понадобилась, <span class="command char-style-override-1">Sql</span> можно было бы оставить в покое. Но как только выясняется, что класс необходимо открыть, нужно рассмотреть возможность усовершенствования его структуры.</p>
+
+    <p>Почему бы не воспользоваться решением, представленным в листинге 10.10? Для каждого метода открытого интерфейса, определенного в предыдущей версии <span class="command char-style-override-1">Sql</span> из листинга 10.9, создается соответствующий класс, производный от <span class="command char-style-override-1">Sql</span>. При этом приватные методы (такие, как <span class="command char-style-override-1">valuesList</span>) перемещаются непосредственно туда, где они понадобятся. Общее приватное поведение изолируется в паре вспомогательных классов, <span class="command char-style-override-1">Where</span> и <span class="command char-style-override-1">ColumnList</span>.</p>
+
+    <p class="Vrezka-head"><strong>Листинг</strong> <strong>10.10.</strong> Набор закрытых классов</p>
+
+    <p class="listing-body">abstract public class Sql {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public Sql(String table, Column[] columns)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;abstract public String generate();</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class CreateSql extends Sql {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public CreateSql(String table, Column[] columns)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;@Override public String generate()</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class SelectSql extends Sql {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public SelectSql(String table, Column[] columns)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;@Override public String generate()</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="Vrezka-head"><strong>Листинг</strong> <strong>10.10</strong> (продолжение)</p>
+
+    <p class="listing-body">public class InsertSql extends Sql {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public InsertSql(String table, Column[] columns, Object[] fields)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;@Override public String generate()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;private String valuesList(Object[] fields, final Column[] columns)</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class SelectWithCriteriaSql extends Sql {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public SelectWithCriteriaSql(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String table, Column[] columns, Criteria criteria)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;@Override public String generate()</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class SelectWithMatchSql extends Sql {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public SelectWithMatchSql(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String table, Column[] columns, Column column, String pattern)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;@Override public String generate()</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class FindByKeySql extends Sql</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public FindByKeySql(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String table, Column[] columns, String keyColumn, String keyValue)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;@Override public String generate()</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class PreparedInsertSql extends Sql {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public PreparedInsertSql(String table, Column[] columns)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;@Override public String generate() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;private String placeholderList(Column[] columns)</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class Where {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public Where(String criteria)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public String generate()</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Код каждого класса становится до смешного простым. Время, необходимое для понимания класса, падает почти до нуля. Вероятность того, что одна из функций нарушит работу другой, ничтожно мала. С точки зрения тестирования проверка всех фрагментов логики в этом решении упрощается, поскольку все классы изолированы друг от друга.</p>
+
+    <p>Что не менее важно, когда придет время добавления <span class="command char-style-override-1">update</span>, вам не придется изменять ни один из существующих классов! Логика построения команды <span class="command char-style-override-1">update</span> реализуется в новом субклассе <span class="command char-style-override-1">Sql</span> с именем <span class="command char-style-override-1">UpdateSql</span>. Это изменение не нарушит работу другого кода в системе.</p>
+
+    <p>Переработанная логика <span class="command char-style-override-1">Sql</span> положительна во всех отношениях. Она поддерживает принцип единой ответственности. Она также поддерживает другой ключевой принцип проектирования классов в ООП, называемый принципом открытости/закрытости [PPP]: классы должны быть открыты для расширений, но закрыты для модификации. Наш переработанный класс <span class="command char-style-override-1">Sql</span> открыт для добавления новой функциональности посредством создания производных классов, но при внесении этого изменения все остальные классы остаются закрытыми. Новый класс <span class="command char-style-override-1">UpdateSql</span> просто размещается в положенном месте.</p>
+
+    <p>Структура системы должна быть такой, чтобы обновление системы (с добавлением новых или изменением существующих аспектов) создавало как можно меньше проблем. В идеале новая функциональность должна реализовываться расширением системы, а не внесением изменений в существующий код.</p>
+
+    <h3>Изоляция изменений</h3>
+
+    <p class="Normal0">Потребности меняются со временем; следовательно, меняется и код. В начальном курсе объектно-ориентированного программирования мы узнали, что классы делятся на конкретные, содержащие подробности реализации (код), и абстрактные, представляющие только концепции. Если клиентский класс зависит от конкретных подробностей, то изменение этих подробностей может нарушить его работоспособность. Чтобы изолировать воздействие этих подробностей на класс, в систему вводятся интерфейсы и абстрактные классы.</p>
+
+    <p>Зависимости от конкретики создает проблемы при тестировании системы. Если мы строим класс <span class="command char-style-override-1">Portfolio</span>, зависящий от внешнего API <span class="command char-style-override-1">TokyoStockExchange</span> для вычисления текущей стоимости портфеля ценных бумаг, наши тестовые сценарии начинают зависеть от ненадежного внешнего фактора. Трудно написать тест, если вы получаете разные ответы каждые пять минут!</p>
+
+    <p>Вместо того чтобы проектировать <span class="command char-style-override-1">Portfolio</span> с прямой зависимостью от <span class="command char-style-override-1">Tokyo­StockExchange</span>, мы создаем интерфейс <span class="command char-style-override-1">StockExchange</span>, в котором объявляется один метод:</p>
+
+    <p class="listing-body">public interface StockExchange {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;Money currentPrice(String symbol);</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Класс <span class="command char-style-override-1">TokyoStockExchange</span> проектируется с расчетом на реализацию этого интерфейса. При ссылке на <span class="command char-style-override-1">StockExch</span><span class="command char-style-override-1">a</span><span class="command char-style-override-1">nge</span> передается в аргументе конструктора <span class="command char-style-override-1">Portfolio</span>:</p>
+
+    <p class="listing-body">public Portfolio {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;private StockExchange exchange;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public Portfolio(StockExchange exchange) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this.exchange = exchange;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;// ...</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Теперь наш тест может создать пригодную для тестирования реализацию интерфейса <span class="command char-style-override-1">StockExchange</span>, эмулирующую реальный API <span class="command char-style-override-1">TokyoStockExchange</span>. Тестовая реализация задает текущую стоимость каждого вида акций, используемых при тестировании. Если тест демонстрирует приобретение пяти акций Microsoft, мы кодируем тестовую реализацию так, чтобы для Microsoft всегда&nbsp;&nbsp;возвращалась стоимость $100 за акцию. Тестовая реализация интерфейса <span class="command char-style-override-1">StockExchange</span> сводится к простому поиску по таблице. После этого пишется тест, который должен вернуть общую стоимость портфеля в $500:</p>
+
+    <p class="listing-body">public class PortfolioTest {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private FixedStockExchangeStub exchange;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private Portfolio portfolio;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;@Before</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected void setUp() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;exchange = new FixedStockExchangeStub();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;exchange.fix("MSFT", 100);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;portfolio = new Portfolio(exchange);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;@Test</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void GivenFiveMSFTTotalShouldBe500() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;portfolio.add(5, "MSFT");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;Assert.assertEquals(500, portfolio.value());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Если система обладает достаточной логической изоляцией для подобного тестирования, она также становится более гибкой и более подходящей для повторного использования. Отсутствие жестких привязок означает, что элементы системы лучше изолируются друг от друга и от изменений. Изоляция упрощает понимание каждого элемента системы.</p>
+
+    <p>Сведение к минимуму логических привязок соответствует другому принципу проектирования классов, известному как <em>принцип обращения зависимостей</em> (DIP, Dependency Inversion Principle). По сути DIP гласит, что классы системы должны зависеть от абстракций, а не от конкретных подробностей.</p>
+
+    <p>Вместо того чтобы зависеть от подробностей реализации класса <span class="command char-style-override-1">Tokyo­Stock­Exchange</span>, наш класс <span class="command char-style-override-1">Portfolio</span> теперь зависит от интерфейса <span class="command char-style-override-1">StockExchange</span>. Интерфейс <span class="command char-style-override-1">StockExchange</span> представляет абстрактную концепцию запроса текущей стоимости акций. Эта абстракция изолирует класс от конкретных подробностей получения такой цены — в том числе и от источника, из которого берется реальная информация.</p>
+
+    <h2 id="toc_marker-12-3">Литература</h2>
+
+    <p class="Normal0">[RDD]: Object Design: Roles, Responsibilities, and Collaborations, Rebecca Wirfs-Brock et al., Addison-Wesley, 2002.</p>
+
+    <p>[PPP]: Agile Software Development: Principles, Patterns, and Practices, Robert C. Martin, Prentice Hall, 2002.</p>
+
+    <p>[Knuth92]: Literate Programming, Donald E. Knuth, Center for the Study of language and Information, Leland Stanford Junior University, 1992.</p>
+
+    <div class="footnotes footnote">
+      <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-33-backlink" id="footnote-319-33">33</a> За более подробной информацией об этом принципе обращайтесь к [PPP].</p>
+    </div>
+  </div>
+</body>
+</html>

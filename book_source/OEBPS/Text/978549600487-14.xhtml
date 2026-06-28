@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Чистый код: создание, анализ и рефакторинг. Библиотека программиста</title>
+  <link href="../Styles/template.css" rel="stylesheet" type="text/css"/>
+</head>
+
+<body id="x978549600487" xml:lang="ru-RU">
+  <div>
+    <h1 id="toc_marker-14">12. Формирование архитектуры</h1>
+
+    <p class="Epigraph-avtor">Джефф Лангр</p>
+
+    <p class="Pic-yakor"><span><img alt="12_01.tif" class="frame-20" src="../Images/12_01_fmt.png"/></span>&nbsp;</p>
+
+    <h2 id="toc_marker-14-1">Четыре правила</h2>
+
+    <p class="Normal0">Разве не хотелось бы вам знать четыре простых правила, выполнение которых помогало бы повысить качество проектирования? Четыре правила, помогающих составить представление о важнейших особенностях структуры и архитектуры кода, упрощающих применение таких принципов, как SRP (принцип единой ответственности) и DIP (принцип обращения зависимостей)? Четыре правила, способствующих формированию хороших архитектур?</p>
+
+    <p>Многие полагают, что четыре правила <em>простой архитектуры</em> [XPE] Кента Бека оказывают значительную помощь в проектировании программных продуктов.</p>
+
+    <p>Согласно Кенту, архитектура может считаться «простой», если она:</p>
+
+    <p class="ListBul">• обеспечивает прохождение всех тестов,</p>
+
+    <p class="ListBul">• не содержит дублирующегося кода,</p>
+
+    <p class="ListBul">• выражает намерения программиста,</p>
+
+    <p class="ListBulLast">• использует минимальное количество классов и методов.</p>
+
+    <p>Правила приведены в порядке их важности.</p>
+
+    <h3>Правило № 1: выполнение всех тестов</h3>
+
+    <p class="Normal0">Прежде всего система должна делать то, что задумано ее проектировщиком. Система может быть отлично спланирована «на бумаге», но если не существует простого способа убедиться в том, что она действительно решает свои задачи, то результат выглядит сомнительно.</p>
+
+    <p>Система, тщательно протестированная и прошедшая все тесты, <em>контролируема</em>. На первый взгляд утверждение кажется очевидным, но это весьма важно. Невозможно проверить работу системы, которая не является контролируемой, а непроверенные системы не должны запускаться в эксплуатацию.</p>
+
+    <p>К счастью, стремление к контролируемости системы ведет к архитектуре с компактными узкоспециализированными классами. Все просто: классы, соответствующие принципу SRP, проще тестировать. Чем больше тестов мы напишем, тем дальше продвинемся к простоте тестирования. Таким образом, обеспечение полной контролируемости системы помогает повысить качество проектирования.</p>
+
+    <p>Жесткая привязка усложняет написание тестов. Таким образом, чем больше тестов мы пишем, тем интенсивнее используем такие принципы, как DIP, и такие инструменты, как внедрение зависимостей, интерфейсы и абстракции, для минимизации привязок.</p>
+
+    <p>Как ни удивительно, выполнение простого и очевидного правила, гласящего, что для системы необходимо написать тесты и постоянно выполнять их, влияет на соответствие системы важнейшим критериям объектно-ориентированного программирования: устранению жестких привязок и повышению связности. Написание тестов улучшает архитектуру системы.</p>
+
+    <h3>Правила № 2–4: переработка кода</h3>
+
+    <p class="Normal0">Когда у вас появился полный набор тестов, можно заняться чисткой кода и классов. Для этого код подвергается последовательной переработке (рефакторингу). Мы добавляем несколько строк кода, делаем паузу и анализируем новую архитектуру. Не ухудшилась ли она по сравнению с предыдущим вариантом? Если ухудшилась, то мы чистим код и тестируем его, чтобы убедиться, что в нем ничего не испорчено. Наличие тестов избавляет от опасений, что чистка кода нарушит его работу!</p>
+
+    <p>В фазе переработки применяется абсолютно все, что вы знаете о качественном проектировании программных продуктов. В ход идут любые приемы: повышение связности, устранение жестких привязок, разделение ответственности, изоляция системных областей ответственности, сокращение объема функций и классов, выбор более содержательных имен и т.д. Также применяются три критерия простой архитектуры: устранение дубликатов, обеспечение выразительности и минимизация количества классов и методов.</p>
+
+    <h3>Отсутствие дублирования</h3>
+
+    <p class="Normal0">Дублирование — главный враг хорошо спроектированной системы. Его последствия — лишняя работа, лишний риск и лишняя избыточная сложность. Дублирование проявляется во многих формах. Конечно, точное совпадение строк кода свидетельствует о дублировании. Похожие строки часто удается «причесать» так, чтобы сходство стало еще более очевидным; это упростит рефакторинг. Кроме того, дублирование может существовать и в других формах — таких, как дублирование реализации. Например, класс коллекции может содержать следующие методы:</p>
+
+    <p class="listing-body">int size() {}</p>
+
+    <p class="listing-body">boolean isEmpty() {}</p>
+
+    <p>Методы могут иметь разные реализации. Допустим, метод <span class="command char-style-override-1">isEmpty</span> может использовать логический флаг, а <span class="command char-style-override-1">size</span> — счетчик элементов. Однако мы можем устранить дублирование, связав <span class="command char-style-override-1">isEmpty</span> с определением <span class="command char-style-override-1">size</span>:</p>
+
+    <p class="listing-body">boolean isEmpty() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;return 0 == size();</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Чтобы создать чистую систему, необходимо сознательно стремиться к устранению дубликатов, пусть даже всего в нескольких строках кода. Для примера рассмотрим следующий код:</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void scaleToOneDimension(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;float desiredDimension, float imageDimension) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (Math.abs(desiredDimension - imageDimension) &lt; errorThreshold)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;float scalingFactor = desiredDimension / imageDimension;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;scalingFactor = (float)(Math.floor(scalingFactor * 100) * 0.01f);</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;RenderedOp newImage = ImageUtilities.getScaledImage(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;image, scalingFactor, scalingFactor);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;image.dispose();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;System.gc();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;image = newImage;</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">public synchronized void rotate(int degrees) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;RenderedOp newImage = ImageUtilities.getRotatedImage(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;image, degrees);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;image.dispose();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;System.gc();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;image = newImage;</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Чтобы обеспечить чистоту системы, следует устранить незначительное дублирование между методами <span class="command char-style-override-1">scaleToOneDimension</span> и <span class="command char-style-override-1">rotate</span>:</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void scaleToOneDimension(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;float desiredDimension, float imageDimension) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (Math.abs(desiredDimension - imageDimension) &lt; errorThreshold)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;float scalingFactor = desiredDimension / imageDimension;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;scalingFactor = (float)(Math.floor(scalingFactor * 100) * 0.01f);</p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;&nbsp;&nbsp;replaceImage(ImageUtilities.getScaledImage(</strong></p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;image, scalingFactor, scalingFactor));</strong></p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public synchronized void rotate(int degrees) {</p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;&nbsp;&nbsp;replaceImage(ImageUtilities.getRotatedImage(image, degrees));</strong></p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;private void replaceImage(RenderedOp newImage) {</strong></p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;&nbsp;&nbsp;image.dispose();</strong></p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;&nbsp;&nbsp;System.gc();</strong></p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;&nbsp;&nbsp;image = newImage;</strong></p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;}</strong></p>
+
+    <p>В ходе выделения общности конструкций на этом микроскопическом уровне начинают проявляться нарушения принципа SRP. Таким образом, только что сформированный метод можно переместить в другой класс. Это расширяет видимость метода. Другой участник группы может найти возможность дальнейшего абстрагирования нового метода и его использования в другом контексте. Таким образом, принцип «повторного использования даже в мелочах» может привести к значительному сокращению сложности системы. Понимание того, как обеспечить повторное использование в мелочах, абсолютно необходимо для его обеспечения в большом масштабе.</p>
+
+    <p>Паттерн ШАБЛОННЫЙ МЕТОД [GOF] относится к числу стандартных приемов устранения высокоуровневого дублирования. Пример:</p>
+
+    <p class="listing-body">public class VacationPolicy {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void accrueUSDivisionVacation() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Код вычисления продолжительности отпуска</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// по количеству отработанных часов</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// ...</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Код проверки минимальной продолжительности отпуска</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// по стандартам США</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// ...</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Код внесения отпуска в платежную ведомость</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// ...</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void accrueEUDivisionVacation() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Код вычисления продолжительности отпуска</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// по количеству отработанных часов</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// ...</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Код проверки минимальной продолжительности отпуска</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// по европейским стандартам</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// ...</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Код внесения отпуска в платежную ведомость</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// ...</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Код <span class="command char-style-override-1">accrueUSDivisionVacation</span> и <span class="command char-style-override-1">accrueEuropeanDivisionVacation</span> в основном совпадает, если не считать проверки минимальной продолжительности. Этот фрагмент алгоритма изменяется в зависимости от типа работника.</p>
+
+    <p>Для устранения этого очевидного дублирования можно воспользоваться паттерном ШАБЛОННЫЙ МЕТОД:</p>
+
+    <p class="listing-body">abstract public class VacationPolicy {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void accrueVacation() {</p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;calculateBaseVacationHours();</strong></p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;alterForLegalMinimums();</strong></p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;applyToPayroll();</strong></p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;private void calculateBaseVacationHours() { /* ... */ };</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;abstract protected void alterForLegalMinimums();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;private void applyToPayroll() { /* ... */ };</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class USVacationPolicy extends VacationPolicy {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;@Override protected void alterForLegalMinimums() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Логика для США</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class EUVacationPolicy extends VacationPolicy {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;@Override protected void alterForLegalMinimums() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Логика для Европы</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Субклассы «заполняют пробел» в обобщенном алгоритме <span class="command char-style-override-1">accrueVacation</span>; они предоставляют только ту информацию, которая различается в специализированных версиях алгоритма.</p>
+
+    <h2 id="toc_marker-14-2">Выразительность</h2>
+
+    <p class="Normal0">Большинству читателей доводилось работать с запутанным кодом. Многие из них создавали запутанный код сами. Легко написать код, понятный для нас самих, потому что в момент его написания мы глубоко понимаем решаемую проблему. У других программистов, которые будут заниматься сопровождением этого кода, такого понимания не будет.</p>
+
+    <p>Основные затраты программного проекта связаны с его долгосрочным сопровождением. Чтобы свести к минимуму риск появления дефектов в ходе внесения изменений, очень важно понимать, как работает система. С ростом сложности системы разработчику приходится разбираться все дольше и дольше, а вероятность того, что он поймет что-то неправильно, только возрастает. Следовательно, код должен четко выражать намерения своего автора. Чем понятнее будет код, тем меньше времени понадобится другим программистам, чтобы разобраться в нем. Это способствует уменьшению количества дефектов и снижению затрат на сопровождение.</p>
+
+    <p>Хороший выбор имен помогает выразить ваши намерения. Имя класса или функции должно восприниматься «на слух», а когда читатель разбирается в том, что делает класс, это не должно вызывать у него удивления.</p>
+
+    <p>Относительно небольшой размер функций и классов также помогает выразить ваши намерения. Компактным классам и функциям проще присваивать имена; они легко пишутся и в них легко разобраться.</p>
+
+    <p>Стандартная номенклатура также способствует выражению намерений автора. В частности, передача информация и выразительность являются важнейшими целями для применения паттернов проектирования. Включение стандартных названий паттернов (например, КОМАНДА или ПОСЕТИТЕЛЬ) в имена классов, реализующих эти паттерны, помогает кратко описать вашу архитектуру для других разработчиков.</p>
+
+    <p>Хорошо написанные модульные тесты тоже выразительны. Они могут рассматриваться как разновидность документации, построенная на конкретных примерах. Читая код тестов, разработчик должен составить хотя бы общее представление о том, что делает класс.</p>
+
+    <p>И все же самое важное, что можно сделать для создания выразительного кода — это <em>постараться</em> сделать его выразительным. Как только наш код заработает, мы обычно переходим к следующей задаче, не прикладывая особых усилий к тому, чтобы код легко читался другими людьми. Но помните: следующим человеком, которому придется разбираться в вашем коде, с большой вероятностью окажетесь вы сами.</p>
+
+    <p>Так что уделите немного внимания качеству исполнения своего продукта. Немного поразмыслите над каждой функцией и классом. Попробуйте улучшить имена, разбейте большие функции на меньшие и вообще проявите заботу о том, что вы создали. Неравнодушие — воистину драгоценный ресурс.</p>
+
+    <h2 id="toc_marker-14-3">Минимум классов и методов</h2>
+
+    <p class="Normal0">Даже такие фундаментальные концепции, как устранение дубликатов, выразительность кода и принцип единой ответственности, могут зайти слишком далеко. Стремясь уменьшить объем кода наших классов и методов, мы можем наплодить слишком много крошечных классов и методов. Это правило рекомендует ограничиться небольшим количеством функций и классов.</p>
+
+    <p>Многочисленность классов и методов иногда является результатом бессмысленного догматизма. В качестве примера можно привести стандарт кодирования, который требует создания интерфейса для каждого без исключения класса. Или разработчиков, настаивающих, что поля данных и поведение всегда должны быть разделены на классы данных и классы поведения. Избегайте подобных догм, а в своей работе руководствуйтесь более прагматичным подходом.</p>
+
+    <p>Наша цель — сделать так, чтобы система была компактной, но при этом одновременно сохранить компактность функций и классов. Однако следует помнить, что из четырех правил простой архитектуры это правило обладает наименьшим приоритетом. Свести к минимуму количество функций и классов важно, однако прохождение тестов, устранение дубликатов и выразительность кода все же важнее.</p>
+
+    <h2 id="toc_marker-14-4">Заключение</h2>
+
+    <p class="Normal0">Может ли набор простых правил заменить практический опыт? Нет, конечно. С другой стороны, правила, описанные в этой главе и в книге, представляют собой кристаллизованную форму многих десятилетий практического опыта авторов. Принципы простой архитектуры помогают разработчикам следовать по тому пути, который им пришлось бы самостоятельно прокладывать в течение многих лет.</p>
+
+    <h2 id="toc_marker-14-5">Литература</h2>
+
+    <p class="Normal0">[XPE]: Extreme Programming Explained: Embrace Change, Kent Beck, Addison-Wesley, 1999.</p>
+
+    <p>[GOF]: Design Patterns: Elements of Reusable Object Oriented Software, Gamma et al., Addison-Wesley, 1996.</p>
+  </div>
+</body>
+</html>

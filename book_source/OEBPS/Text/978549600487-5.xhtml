@@ -1,0 +1,996 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Чистый код: создание, анализ и рефакторинг. Библиотека программиста</title>
+  <link href="../Styles/template.css" rel="stylesheet" type="text/css"/>
+</head>
+
+<body id="x978549600487" xml:lang="ru-RU">
+  <div>
+    <h1 id="toc_marker-5">3. Функции</h1>
+
+    <p class="Pic-yakor"><span><img alt="03_01.tif" class="frame-7" src="../Images/03_01_fmt.png"/></span>&nbsp;</p>
+
+    <p>На заре эпохи программирования системы строились из программ, функций и подпрограмм. До наших дней дожили только функции. Они образуют первый уровень структуризации в любой программе, и их грамотная запись является основной темой этой главы.</p>
+
+    <p>Рассмотрим код в листинге 3.1. В FitNesse<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-10" id="footnote-319-10-backlink">10</a></span> трудно найти длинную функцию, но после некоторых поисков мне это все же удалось. Функция не только длинна, но она содержит повторяющиеся фрагменты кода, множество загадочных строк, а также странные и неочевидные типы данных и функции API. Попробуйте разобраться в ней за три минуты. Посмотрим, что вам удастся понять.</p>
+
+    <p class="Vrezka-head"><strong>Листинг</strong> <strong>3.1.</strong> HtmlUtil.java (FitNesse 20070619)</p>
+
+    <p class="listing-body">public static String testableHtml(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;PageData pageData,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;boolean includeSuiteSetup</p>
+
+    <p class="listing-body">) throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;WikiPage wikiPage = pageData.getWikiPage();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;StringBuffer buffer = new StringBuffer();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;if (pageData.hasAttribute("Test")) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (includeSuiteSetup) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WikiPage suiteSetup =</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PageCrawlerImpl.getInheritedPage(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SuiteResponder.SUITE_SETUP_NAME, wikiPage</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (suiteSetup != null) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WikiPagePath pagePath =</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;suiteSetup.getPageCrawler().getFullPath(suiteSetup);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String pagePathName = PathParser.render(pagePath);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;buffer.append("!include -setup .")</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append(pagePathName)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append("\n");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;WikiPage setup =</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PageCrawlerImpl.getInheritedPage("SetUp", wikiPage);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (setup != null) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WikiPagePath setupPath =</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wikiPage.getPageCrawler().getFullPath(setup);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String setupPathName = PathParser.render(setupPath);"</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;buffer.append("!include -setup .")</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append(setupPathName)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append("\n");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;buffer.append(pageData.getContent());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;if (pageData.hasAttribute("Test")) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;WikiPage teardown =</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PageCrawlerImpl.getInheritedPage("TearDown", wikiPage);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (teardown != null) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WikiPagePath tearDownPath =</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wikiPage.getPageCrawler().getFullPath(teardown);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String tearDownPathName = PathParser.render(tearDownPath);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;buffer.append("\n")</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append("!include -teardown .")</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append(tearDownPathName)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append("\n");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (includeSuiteSetup) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WikiPage suiteTeardown =</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PageCrawlerImpl.getInheritedPage(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SuiteResponder.SUITE_TEARDOWN_NAME,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wikiPage</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (suiteTeardown != null) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WikiPagePath pagePath =</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;suiteTeardown.getPageCrawler().getFullPath (suiteTeardown);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String pagePathName = PathParser.render(pagePath);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;buffer.append("!include -teardown .")</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append(pagePathName)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append("\n");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;pageData.setContent(buffer.toString());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return pageData.getHtml();</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Удалось ли вам разобраться с функцией за три минуты? Вероятно, нет. В ней происходит слишком много всего, и притом на разных уровнях абстракции. Загадочные строки и непонятные вызовы функций смешиваются в конструкциях <span class="command char-style-override-1">if</span> двойной вложенности, к тому же зависящих от состояния флагов.</p>
+
+    <p>Но после выделения нескольких методов, переименований и небольшой рес­труктуризации мне удалось представить смысл этой функции в девяти строках листинга 3.2. Посмотрим, удастся ли вам разобраться в ней за следующие три минуты.</p>
+
+    <p class="Vrezka-head"><strong>Листинг 3.2.</strong> HtmlUtil.java (переработанная версия)</p>
+
+    <p class="listing-body">public static String renderPageWithSetupsAndTeardowns(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;PageData pageData, boolean isSuite</p>
+
+    <p class="listing-body">) throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;boolean isTestPage = pageData.hasAttribute("Test");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;if (isTestPage) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;WikiPage testPage = pageData.getWikiPage();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;StringBuffer newPageContent = new StringBuffer();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;includeSetupPages(testPage, newPageContent, isSuite);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;newPageContent.append(pageData.getContent());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;includeTeardownPages(testPage, newPageContent, isSuite);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;pageData.setContent(newPageContent.toString());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return pageData.getHtml();</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Если только вы не занимаетесь активным изучением FitNesse, скорее всего, вы не разберетесь во всех подробностях. Но по крайней мере вы поймете, что функция включает в тестовую страницу какие-то начальные и конечные блоки, а потом генерирует код HTML. Если вы знакомы с JUnit<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-11" id="footnote-319-11-backlink">11</a></span>, то, скорее всего, поймете, что эта функция является частью тестовой инфраструктуры на базе Web. И конечно, это правильное предположение. Прийти к такому выводу на основании листинга 3.2 несложно, но из листинга 3.1 это, мягко говоря, неочевидно.</p>
+
+    <p>Что же делает функцию из листинга 3.2 такой понятной и удобочитаемой? Как заставить функцию передавать намерения разработчика? Какие атрибуты функции помогут случайному читателю составить интуитивное представление о выполняемых ей задачах?</p>
+
+    <h2 id="toc_marker-5-1">Компактность!</h2>
+
+    <p class="Normal0">Первое правило: функции должны быть компактными. Второе правило: <em>функции должны быть еще компактнее</em>. Я не могу научно обосновать свое утверждение. Не ждите от меня ссылок на исследования, доказывающие, что очень маленькие функции лучше больших. Я могу всего лишь сказать, что я почти четыре десятилетия писал функции всевозможных размеров. Мне доводилось создавать кошмарных монстров в 3000 строк. Я написал бесчисленное множество функций длиной от 100 до 300 строк. И я писал функции от 20 до 30 строк. Мой практический опыт научил меня (ценой многих проб и ошибок), что функции должны быть очень маленькими. В 80-е годы считалось, что функция должна занимать не более одного экрана. Конечно, тогда экраны VT100 состояли из 24 строк и 80 столбцов, а редакторы использовали 4 строки для административных целей. В наши дни с мелким шрифтом на хорошем большом мониторе можно разместить 150 символов в строке и 100 и более строк на экране. Однако строки не должны состоять из 150 символов, а функции — из 100 строк. Желательно, чтобы длина функции не превышала 20 строк.</p>
+
+    <p>Насколько короткой может быть функция? В 1999 году я заехал к Кенту Беку в его дом в Орегоне. Мы посидели и позанимались программированием. В один момент он показал мне симпатичную маленькую программу Java/Swing, которую он назвал Sparkle. Программа создавала на экране визуальный эффект, очень похожий на эффект волшебной палочки феи-крестной из фильма «Золушка». При перемещении мыши с курсора рассыпались замечательные блестящие искорки, которые осыпались к нижнему краю экрана под воздействием имитируемого гравитационного поля. Когда Кент показал мне код, меня поразило, насколько компактными были все функции. Многие из моих функций в программах Swing растягивались по вертикали чуть ли не на километры. Однако каждая функция в программе Кента занимала всего две, три или четыре строки. Все функции были предельно очевидными. Каждая функция излагала свою историю, и каждая история естественным образом подводила вас к началу следующей истории. <em>Вот</em> какими короткими должны быть функции<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-12" id="footnote-319-12-backlink">12</a></span>!</p>
+
+    <p>Более того, функции должны быть еще короче, чем в листинге 3.2! На деле листинг 3.2 следовало бы сократить до листинга 3.3.</p>
+
+    <p class="Vrezka-head"><strong>Листинг 3.3.</strong> HtmlUtil.java (переработанная версия)</p>
+
+    <p class="listing-body">public static String renderPageWithSetupsAndTeardowns(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;PageData pageData, boolean isSuite) throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;if (isTestPage(pageData))</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;includeSetupAndTeardownPages(pageData, isSuite);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return pageData.getHtml();</p>
+
+    <p class="listing-body">}</p>
+
+    <h3>Блоки и отступы</h3>
+
+    <p class="Normal0">Из сказанного выше следует, что блоки в командах <span class="command char-style-override-1">if</span>, <span class="command char-style-override-1">else</span>, <span class="command char-style-override-1">while</span> и т.д. должны состоять из одной строки, в которой обычно содержится вызов функции. Это не только делает вмещающую функцию более компактной, но и способствует документированию кода, поскольку вызываемой в блоке функции можно присвоить удобное содержательное имя.</p>
+
+    <p>Кроме того, функции не должны содержать вложенных структур, так как это ­приводит к их увеличению. Максимальный уровень отступов в функции не должен превышать одного-двух. Разумеется, это упрощает чтение и понимание функций.</p>
+
+    <h2 id="toc_marker-5-2">Правило одной операции</h2>
+
+    <div class="frame-4"><img alt="03_02.tif" class="frame-8" src="../Images/03_02_fmt.png"/></div>
+
+    <p class="Normal0">Совершенно очевидно, что функция из листинга 3.1 выполняет множество операций. Она создает буферы, производит выборку данных, ищет унаследованные страницы, строит пути, присоединяет загадочные строки, генерирует код HTML… и это еще не все. С другой стороны, в листинге 3.3 выполняется всего одна простая операция: включение в тестовую страницу начальных и конечных блоков.</p>
+
+    <p>Следующий совет существует в той или иной форме не менее 30 лет.</p>
+
+    <p>ФУНКЦИЯ ДОЛЖНА ВЫПОЛНЯТЬ ТОЛЬКО ОДНУ ОПЕРАЦИЮ. ОНА ДОЛЖНА ВЫПОЛНЯТЬ ЕЕ ХОРОШО. И НИЧЕГО ДРУГОГО ОНА ДЕЛАТЬ НЕ ДОЛЖНА.</p>
+
+    <p>Проблема в том, что иногда бывает трудно определить, что же считать «одной операцией». В листинге 3.3 выполняется одна операция? Легко возразить, что в нем выполняются минимум три операции:</p>
+
+    <p class="ListNum">1. Функция проверяет, является ли страница тестовой страницей.</p>
+
+    <p class="ListNum">2. Если является, то в нее включаются начальные и конечные блоки.</p>
+
+    <p class="ListNumLast">3. Для страницы генерируется код HTML.</p>
+
+    <p>Так как же? Сколько операций выполняет функция — одну или три? Обратите внимание: три этапа работы функции находятся на одном уровне абстракции под объявленным именем функции. Ее можно было бы описать в виде короткого <span class="command char-style-override-1">TO</span><span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-13" id="footnote-319-13-backlink">13</a></span>-абзаца:</p>
+
+    <p class="ListBulLast">• TO RenderPageWithSetupsAndTeardowns, мы проверяем, является ли страница тестовой, и если является — включаем начальные и конечные блоки. В любом случае для страницы генерируется код HTML.</p>
+
+    <p>Если функция выполняет только те действия, которые находятся на одном уровне под объявленным именем функции, то эта функция выполняет одну операцию. В конце концов, функции пишутся прежде всего для разложения более крупной концепции (иначе говоря, имени функции) на последовательность действий на следующем уровне абстракции.</p>
+
+    <p>Вполне очевидно, что листинг 3.1 содержит множество различных действий на разных уровнях абстракции. Поэтому в нем явно выполняется более одной операции. Даже листинг 3.2 содержит два уровня абстракции; это доказывается тем, что нам удалось его сократить. С другой стороны, осмысленно сократить листинг 3.3 очень трудно. Команду <span class="command char-style-override-1">if</span> можно вынести в функцию с именем <span class="command char-style-override-1">includeSetupsAndTeardownsIfTestPage</span>, но это простая переформулировка кода без изменения уровня абстракции.</p>
+
+    <p>Итак, чтобы определить, что функция выполняет более одной операции, попробуйте извлечь из нее другую функцию, которая бы не являлась простой переформулировкой реализации [G34].</p>
+
+    <h3>Секции в функциях</h3>
+
+    <p class="Normal0">Взгляните на листинг 4.7 на с. 98. Обратите внимание: функция <span class="command char-style-override-1">generatePrimes</span> разделена на секции (объявления, инициализация, отбор). Это очевидный признак того, что функция выполняет более одной операции. Функцию, выполняющую только одну операцию, невозможно осмысленно разделить на секции.</p>
+
+    <h2 id="toc_marker-5-3">Один уровень абстракции на функцию</h2>
+
+    <p class="Normal0">Чтобы убедиться в том, что функция выполняет «только одну операцию», необходимо проверить, что все команды функции находятся на одном уровне абстракции. Легко убедиться, что листинг 3.1 нарушает это правило. Некоторые из его концепций — например, <span class="command char-style-override-1">getHtml()</span> — находятся на очень высоком уровне абстракции; другие (скажем, <span class="command char-style-override-1">String pagePathName = PathParser.render(pagePath)</span>) — на среднем уровне. Наконец, третьи — такие, как <span class="command char-style-override-1">.append(</span><span class="command char-style-override-1">"</span><span class="command char-style-override-1">\n</span><span class="command char-style-override-1">"</span><span class="command char-style-override-1">)</span> — относятся к чрезвычайно низкому уровню абстракции.</p>
+
+    <p>Смешение уровней абстракции внутри функции всегда создает путаницу. Читатель не всегда понимает, является ли некоторое выражение важной концепцией или второстепенной подробностью. Что еще хуже, при их смешении функция постепенно начинает обрастать все большим количеством второстепенных подробностей.</p>
+
+    <h3>Чтение кода сверху вниз: правило понижения</h3>
+
+    <p class="Normal0">Код должен читаться как рассказ — сверху вниз [KP78, p. 37].</p>
+
+    <p>За каждой функцией должны следовать функции следующего уровня абстракции. Это позволяет читать код, последовательно спускаясь по уровням абстракции в ходе чтения списка функций. Я называю такой подход «правилом понижения».</p>
+
+    <p>Сказанное можно сформулировать и иначе: программа должна читаться так, словно она является набором <span class="command char-style-override-1">TO</span>-абзацев, каждый из которых описывает текущий уровень абстракции и ссылается на последующие <span class="command char-style-override-1">TO</span>-абзацы следующего нижнего уровня.</p>
+
+    <p class="ListBulLast">• Чтобы включить начальные и конечные блоки, мы сначала включаем начальные блоки, затем содержимое тестовой страницы, а затем включаем конечные блоки.</p>
+
+    <p class="ListBul2">• Чтобы включить начальные блоки, мы сначала включаем пакетные начальные блоки, если имеем дело с пакетом тестов, а затем включаем обычные начальные блоки.</p>
+
+    <p class="ListBul2">• Чтобы включить пакетные начальные блоки, мы ищем в родительской иерархии страницу <span class="command char-style-override-1">SuiteSetUp</span> и добавляем команду <span class="command char-style-override-1">include</span> с путем к этой странице.</p>
+
+    <p class="ListBul2">• Чтобы найти в родительской иерархии…</p>
+
+    <p>Опыт показывает, что программистов очень трудно научить следовать этому правилу и писать функции, остающиеся на одном уровне абстракции. Тем не менее освоить этот прием очень важно. Он играет ключевую роль для создания коротких функций, выполняющих только одну операцию. Построение кода по аналогии с набором последовательных <span class="command char-style-override-1">TO</span>-абзацев — эффективный метод поддержания единого уровня абстракции.</p>
+
+    <p>Взгляните на листинг 3.7 в конце этой главы. В нем приведен полный код функции <span class="command char-style-override-1">testableHtml</span>, переработанной в соответствии с описанными здесь принципами. Обратите внимание на то, как каждая функция «представляет» читателю следующую функцию и как каждая функция остается на едином уровне абстракции.</p>
+
+    <h2 id="toc_marker-5-4">Команды switch</h2>
+
+    <p class="Normal0">Написать компактную команду <span class="command char-style-override-1">switch</span> довольно сложно<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-14" id="footnote-319-14-backlink">14</a></span>. Даже команда <span class="command char-style-override-1">switch</span> всего с двумя условиями занимает больше места, чем в моем представлении должен занимать один блок или функция. Также трудно создать команду <span class="command char-style-override-1">switch</span>, которая делает что-то одно — по своей природе команды <span class="command char-style-override-1">switch</span> всегда выполняют N операций. К сожалению, обойтись без команд <span class="command char-style-override-1">switch</span> удается не всегда, но по крайней мере мы <em>можем</em> позаботиться о том, чтобы эти команды были скрыты в низкоуровневом классе и не дублировались в коде. И конечно, в этом нам может помочь полиморфизм.</p>
+
+    <p>В листинге 3.4 представлена всего одна операция, зависящая от типа работника.</p>
+
+    <p class="Vrezka-head"><strong>Листинг</strong> <strong>3.4.</strong> Payroll.java</p>
+
+    <p class="listing-body">public Money calculatePay(Employee e)</p>
+
+    <p class="listing-body">throws InvalidEmployeeType {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;switch (e.type) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;case COMMISSIONED:</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return calculateCommissionedPay(e);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;case HOURLY:</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return calculateHourlyPay(e);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;case SALARIED:</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return calculateSalariedPay(e);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;default:</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throw new InvalidEmployeeType(e.type);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p>Эта функция имеет ряд недостатков. Во-первых, она велика, а при добавлении новых типов работников она будет разрастаться. Во-вторых, она совершенно очевидно выполняет более одной операции. В-третьих, она нарушает принцип единой ответственности<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-15" id="footnote-319-15-backlink">15</a></span>, так как у нее существует несколько возможных причин изменения. В-четвертых, она нарушает принцип открытости/закрытости<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-16" id="footnote-319-16-backlink">16</a></span>, потому что код функции должен изменяться при каждом добавлении новых типов. Но, пожалуй, самый серьезный недостаток заключается в том, что программа может содержать неограниченное количество других функций с аналогичной структурой, например:</p>
+
+    <p class="listing-body">isPayday(Employee e, Date date)</p>
+
+    <p>или</p>
+
+    <p class="listing-body">deliverPay(Employee e, Money pay)</p>
+
+    <p>и так далее. Все эти функции будут иметь все ту же ущербную структуру.</p>
+
+    <p>Решение проблемы (листинг 3.5) заключается в том, чтобы похоронить команду <span class="command char-style-override-1">switch</span> в фундаменте АБСТРАКТНОЙ ФАБРИКИ [GOF] и никому ее не показывать. Фабрика использует команду <span class="command char-style-override-1">switch</span> для создания соответствующих экземпляров потомков <span class="command char-style-override-1">Employee</span>, а вызовы функций <span class="command char-style-override-1">calculatePay</span>, <span class="command char-style-override-1">isPayDay</span>, <span class="command char-style-override-1">deliverPay</span> и т.д. проходят полиморфную передачу через интерфейс <span class="command char-style-override-1">Employee</span>.</p>
+
+    <p class="Vrezka-head"><strong>Листинг</strong> <strong>3.5.</strong> Employee и Factory</p>
+
+    <p class="listing-body">public abstract class Employee {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public abstract boolean isPayday();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public abstract Money calculatePay();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public abstract void deliverPay(Money pay);</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">-----------------</p>
+
+    <p class="listing-body">public interface EmployeeFactory {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public Employee makeEmployee(EmployeeRecord r) throws InvalidEmployeeType;</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">-----------------</p>
+
+    <p class="listing-body">public class EmployeeFactoryImpl implements EmployeeFactory {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public Employee makeEmployee(EmployeeRecord r) throws InvalidEmployeeType {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;switch (r.type) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;case COMMISSIONED:</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return new CommissionedEmployee(r) ;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;case HOURLY:</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return new HourlyEmployee(r);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;case SALARIED:</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return new SalariedEmploye(r);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;default:</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throw new InvalidEmployeeType(r.type);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Мое общее правило в отношении команд <span class="command char-style-override-1">switch</span> гласит, что эти команды допустимы, если они встречаются в программе однократно, используются для создания полиморфных объектов и скрываются за отношениями наследования, чтобы оставаться невидимыми для остальных частей системы [G23]. Конечно, правил без исключений не бывает и в некоторых ситуациях приходится нарушать одно или несколько условий этого правила.</p>
+
+    <h2 id="toc_marker-5-5">Используйте содержательные имена</h2>
+
+    <p class="Normal0">В листинге 3.7 я переименовал нашу функцию <span class="command char-style-override-1">testableHtml</span> в <span class="command char-style-override-1">SetupTeardownIncluder.render</span>. Новое имя гораздо лучше, потому что оно точнее описывает, что делает функция. Кроме того, всем приватным методам были присвоены столь же содержательные имена <span class="command char-style-override-1">isTestable</span>, <span class="command char-style-override-1">includeSetupAndTeardownPages</span> и т.д. Трудно пере­оценить пользу хороших имен. Вспомните принцип Уорда: «Вы работаете с чистым кодом, если каждая функция в основном делает то, что вы от нее ожидали». Половина усилий по реализации этого принципа сводится к выбору хороших имен для компактных функций, выполняющих одну операцию. Чем меньше и специализированнее функция, тем проще выбрать для нее содержательное имя.</p>
+
+    <p>Не бойтесь использовать длинные имена. Длинное содержательное имя лучше короткого невразумительного. Выберите схему, которая позволяет легко прочитать слова в имени функции, а затем составьте из этих слов имя, которое описывает назначение функции.</p>
+
+    <p>Не бойтесь расходовать время на выбор имени. Опробуйте несколько разных имен и посмотрите, как читается код с каждым из вариантов. В современных рабочих средах (таких, как Eclipse и IntelliJ) задача смены имени решается тривиально. Используйте одну из этих сред и поэкспериментируйте с разными именами, пока не найдете самое содержательное.</p>
+
+    <p>Выбор содержательных имен прояснит архитектуру модуля и поможет вам усовершенствовать ее. Нередко поиски хороших имен приводят к полезной реструктуризации кода.</p>
+
+    <p>Будьте последовательны в выборе имен. Используйте в именах функций те же словосочетания, глаголы и существительные, которые используются в ваших модулях. Для примера можно взять имена <span class="command char-style-override-1">includeSetupAndTeardownPages</span>, <span class="command char-style-override-1">includeSetupPages</span>, <span class="command char-style-override-1">includeSuiteSetupPage</span> и <span class="command char-style-override-1">includeSetupPage</span>. Благодаря единой фразеологии эти имена рассказывают связную историю. В самом деле, если бы я показал вам только эту последовательность, вы бы спросили: «А где же <span class="command char-style-override-1">includeTeardownPages</span>, <span class="command char-style-override-1">includeSuiteTeardownPage</span> и <span class="command char-style-override-1">includeTeardownPage</span>?» Вспомните — «…в основном делает то, что вы от нее ожидали».</p>
+
+    <h2 id="toc_marker-5-6">Аргументы функций</h2>
+
+    <p class="Normal0">В идеальном случае количество аргументов функции равно нулю (нуль-арная функция). Далее следуют функции с одним аргументом (унарные) и с двумя аргументами (бинарные). Функций с тремя аргументами (тернарных) следует по возможности избегать. Необходимость функций с большим количеством аргументов (полиарных) должна быть подкреплена очень вескими доводами — и все равно такие функции лучше не использовать.</p>
+
+    <div class="frame-4"><img alt="03_03.tif" class="frame-3" src="../Images/03_03_fmt.png"/></div>
+
+    <p>Аргументы усложняют функции и лишают их</p>
+
+    <p>значительной части концептуальной мощи. Именно по этой причине я почти полностью избавился от них в этом примере. Возьмем хотя бы переменную <span class="command char-style-override-1">StringBuffer</span>. Ее можно было бы передать в аргументе (вместо того, чтобы делать ее переменной экземпляра), но тогда читателям кода пришлось бы интерпретировать ее каждый раз, когда она встречается в коде. Когда вы читаете историю, рассказываемую модулем, вызов <span class="command char-style-override-1">includeSetupPage</span><span class="command char-style-override-1">()</span> выглядит намного более понятным, чем вызов <span class="command char-style-override-1">includeSetupPageInto</span><span class="command char-style-override-1">(</span><span class="command char-style-override-1">newPageContent</span><span class="command char-style-override-1">)</span>. Аргумент и имя функции находятся на разных уровнях абстракции, а читателю приходится помнить о подробностях (то есть <span class="command char-style-override-1">StringBuffer</span>), которые на данный момент не особенно важны.</p>
+
+    <p>Аргументы создают еще больше проблем с точки зрения тестирования. Только представьте, как трудно составить все тестовые сценарии, проверяющие правильность работы кода со всеми комбинациями аргументов. Если аргументов нет — задача тривиальна. При одном аргументе все обходится без особых сложностей. С двумя аргументами ситуация усложняется. Если же аргументов больше двух, задача тестирования всех возможных комбинаций выглядит все более устрашающе.</p>
+
+    <p>Выходные аргументы запутывают ситуацию еще быстрее, чем входные. Читая код функции, мы обычно предполагаем, что функция получает информацию в аргументах, и выдает ее в возвращаемом значении. Как правило, никто не ожидает, что функция будет возвращать информацию в аргументах. Таким образом, выходные аргументы часто заставляют нас браться за чтение функции заново.</p>
+
+    <p>Если уж обойтись без аргументов никак не удается, постарайтесь хотя бы ограничиться одним входным аргументом. Смысл вызова <span class="command char-style-override-1">SetupTeardownIncluder.render(pageData)</span> вполне прозрачен — понятно, что мы собираемся сгенерировать данные для объекта <span class="command char-style-override-1">pageData</span>.</p>
+
+    <h3>Стандартные унарные формы</h3>
+
+    <p class="Normal0">Существует два очень распространенных случая вызова функции с одним аргументом. Первая — проверка некоторого условия, связанного с аргументом, как в вызове <span class="command char-style-override-1">boolean</span> <span class="command char-style-override-1">fileExists(</span><span class="command char-style-override-1">"</span><span class="command char-style-override-1">MyFile</span><span class="command char-style-override-1">"</span><span class="command char-style-override-1">)</span>. Вторая — обработка аргумента, его преобразование и возвращение. Например, вызов <span class="command char-style-override-1">InputStream fileOpen(</span><span class="command char-style-override-1">"</span><span class="command char-style-override-1">MyFile</span><span class="command char-style-override-1">"</span><span class="command char-style-override-1">)</span> преобразует имя файла в формате <span class="command char-style-override-1">String</span> в возвращаемое значение <span class="command char-style-override-1">InputStream</span>. Выбирайте имена, которые четко отражают различия, и всегда используйте две формы в логически непротиворечивом контексте. (См. далее «Разделение команд и запросов»).</p>
+
+    <p>Несколько менее распространенным, но все равно очень полезным частным случаем функции с одним аргументом является <em>событие</em>. В этой форме имеется входной аргумент, а выходного аргумента нет. Предполагается, что программа интерпретирует вызов функции как событие и использует аргумент для изменения состояния системы, например, <span class="command char-style-override-1">void</span> <span class="command char-style-override-1">passwordAttemptFailedNtimes(int attempts)</span>. Будьте внимательны при использовании данной формы. Читателю должно быть предельно ясно, что перед ним именно событие. Тщательно выбирайте имена и контексты.</p>
+
+    <p>Старайтесь избегать унарных функций, не относящихся к этим формам, например <span class="command char-style-override-1">void includeSetupPageInto(StringBuffer pageText)</span>. Преобразования, в которых вместо возвращаемого значения используется выходной аргумент, сбивают читателя с толку. Если функция преобразует свой входной аргумент, то результат должен передаваться в возвращаемом значении. В самом деле, вызов <span class="command char-style-override-1">StringBuffer transform(</span><span class="command char-style-override-1">StringBuffer in)</span> лучше вызова <span class="command char-style-override-1">void transform(StringBuffer out)</span>, даже если реализация в первом случае просто возвращает входной аргумент. По крайней мере она соответствует основной форме преобразования.</p>
+
+    <h3>Аргументы-флаги</h3>
+
+    <p class="Normal0">Аргументы-флаги уродливы. Передача логического значения функции — воистину ужасная привычка. Она немедленно усложняет сигнатуру ­метода, громко провозглашая, что функция выполняет более одной операции. При истинном значении флага выполняется одна операция, а при ложном — другая!</p>
+
+    <p>В листинге 3.7 у нас нет выбора, потому что вызывающая сторона уже передает этот флаг, а я хотел ограничить область переработки границами функции. Тем не менее вызов метода <span class="command char-style-override-1">render(true)</span> откровенно сбивает с толку бедного читателя. Если навести указатель мыши на вызов и увидеть <span class="command char-style-override-1">render(boolean isSuite)</span>, ситуация слегка проясняется, но ненамного. Эту функцию следовало бы разбить на две: <span class="command char-style-override-1">renderForSuite()</span> и <span class="command char-style-override-1">renderForSingleTest()</span>.</p>
+
+    <h3>Бинарные функции</h3>
+
+    <p class="Normal0">Функцию с двумя аргументами понять сложнее, чем унарную функцию. Например, вызов <span class="command char-style-override-1">writeField(name)</span> выглядит более доступно, чем <span class="command char-style-override-1">writeField(outputStream, name)</span><span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-17" id="footnote-319-17-backlink">17</a></span>. Хотя смысл обеих форм понятен, первая форма просто проскальзывает под нашим взглядом, моментально раскрывая свой смысл. Во второй форме приходится сделать непродолжительную паузу, пока вы не поймете, что первый параметр должен игнорироваться. И конечно, это в конечном итоге создает проблемы, потому что никакие части кода игнорироваться не должны. Именно в проигнорированных частях чаще всего скрываются ошибки.</p>
+
+    <p>Конечно, в некоторых ситуациях форма с двумя аргументами оказывается уместной. Например, вызов <span class="command char-style-override-1">Point p = new Point(0,0);</span> абсолютно разумен. Точка в декартовом пространстве естественным образом создается с двумя аргументами. В самом деле, вызов <span class="command char-style-override-1">new Point(0)</span> выглядел бы довольно странно. Однако два аргумента в нашем случае являются упорядоченными компонентами одного значения! Напротив, <span class="command char-style-override-1">outputStream</span> и <span class="command char-style-override-1">name</span> не имеют ни естественной связи, ни естественного порядка.</p>
+
+    <p>Даже с очевидными бинарными функциями вида <span class="command char-style-override-1">assertEquals(expected, actual)</span> возникают проблемы. Сколько раз вы помещали <span class="command char-style-override-1">actual</span> туда, где должен был находиться аргумент <span class="command char-style-override-1">expected</span>? Эти два аргумента не имеют естественного порядка. Последовательность <span class="command char-style-override-1">expected, actual</span> — не более чем условное правило, которое запоминается не сразу.</p>
+
+    <p>Бинарные функции не являются абсолютным злом, и вам почти наверняка придется писать их. Тем не менее следует помнить, что за их использование приходится расплачиваться, а вам стоит воспользоваться всеми доступными средствами для их преобразования в унарные. Например, можно сделать метод <span class="command char-style-override-1">writeField</span> членом класса <span class="command char-style-override-1">outStream</span>, чтобы использовать запись <span class="command char-style-override-1">outputStream.writeField(name)</span>. Другой вариант — преобразование <span class="command char-style-override-1">outputStream</span> в поле текущего класса, чтобы переменную не приходилось передавать при вызове. Также можно создать новый класс <span class="command char-style-override-1">FieldWriter</span>, который получает <span class="command char-style-override-1">outputStream</span> в конструкторе и содержит метод <span class="command char-style-override-1">write</span>.</p>
+
+    <h3>Тернарные функции</h3>
+
+    <p class="Normal0">Разобраться в функции с тремя аргументами значительно сложнее, чем в бинарной функции. Проблемы соблюдения порядка аргументов, приостановки чтения и игнорирования увеличиваются более чем вдвое. Я рекомендую очень хорошо подумать, прежде чем создавать тернарную функцию.</p>
+
+    <p>Для примера возьмем стандартную перегруженную версию <span class="command char-style-override-1">assertEquals</span> с тремя аргументами: <span class="command char-style-override-1">assertEquals(message, expected, actual)</span>. Сколько раз вы читали значение <span class="command char-style-override-1">message</span> и думали, что перед вами <span class="command char-style-override-1">expected</span>? Я сталкивался с этой конкретной тернарной функцией и задерживался на ней много раз. Более того, <em>каждый раз, когда я ее вижу</em>, мне приходится делать новый заход и вспоминать о необходимости игнорировать <span class="command char-style-override-1">message</span>.</p>
+
+    <p>С другой стороны, следующая тернарная функция не столь коварна: <span class="command char-style-override-1">assert­Equals(1.0, amount, .001)</span>. Хотя и она не воспринимается с первого раза, в данном случае эта трудность оправдана. Всегда полезно лишний раз вспомнить, что равенство вещественных значений — понятие относительное.</p>
+
+    <h3>Объекты как аргументы</h3>
+
+    <p class="Normal0">Если функция должна получать более двух или трех аргументов, весьма вероятно, что некоторые из этих аргументов стоит упаковать в отдельном классе. Рассмотрим следующие два объявления:</p>
+
+    <p class="listing-body">Circle makeCircle(double x, double y, double radius);</p>
+
+    <p class="listing-body">Circle makeCircle(Point center, double radius);</p>
+
+    <p>Сокращение количества аргументов посредством создания объектов может показаться жульничеством, но это не так. Если переменные передаются совместно как единое целое (как переменные <span class="command char-style-override-1">x</span> и <span class="command char-style-override-1">y</span>&nbsp;&nbsp;в этом примере), то, скорее всего, вместе они образуют концепцию, заслуживающую собственного имени.</p>
+
+    <h3>Списки аргументов</h3>
+
+    <p class="Normal0">Иногда функция должна получать переменное количество аргументов. Для примера возьмем метод <span class="command char-style-override-1">String.format</span>:</p>
+
+    <p class="listing-body">String.format(<span class="command char-style-override-5">"</span>%s worked %.2f hours.<span class="command char-style-override-5">"</span>, name, hours);</p>
+
+    <p>Если все переменные аргументы считаются равноправными, как в этом примере, то их совокупность эквивалентна одному аргументу типа <span class="command char-style-override-1">List</span>. По этой причине функция <span class="command char-style-override-1">String</span><span class="command char-style-override-1">.</span><span class="command char-style-override-1">format</span> фактически является бинарной. И действительно, следующее объявление <span class="command char-style-override-1">String</span><span class="command char-style-override-1">.</span><span class="command char-style-override-1">format</span> подтверждает это:</p>
+
+    <p class="listing-body">public String format(String format, Object... args)</p>
+
+    <p>Следовательно, в данном случае действуют уже знакомые правила. Функции с переменным списком аргументов могут быть унарными, бинарными и даже тернарными, но использовать большее количество аргументов было бы ошибкой.</p>
+
+    <p class="listing-body">void monad(Integer... args);</p>
+
+    <p class="listing-body">void dyad(String name, Integer... args);</p>
+
+    <p class="listing-body">void triad(String name, int count, Integer... args);</p>
+
+    <h3>Глаголы и ключевые слова</h3>
+
+    <p class="Normal0">Выбор хорошего имени для функции способен в значительной мере объяснить смысл функции, а также порядок и смысл ее аргументов. В унарных функциях сама функция и ее аргумент должны образовывать естественную пару «глагол/существительное». Например, вызов вида <span class="command char-style-override-1">write</span><span class="command char-style-override-1">(</span><span class="command char-style-override-1">name</span><span class="command char-style-override-1">)</span> смотрится весьма информативно. Читатель понимает, что чем бы ни было «имя» (<span class="command char-style-override-1">name</span>), оно куда-то «записывается» (<span class="command char-style-override-1">write</span>). Еще лучше запись <span class="command char-style-override-1">writeField(name)</span>, которая сообщает, что «имя» записывается в «поле» какой-то структуры.</p>
+
+    <p>Последняя запись является примером использования ключевых слов в имени функции. В этой форме имена аргументов кодируются в имени функции. Например, <span class="command char-style-override-1">assertEquals</span> можно записать в виде <span class="command char-style-override-1">assertExpectedEqualsActual</span><span class="command char-style-override-1">(</span><span class="command char-style-override-1">expected</span><span class="command char-style-override-1">,</span> <span class="command char-style-override-1">actual</span><span class="command char-style-override-1">)</span>. Это в значительной мере решает проблему запоминания порядка аргументов.</p>
+
+    <h2 id="toc_marker-5-7">Избавьтесь от побочных эффектов</h2>
+
+    <p class="Normal0">Побочные эффекты суть ложь. Ваша функция обещает делать что-то одно, но делает что-то другое, <em>скрытое от пользователя</em>. Иногда она вносит неожиданные изменения в переменные своего класса — скажем, присваивает им значения параметров, переданных функции, или глобальных переменных системы. В любом случае такая функция является коварной и вредоносной ложью, которая часто приводит к созданию противоестественных временных привязок и других зависимостей.</p>
+
+    <p>Для примера возьмем безвредную на первый взгляд функцию из листинга 3.6. Функция использует стандартный алгоритм для проверки пары «имя пользователя/пароль». Она возвращает <span class="command char-style-override-1">true</span> в случае совпадения или <span class="command char-style-override-1">false</span> при возникновении проблем. Но у функции также имеется побочный эффект. Сможете ли вы обнаружить его?</p>
+
+    <p class="Vrezka-head"><strong>Листинг</strong> <strong>3.6.</strong> UserValidator.java</p>
+
+    <p class="listing-body">public class UserValidator {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private Cryptographer cryptographer;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public boolean checkPassword(String userName, String password)</p>
+
+    <p class="listing-body">{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;User user = UserGateway.findByName(userName);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (user != User.NULL) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String codedPhrase = user.getPhraseEncodedByPassword();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String phrase = cryptographer.decrypt(codedPhrase, password);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (<span class="command char-style-override-5">"</span>Valid Password<span class="command char-style-override-5">"</span>.equals(phrase)) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Session.initialize();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return true;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return false;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Разумеется, побочным эффектом является вызов <span class="command char-style-override-1">Session</span><span class="command char-style-override-1">.</span><span class="command char-style-override-1">initialize</span><span class="command char-style-override-1">()</span>. Имя <span class="command char-style-override-1">checkPassword</span> сообщает, что функция проверяет пароль. Оно ничего не говорит о том, что функция инициализирует сеанс. Таким образом, тот, кто поверит имени функции, рискует потерять текущие сеансовые данные, когда он решит проверить данные пользователя.</p>
+
+    <p>Побочный эффект создает временную привязку. А именно, функция <span class="command char-style-override-1">checkPassword</span> может вызываться только в определенные моменты времени (когда инициализация сеанса может быть выполнена безопасно). Несвоевременный вызов может привести к непреднамеренной потере сеансовых данных. Временные привязки создают массу проблем, особенно когда они прячутся в побочных эффектах. Если без временной привязки не обойтись, этот факт должен быть четко оговорен в имени функции. В нашем примере функцию можно было бы переименовать в <span class="command char-style-override-1">checkPasswordAndInitializeSession</span>, хотя это безусловно нарушает правило «одной операции».</p>
+
+    <h3>Выходные аргументы</h3>
+
+    <p class="Normal0">Аргументы естественным образом интерпретируются как входные данные функции. Каждый, кто занимался программированием более нескольких лет, наверняка сталкивался с необходимостью дополнительной проверки аргументов, которые на самом деле оказывались выходными, а не входными. Пример:</p>
+
+    <p class="listing-body">appendFooter(s);</p>
+
+    <p>Присоединяет ли эта функция <span class="command char-style-override-1">s</span> в качестве завершающего блока к чему-то другому?&nbsp;&nbsp;Или она присоединяет какой-то завершающий блок к <span class="command char-style-override-1">s</span>? Является ли <span class="command char-style-override-1">s</span> входным или выходным аргументом? Конечно, можно посмотреть на сигнатуру функции и получить ответ:</p>
+
+    <p class="listing-body">public void appendFooter(StringBuffer report)</p>
+
+    <p>Вопрос снимается, но только после проверки объявления. Все, что заставляет обращаться к сигнатуре функции, нарушает естественный ритм чтения кода. Подобных «повторных заходов» следует избегать.</p>
+
+    <p>До наступления эпохи объектно-ориентированного программирования без выходных аргументов иногда действительно не удавалось обойтись. Но в ОО-языках эта проблема в целом исчезла, потому что сама функция может вызываться для выходного аргумента. Иначе говоря, функцию <span class="command char-style-override-1">appendFooter</span> лучше вызывать в виде</p>
+
+    <p class="listing-body">report.appendFooter();</p>
+
+    <p>В общем случае выходных аргументов следует избегать. Если ваша функция должна изменять чье-то состояние, пусть она изменяет состояние своего объекта-владельца.</p>
+
+    <h2 id="toc_marker-5-8">Разделение команд и запросов</h2>
+
+    <p class="Normal0">Функция должна что-то делать или отвечать на какой-то вопрос, но не одновременно. Либо функция изменяет состояние объекта, либо возвращает информацию об этом объекте. Совмещение двух операций часто создает путаницу. Для примера возьмем следующую функцию:</p>
+
+    <p class="listing-body">public boolean set(String attribute, String value);</p>
+
+    <p>Функция присваивает значение атрибуту с указанным именем и возвращает <span class="command char-style-override-1">true</span>, если присваивание прошло успешно, или <span class="command char-style-override-1">false</span>, если такой атрибут не существует. Это приводит к появлению странных конструкций вида</p>
+
+    <p class="listing-body">if (set(<span class="command char-style-override-5">"</span>username<span class="command char-style-override-5">"</span>, <span class="command char-style-override-5">"</span>unclebob<span class="command char-style-override-5">"</span>))...</p>
+
+    <p>Представьте происходящее с точки зрения читателя кода. Что проверяет это условие? Что атрибут <span class="command char-style-override-1">"</span><span class="command char-style-override-1">username</span><span class="command char-style-override-1">"</span> содержит ранее присвоенное значение <span class="command char-style-override-1">"</span><span class="command char-style-override-1">unclebob</span><span class="command char-style-override-1">"</span>? Или что проверяет атрибуту <span class="command char-style-override-1">"</span><span class="command char-style-override-1">username</span><span class="command char-style-override-1">"</span> успешно присвоено значение <span class="command char-style-override-1">"</span><span class="command char-style-override-1">unclebob</span><span class="command char-style-override-1">"</span>? Смысл невозможно вывести из самого вызова, потому что мы не знаем, чем в данном случае является слово <span class="command char-style-override-1">set</span> — глаголом или прилагательным.</p>
+
+    <p>Автор предполагал, что <span class="command char-style-override-1">set</span> является глаголом, но в контексте команды <span class="command char-style-override-1">if</span> это имя скорее воспринимается как прилагательное. Таким образом, команда читается в виде «Если атрибуту <span class="command char-style-override-1">username</span> ранее было присвоено значение <span class="command char-style-override-1">unclebob</span>», а не «присвоить атрибуту <span class="command char-style-override-1">username</span> значение <span class="command char-style-override-1">unclebob</span>, и если все прошло успешно, то…» Можно было бы попытаться решить проблему, переименовав функцию <span class="command char-style-override-1">set</span> в <span class="command char-style-override-1">setAndCheckIfExists</span>, но это не особенно улучшает удобочитаемость команды <span class="command char-style-override-1">if</span>. Полноценное решение заключается в отделении команды от запроса, чтобы в принципе исключить любую неоднозначность.</p>
+
+    <p class="listing-body">if (attributeExists(<span class="command char-style-override-5">"</span>username<span class="command char-style-override-5">"</span>)) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;setAttribute(<span class="command char-style-override-5">"</span>username<span class="command char-style-override-5">"</span>, <span class="command char-style-override-5">"</span>unclebob<span class="command char-style-override-5">"</span>);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;...</p>
+
+    <p class="listing-body">}</p>
+
+    <h2 id="toc_marker-5-9">Используйте исключения вместо возвращения кодов ошибок</h2>
+
+    <p class="Normal0">Возвращение кодов ошибок функциями-командами является неочевидным нарушением принципа разделения команд и запросов. Оно поощряет использование команд в предикатных выражениях <span class="command char-style-override-1">if</span>:</p>
+
+    <p class="listing-body">if (deletePage(page) == E_OK)</p>
+
+    <p>Такие конструкции не страдают от смешения глаголов с прилагательными, но они приводят к созданию структур слишком глубокой вложенности. При возвращении кода ошибки возникает проблема: вызывающая сторона должна немедленно отреагировать на ошибку.</p>
+
+    <p class="listing-body">if (deletePage(page) == E_OK) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;if (registry.deleteReference(page.name) == E_OK) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (configKeys.deleteKey(page.name.makeKey()) == E_OK){</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;logger.log(<span class="command char-style-override-5">"</span>page deleted<span class="command char-style-override-5">"</span>);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;} else {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;logger.log(<span class="command char-style-override-5">"</span>configKey not deleted<span class="command char-style-override-5">"</span>);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;} else</p>
+
+    <p class="listing-body">{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;logger.log(<span class="command char-style-override-5">"</span>deleteReference from registry failed<span class="command char-style-override-5">"</span>);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">} else {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;logger.log(<span class="command char-style-override-5">"</span>delete failed<span class="command char-style-override-5">"</span>);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return E_ERROR;</p>
+
+    <p class="listing-body">}</p>
+
+    <p>С другой стороны, если вместо возвращения кодов ошибок используются исключения, то код обработки ошибок изолируется от ветви нормального выполнения и упрощается:</p>
+
+    <p class="listing-body">try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;deletePage(page);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;registry.deleteReference(page.name);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;configKeys.deleteKey(page.name.makeKey());</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">catch (Exception e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;logger.log(e.getMessage());</p>
+
+    <p class="listing-body">}</p>
+
+    <h3>Изолируйте блоки try/catch</h3>
+
+    <p class="Normal0">Блоки <span class="command char-style-override-1">try</span>/<span class="command char-style-override-1">catch</span> выглядят весьма уродливо. Они запутывают структуру кода и смешивают обработку ошибок с нормальной обработкой. По этой причине тела блоков <span class="command char-style-override-1">try</span> и <span class="command char-style-override-1">catch</span> рекомендуется выделять в отдельные функции.</p>
+
+    <p class="listing-body">public void delete(Page page) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;deletePageAndAllReferences(page);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;catch (Exception e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;logError(e);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">private void deletePageAndAllReferences(Page page) throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;deletePage(page);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;registry.deleteReference(page.name);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;configKeys.deleteKey(page.name.makeKey());</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">private void logError(Exception e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;logger.log(e.getMessage());</p>
+
+    <p class="listing-body">}</p>
+
+    <p>В этом примере функция <span class="command char-style-override-1">delete</span> специализируется на обработке ошибок. В этой функции легко разобраться, а потом забыть о ней. Функция <span class="command char-style-override-1">deletePageAndAllReferences</span> специализируется на процессе полного удаления страницы. Читая ее, можно не обращать внимания на обработку ошибок. Таким образом, код нормального выполнения отделяется от кода обработки ошибок, а это упрощает его понимание и модификацию.</p>
+
+    <h3>Обработка ошибок как одна операция</h3>
+
+    <p class="Normal0">Функции должны выполнять одну операцию. Обработка ошибок — это одна операция. Значит, функция, обрабатывающая ошибки, ничего другого делать не должна. Отсюда следует, что если в функции присутствует ключевое слово <span class="command char-style-override-1">try</span>, то оно должно быть первым словом в функции, а после блоков <span class="command char-style-override-1">catch</span>/<span class="command char-style-override-1">finally</span> ничего другого быть не должно (как в предыдущем примере).</p>
+
+    <h3>Магнит зависимостей Error.java</h3>
+
+    <p class="Normal0">Возвращение кода ошибки обычно подразумевает, что в программе имеется некий класс или перечисление, в котором определяются все коды ошибок.</p>
+
+    <p class="listing-body">public enum Error {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;OK,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;INVALID,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;NO_SUCH,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;LOCKED,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;OUT_OF_RESOURCES,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;WAITING_FOR_EVENT;</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Подобные классы называются <em>магнитами зависимостей</em>; они должны импортироваться и использоваться многими другими классами. При любых изменениях перечисления <span class="command char-style-override-1">Error</span> все эти классы приходится компилировать и развертывать заново<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-18" id="footnote-319-18-backlink">18</a></span>. Это обстоятельство создает негативную нагрузку на класс <span class="command char-style-override-1">Error</span>. Программистам не хочется добавлять новые ошибки, чтобы не создавать себе проблем со сборкой и развертыванием. Соответственно, вместо добавления новых кодов ошибок они предпочитают использовать старые.</p>
+
+    <p>Если вместо кодов ошибок использовать исключения, то новые исключения определяются <em>производными</em> от класса исключения. Их включение в программу не требует перекомпиляции или повторного развертывания<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-19" id="footnote-319-19-backlink">19</a></span>.</p>
+
+    <h2 id="toc_marker-5-10">Не повторяйтесь<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-20" id="footnote-319-20-backlink">20</a></span></h2>
+
+    <div class="frame-4"><img alt="03_04.tif" class="frame-9" src="../Images/03_04_fmt.png"/></div>
+
+    <p class="Normal0">Внимательно присмотревшись к листингу 3.1,</p>
+
+    <p>можно заметить, что один из алгоритмов повторяется в нем четыре раза: по одному разу для <span class="command char-style-override-1">SetUp</span>, <span class="command char-style-override-1">SuiteSetUp</span>, <span class="command char-style-override-1">TearDown</span> и <span class="command char-style-override-1">SuiteTearDown</span>. Обнаружить это дублирование нелегко, потому что четыре вхождения алгоритма перемешаны с другим кодом, а в дублировании фрагментов имеются некоторые различия. Тем не менее дублирование создает проблемы, потому что оно увеличивает объем кода, а при изменении алгоритма вам придется вносить изменения сразу в четырех местах. Также вчетверо возрастает вероятность ошибки.</p>
+
+    <p>В листинге 3.7 дублирование устраняется при помощи метода <span class="command char-style-override-1">include</span>. Снова прочитайте код и обратите внимание, насколько проще читается весь модуль после устранения дублирования.</p>
+
+    <p>Дублирование иногда считается корнем всего зла в программировании. Было создано много приемов и методологий, направленных на контроль и устранение дублирования. Возьмем хотя бы нормальные формы баз данных Кодда, пред­назначенные для устранения дубликатов в данных. Или другой пример: объектно-ориентированные языки помогают сконцентрировать в базовых классах код, который в других обстоятельствах мог бы дублироваться в разных местах. Структурное программирование, аспектно-ориентированное программирование, компонентно-ориентированное программирование — все эти технологии отчасти являются стратегиями борьбы с дублированием. Похоже, с момента изобретения подпрограмм все новшества в разработке программного обеспечения были направлены исключительно на борьбу с дублированием в исходном коде.</p>
+
+    <h2 id="toc_marker-5-11">Структурное программирование</h2>
+
+    <p class="Normal0">Некоторые программисты следуют правилам структурного программирования, изложенным Эдгаром Дейкстрой [SP72]. Дейкстра считает, что каждая функция и каждый блок внутри функции должны иметь одну точку входа и одну точку выхода. Выполнение этого правила означает, что функция должна содержать только одну команду <span class="command char-style-override-1">return</span>, в циклах не должны использоваться команды <span class="command char-style-override-1">break</span> или <span class="command char-style-override-1">continue</span>, а команды <span class="command char-style-override-1">goto</span> не должны использоваться никогда и ни при каких условиях.</p>
+
+    <p>Хотя мы с симпатией относимся к целям и методам структурного программирования, в очень компактных функциях эти правила не приносят особой пользы. Только при увеличении объема функций их соблюдение обеспечивает существенный эффект.</p>
+
+    <p>Итак, если ваши функции остаются очень компактными, редкие вкрапления множественных <span class="command char-style-override-1">return</span>, команд <span class="command char-style-override-1">break</span> и <span class="command char-style-override-1">continue</span> не принесут вреда, а иногда даже повышают выразительность по сравнению с классической реализацией с одной точкой входа и одной точкой выхода. С другой стороны, команда <span class="command char-style-override-1">goto</span> имеет смысл только в больших функциях, поэтому ее следует избегать.</p>
+
+    <h2 id="toc_marker-5-12">Как научиться писать такие функции?</h2>
+
+    <p class="Normal0">Написание программ сродни любому другому виду письменной работы. Когда вы пишете статью или доклад, вы сначала излагаете свои мысли, а затем «причесываете» их до тех пор, пока они не будут хорошо читаться. Первый вариант ­может быть неуклюжим и нелогичным; вы переделываете, дополняете и уточняете его, пока он не будет читаться так, как вам хочется.</p>
+
+    <p>Когда я пишу свои функции, они получаются длинными и сложными. В них встречаются многоуровневые отступы и вложенные циклы. Они имеют длинные списки аргументов. Имена выбираются хаотично, а в коде присутствуют дубликаты. Но у меня также имеется пакет модульных тестов для всех этих неуклюжих строк до последней.</p>
+
+    <p>Итак, я начинаю «причесывать» и уточнять свой код, выделять новые функции, изменять имена и устранять дубликаты. Я сокращаю методы и переупорядочиваю их. Иногда приходится ломать целые классы, но при этом слежу за тем, чтобы все тесты выполнялись успешно.</p>
+
+    <p>В конечном итоге у меня остаются функции, построенные по правилам, изложенным в этой главе. Я не записываю их так с самого начала. И вообще не думаю, что кому-нибудь это под силу.</p>
+
+    <h2 id="toc_marker-5-13">Завершение</h2>
+
+    <p class="Normal0">Каждая система строится в контексте языка, отражающего специфику предметной области и разработанного программистами для описания этой системы. В этом языке функции играют роль глаголов, а классы — существительных. Не стоит полагать, что мы возвращаемся к кошмарной древней практике, по которой существительные и глаголы в документе с требованиями становились первыми кандидатами для классов и функций системы. Скорее речь идет о гораздо более древней истине. Искусство программирования является (и всегда было) искусством языкового проектирования.</p>
+
+    <p>Опытные программисты рассматривают систему как историю, которую они должны рассказать, а не как программу, которую нужно написать. Они используют средства выбранного ими языка программирования для конструирования гораздо более богатого и выразительного языка, подходящего для этого повествования. Частью этого предметно-ориентированного языка является иерархия функций, которые описывают все действия, выполняемые в рамках системы. В результате искусной рекурсии эти действия формулируются на том самом предметно-ориентированном языке, который они определяют для изложения своей маленькой части истории.</p>
+
+    <p>Эта глава была посвящена механике качественного написания функций. Если вы будете следовать этим правилам, ваши функции будут короткими, удачно названными и хорошо организованными. Но никогда не забывайте, что ваша настоящая цель — «рассказать историю» системы, а написанные вами функции должны четко складываться в понятный и точный язык, который поможет вам в этом.</p>
+
+    <p class="Vrezka-head"><strong>Листинг</strong> <strong>3.7.</strong> SetupTeardownIncluder.java</p>
+
+    <p class="listing-body">package fitnesse.html;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">import fitnesse.responders.run.SuiteResponder;</p>
+
+    <p class="listing-body">import fitnesse.wiki.*;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class SetupTeardownIncluder {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private PageData pageData;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private boolean isSuite;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private WikiPage testPage;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private StringBuffer newPageContent;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private PageCrawler pageCrawler;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public static String render(PageData pageData) throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return render(pageData, false);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public static String render(PageData pageData, boolean isSuite)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return new SetupTeardownIncluder(pageData).render(isSuite);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private SetupTeardownIncluder(PageData pageData) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;this.pageData = pageData;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;testPage = pageData.getWikiPage();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;pageCrawler = testPage.getPageCrawler();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;newPageContent = new StringBuffer();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String render(boolean isSuite) throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;this.isSuite = isSuite;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (isTestPage())</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;includeSetupAndTeardownPages();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return pageData.getHtml();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private boolean isTestPage() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return pageData.hasAttribute("Test");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void includeSetupAndTeardownPages() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;includeSetupPages();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;includePageContent();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;includeTeardownPages();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;updatePageContent();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void includeSetupPages() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (isSuite)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;includeSuiteSetupPage();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;includeSetupPage();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void includeSuiteSetupPage() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;include(SuiteResponder.SUITE_SETUP_NAME, "-setup");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void includeSetupPage() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;include("SetUp", "-setup");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void includePageContent() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;newPageContent.append(pageData.getContent());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void includeTeardownPages() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;includeTeardownPage();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (isSuite)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;includeSuiteTeardownPage();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void includeTeardownPage() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;include("TearDown", "-teardown");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void includeSuiteTeardownPage() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;include(SuiteResponder.SUITE_TEARDOWN_NAME, "-teardown");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void updatePageContent() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;pageData.setContent(newPageContent.toString());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void include(String pageName, String arg) throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;WikiPage inheritedPage = findInheritedPage(pageName);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (inheritedPage != null) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String pagePathName = getPathNameForPage(inheritedPage);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;buildIncludeDirective(pagePathName, arg);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private WikiPage findInheritedPage(String pageName) throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return PageCrawlerImpl.getInheritedPage(pageName, testPage);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String getPathNameForPage(WikiPage page) throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;WikiPagePath pagePath = pageCrawler.getFullPath(page);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return PathParser.render(pagePath);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void buildIncludeDirective(String pagePathName, String arg) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;newPageContent</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append("\n!include ")</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append(arg)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append(" .")</p>
+
+    <p class="Vrezka-head"><strong>Листинг</strong> <strong>3.7</strong> (продолжение)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append(pagePathName)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append("\n");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <h2 id="toc_marker-5-14">Литература</h2>
+
+    <p class="Normal0">[KP78]: Kernighan and Plaugher, The Elements of Programming Style, 2d. ed., McGraw-Hill, 1978.</p>
+
+    <p>[PPP02]: Robert C. Martin, Agile Software Development: Principles, Patterns, and Practices, Prentice Hall, 2002.</p>
+
+    <p>[GOF]: Design Patterns: Elements of Reusable Object Oriented Software, Gamma et al., Addison-Wesley, 1996.</p>
+
+    <p>[PRAG]: The Pragmatic Programmer, Andrew Hunt, Dave Thomas, Addison-Wesley, 2000.</p>
+
+    <p>[SP72]: Structured Programming, O.-J. Dahl, E.W. Dijkstra, C.A. R. Hoare, Academic Press, London, 1972.</p>
+
+    <div class="footnotes">
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-10-backlink" id="footnote-319-10">10</a> Тестовая программа, распространяемая с открытым кодом — <a href="http://www.tnese.org">www.tnese.org</a>.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-11-backlink" id="footnote-319-11">11</a> Программа модульного тестирования для <span xml:lang="en-US">Java</span>, распространяемая с открытым кодом — <a href="http://www.junit.org">www.junit.org</a>.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-12-backlink" id="footnote-319-12">12</a> Я спросил Кента, не сохранилась ли у него эта программа, но ему не удалось ее найти. Обшарил все свои старые компьютеры — тоже безуспешно. Остались лишь мои воспоминания об этой программе.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-13-backlink" id="footnote-319-13">13</a> В языке <span xml:lang="en-US">LOGO</span> ключевое слово <span xml:lang="en-US">TO</span> использовалось так же, как в <span xml:lang="en-US">Ruby</span> и <span xml:lang="en-US">Python</span> используется «<span xml:lang="en-US">def</span>». Таким образом, каждая функция начиналась со слова «<span xml:lang="en-US">TO</span>».</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-14-backlink" id="footnote-319-14">14</a> Разумеется, сюда же относятся и длинные цепочки <span class="command char-style-override-3">if</span>/<span class="command char-style-override-3">else</span>.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-15-backlink" id="footnote-319-15">15</a> <a href="http://en.wikipedia.org/wiki/Single_responsibility_principle">http://en.wikipedia.org/wiki/Single_responsibility_principle</a>; <a href="http://www.objectmentor.com/resources/articles/srp.pdf">http://www.objectmentor.com/resources/articles/srp.pdf</a>.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-16-backlink" id="footnote-319-16">16</a> <a href="http://en.wikipedia.org/wiki/Open/closed_principle">http://en.wikipedia.org/wiki/Open/closed_principle</a>; <a href="http://www.objectmentor.com/resources/articles/ocp.pdf">http://www.objectmentor.com/resources/articles/ocp.pdf</a>.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-17-backlink" id="footnote-319-17">17</a> Я только что завершил переработку модуля, использовавшего бинарную форму. Мне удалось преобразовать <span class="command char-style-override-3" xml:lang="en-US">outputStream</span> в поле класса и привести все вызовы <span class="command char-style-override-3" xml:lang="en-US">writeField</span> к унарной форме. Результат получился гораздо более наглядным.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-18-backlink" id="footnote-319-18">18</a> Люди, считавшие, что они смогут обойтись без перекомпиляции и повторного развертывания, были пойманы и сурово наказаны.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-19-backlink" id="footnote-319-19">19</a> Пример принципа открытости/закрытости (<span xml:lang="en-US">OCP</span>) [<span xml:lang="en-US">PPP</span>02].</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-20-backlink" id="footnote-319-20">20</a> Принцип <span xml:lang="en-US">DRY</span> [<span xml:lang="en-US">PRAG</span>].</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,1394 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Чистый код: создание, анализ и рефакторинг. Библиотека программиста</title>
+  <link href="../Styles/template.css" rel="stylesheet" type="text/css"/>
+</head>
+
+<body id="x978549600487" xml:lang="ru-RU">
+  <div>
+    <h1 id="toc_marker-6">4. Комментарии</h1>
+
+    <p class="Pic-yakor"><span><img alt="04_01.tif" class="frame-2" src="../Images/04_01_fmt.png"/></span>&nbsp;</p>
+
+    <p class="Epigraph">Не комментируйте плохой код — перепишите его.</p>
+
+    <p class="Epigraph-avtor">Брайан У. Керниган и П. Дж. Плауэр<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-21" id="footnote-319-21-backlink">21</a></span></p>
+
+    <p>Ничто не помогает так, как уместный комментарий. Ничто не загромождает модуль так, как бессодержательные и безапелляционные комментарии. Ничто не приносит столько вреда, как старый, утративший актуальность комментарий, распространяющий ложь и дезинформацию.</p>
+
+    <p>Комментарии — не список Шиндлера. Не стоит относиться к ним как к «абсолютному добру». На самом деле комментарии в лучшем случае являются неизбежным злом. Если бы языки программирования были достаточно выразительными или если бы мы умели искусно пользоваться этими языками для выражения своих намерений, то потребность в комментариях резко снизилась бы, а может, и вовсе сошла «на нет».</p>
+
+    <p>Грамотное применение комментариев должно компенсировать нашу неудачу в выражении своих мыслей в коде. Обратите внимание на слово «неудачу». Я абсолютно серьезно. Комментарий — всегда признак неудачи. Мы вынуждены использовать комментарии, потому что нам не всегда удается выразить свои мысли без них, однако гордиться здесь нечем.</p>
+
+    <p>Итак, вы оказались в ситуации, в которой необходимо написать комментарий? Хорошенько подумайте, нельзя ли пойти по другому пути и выразить свои намерения в коде. Каждый раз, когда вам удается это сделать, — похлопайте себя по плечу. Каждый раз, когда вы пишете комментарий, — поморщитесь и ощутите свою неудачу.</p>
+
+    <p>Почему я так настроен против комментариев? Потому что они лгут. Не всегда и не преднамеренно, но это происходит слишком часто. Чем древнее комментарий, чем дальше он расположен от описываемого им кода, тем больше вероятность того, что он просто неверен. Причина проста: программисты не могут нормально сопровождать комментарии.</p>
+
+    <p>Программный код изменяется и эволюционирует. Его фрагменты перемещаются из одного места в другое, раздваиваются, размножаются и сливаются. К сожалению, комментарии не всегда сопровождают их — и не всегда <em>могут</em> сопровождать их. Слишком часто комментарии отделяются от описываемого ими кода и превращаются в пометки непонятной принадлежности, с постоянно снижающейся точностью. Посмотрите, что произошло с этим комментарием и той строкой, которую он должен описывать:</p>
+
+    <p class="listing-body">MockRequest request;</p>
+
+    <p class="listing-body">private final String HTTP_DATE_REGEXP =</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;"[SMTWF][a-z]{2}\\,\\s[0-9]{2}\\s[JFMASOND][a-z]{2}\\s"+</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;"[0-9]{4}\\s[0-9]{2}\\:[0-9]{2}\\:[0-9]{2}\\sGMT";</p>
+
+    <p class="listing-body">private Response response;</p>
+
+    <p class="listing-body">private FitNesseContext context;</p>
+
+    <p class="listing-body">private FileResponder responder;</p>
+
+    <p class="listing-body">private Locale saveLocale;</p>
+
+    <p class="listing-body">// Пример: "Tue, 02 Apr 2003 22:18:49 GMT"</p>
+
+    <p>Другие переменные экземпляра (вероятно, добавленные позднее) вклинились между константой <span class="command char-style-override-1">HTTP</span><span class="command char-style-override-1">_</span><span class="command char-style-override-1">DATE</span><span class="command char-style-override-1">_</span><span class="command char-style-override-1">REGEXP</span> и пояснительным комментарием.</p>
+
+    <p>На это можно возразить, что программисты должны быть достаточно дисциплинированными, чтобы поддерживать в своем коде актуальные, точные и релевантные комментарии. Согласен, должны. Но я бы предпочел, чтобы вместо этого программист постарался сделать свой код настолько четким и выразительным, чтобы комментарии были попросту не нужны.</p>
+
+    <p>Неточные комментарии гораздо вреднее, чем полное отсутствие комментариев. Они обманывают и сбивают с толку. Они создают у программиста невыполнимые ожидания. Они устанавливают устаревшие правила, которые не могут (или не должны) соблюдаться в будущем.</p>
+
+    <p>Истину можно найти только в одном месте: в коде. Только код может правдиво сообщить, что он делает. Это единственный источник действительно досто­верной информации. Таким образом, хотя комментарии иногда необходимы, мы потратим немало усилий для того, чтобы свести их использование к минимуму.</p>
+
+    <h2 id="toc_marker-6-1">Комментарии не компенсируют&nbsp;&nbsp;плохого кода</h2>
+
+    <p class="Normal0">Одной из распространенных причин для написания комментариев является низкое качество кода. Вы пишете модуль и видите, что код получился запутанным и беспорядочным. Вы знаете, что разобраться в нем невозможно. Поэтому вы говорите себе: «О, да это стоит прокомментировать!» Нет! Лучше исправьте свой код!</p>
+
+    <p>Ясный и выразительный код с минимумом комментариев гораздо лучше громоздкого, сложного кода с большим количеством комментариев. Не тратьте время на написание комментариев, объясняющих созданную вами путаницу, — лучше потратьте его на исправление.</p>
+
+    <h2 id="toc_marker-6-2">Объясните свои намерения в коде</h2>
+
+    <p class="Normal0">И все же в некоторых ситуациях код оказывается не лучшим средством для объяснений. К сожалению, многие программисты воспринимают этот факт иначе: они полагают, что код <em>никогда</em> не является хорошим средством для объяснений. А это, разумеется, неправда. С каким бы кодом вы предпочли работать — с таким:</p>
+
+    <p class="listing-body">// Проверить, положена ли работнику полная премия</p>
+
+    <p class="listing-body">if ((employee.flags &amp; HOURLY_FLAG) &amp;&amp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;(employee.age &gt; 65))</p>
+
+    <p>Или с таким:</p>
+
+    <p class="listing-body">if (employee.isEligibleForFullBenefits())</p>
+
+    <p>Чтобы объяснить большую часть ваших намерений в коде, достаточно нескольких секунд. Нередко задача сводится с созданию функции, которая сообщает то же, что и комментарий, который вы собираетесь написать.</p>
+
+    <h2 id="toc_marker-6-3">Хорошие комментарии</h2>
+
+    <p class="Normal0">Впрочем, необходимые и полезные комментарии все же существуют. Мы рассмотрим несколько примеров, которые, на мой взгляд, стоят затраченных на них битов. И все же следует помнить, что по-настоящему хороший комментарий — тот, без которого вам удастся обойтись.</p>
+
+    <h3>Юридические комментарии</h3>
+
+    <p class="Normal0">Иногда корпоративные стандарты кодирования заставляют нас вставлять комментарии по юридическим соображениям. Например, заявление об авторских правах — необходимая информация, которая вполне может размещаться в комментарии в начале каждого файла с исходным кодом.</p>
+
+    <p>Ниже приведен стандартный заголовок комментария, который вставляется в начало каждого исходного файла в FitNesse. К счастью, наша IDE автоматически сворачивает этот комментарий, чтобы он не загромождал экран.</p>
+
+    <p class="listing-body">// Copyright (C) 2003,2004,2005 by Object Mentor, Inc. All rights reserved.</p>
+
+    <p class="listing-body">// Публикуется на условиях лицензии GNU General Public License версии 2 и выше.</p>
+
+    <p>Такие комментарии не должны представлять собой комментарии или юридические трактаты. Вместо того чтобы перечислять в комментарии все условия, по возможности ограничьтесь ссылкой на стандартную лицензию или другой внешний документ.</p>
+
+    <h3>Информативные комментарии</h3>
+
+    <p class="Normal0">Иногда бывает полезно включить в комментарий пояснение к коду. Возьмем следующий комментарий, объясняющий возвращаемое значение абстрактного метода:</p>
+
+    <p class="listing-body">// Возвращает тестируемый экземпляр Responder.</p>
+
+    <p class="listing-body">protected abstract Responder responderInstance();</p>
+
+    <p>Такие комментарии бывают полезными, но там, где это возможно, информацию лучше передавать в имени функции. Например, в данном примере вполне можно обойтись и без комментария — достаточно переименовать функцию в <span class="command char-style-override-1">responderBeingTested</span>.</p>
+
+    <p>А вот другой, более уместный пример:</p>
+
+    <p class="listing-body">// Поиск по формату: kk:mm:ss EEE, MMM dd, yyyy</p>
+
+    <p class="listing-body">Pattern timeMatcher = Pattern.compile(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"\\d*:\\d*:\\d* \\w*, \\w* \\d*, \\d*");</p>
+
+    <p>На этот раз комментарий сообщает, что регулярное выражение предназначено для идентификации времени и даты, отформатированных функцией <span class="command char-style-override-1">SimpleDateFormat</span><span class="command char-style-override-1">.</span><span class="command char-style-override-1">format</span> с заданной форматной строкой. И все же код стал бы лучше (и понятнее), если бы мы переместили этот код в специальный класс, преобразующий форматы даты и времени. Тогда комментарий, вероятно, стал бы излишним.</p>
+
+    <h3>Представление намерений</h3>
+
+    <p class="Normal0">Иногда комментарий выходит за рамки полезной информации о реализации и описывает намерения, заложенные в решение. В следующем примере мы видим интересный пример архитектурного решения, документированного в комментарии. Автор решил, что при сравнении двух объектов объекты его класса должны находиться в порядке сортировки выше, чем объекты любого другого класса.</p>
+
+    <p class="listing-body">public int compareTo(Object o)</p>
+
+    <p class="listing-body">{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;if(o instanceof WikiPagePath)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;WikiPagePath p = (WikiPagePath) o;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String compressedName = StringUtil.join(names, "");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String compressedArgumentName = StringUtil.join(p.names, "");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return compressedName.compareTo(compressedArgumentName);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return 1; // <strong>Больше, потому что относится к правильному типу</strong>.</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Или другой, еще лучший пример. Возможно, вы не согласитесь с тем, как программист решает проблему, но по крайней мере вы знаете, что он пытается сделать.</p>
+
+    <p class="listing-body">public void testConcurrentAddWidgets() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;WidgetBuilder widgetBuilder =</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;new WidgetBuilder(new Class[]{BoldWidget.class});</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String text = "'''bold text'''";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;ParentWidget parent =</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;new BoldWidget(new MockWidgetRoot(), "'''bold text'''");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;AtomicBoolean failFlag = new AtomicBoolean();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;failFlag.set(false);</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;&nbsp;&nbsp;// Мы пытаемся спровоцировать</strong> "<strong>состояние гонки</strong>"<strong>,</strong></p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;&nbsp;&nbsp;// создавая большое количество программных потоков.</strong></p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;for (int i = 0; i &lt; 25000; i++) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WidgetBuilderThread widgetBuilderThread =</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;new WidgetBuilderThread(widgetBuilder, text, parent, failFlag);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Thread thread = new Thread(widgetBuilderThread);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;thread.start();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(false, failFlag.get());</p>
+
+    <p class="listing-body">}</p>
+
+    <h3>Прояснение</h3>
+
+    <p class="Normal0">Иногда смысл загадочного аргумента или возвращаемого значения бывает удобно преобразовать в удобочитаемую форму. В общем случае лучше подумать, как сделать так, чтобы этот аргумент или возвращаемое значение говорили сами за себя; но если они являются частью стандартной библиотеки или используются в коде, который вы не можете изменить, то пояснительный комментарий может быть весьма полезным.</p>
+
+    <p class="listing-body">public void testCompareTo() throws Exception</p>
+
+    <p class="listing-body">{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;WikiPagePath a = PathParser.parse("PageA");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;WikiPagePath ab = PathParser.parse("PageA.PageB");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;WikiPagePath b = PathParser.parse("PageB");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;WikiPagePath aa = PathParser.parse("PageA.PageA");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;WikiPagePath bb = PathParser.parse("PageB.PageB");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;WikiPagePath ba = PathParser.parse("PageB.PageA");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertTrue(a.compareTo(a) == 0);&nbsp;&nbsp;&nbsp;&nbsp;// a == a</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertTrue(a.compareTo(b) != 0);&nbsp;&nbsp;&nbsp;&nbsp;// a != b</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertTrue(ab.compareTo(ab) == 0);&nbsp;&nbsp;// ab == ab</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertTrue(a.compareTo(b) == -1);&nbsp;&nbsp;&nbsp;// a &lt; b</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertTrue(aa.compareTo(ab) == -1); // aa &lt; ab</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertTrue(ba.compareTo(bb) == -1); // ba &lt; bb</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertTrue(b.compareTo(a) == 1);&nbsp;&nbsp;&nbsp;&nbsp;// b &gt; a</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertTrue(ab.compareTo(aa) == 1);&nbsp;&nbsp;// ab &gt; aa</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertTrue(bb.compareTo(ba) == 1);&nbsp;&nbsp;// bb &gt; ba</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Конечно, при этом возникает существенный риск, что пояснительный комментарий окажется неверным. Просмотрите код примера и убедитесь, как трудно проверить его правильность. Это объясняет как необходимость пояснений, так и связанный с ними риск. Итак, прежде чем писать такие комментарии, убедитесь в том, что лучшего способа не существует, и еще внимательнее следите за их правильностью.</p>
+
+    <h3>Предупреждения о последствиях</h3>
+
+    <div class="frame-4"><img alt="04_02.tif" class="frame-6" src="../Images/04_02_fmt.png"/></div>
+
+    <p class="Normal0">Иногда бывает полезно предупредить ­других программистов о нежелательных последствиях от каких-либо действий. Например, следующий комментарий объяс­няет, почему конкретный тестовый сценарий был отключен:</p>
+
+    <p class="listing-body"><strong>// Не запускайте, если только не располагаете</strong></p>
+
+    <p class="listing-body"><strong>// излишками свободного времени.</strong></p>
+
+    <p class="listing-body">public void _testWithReallyBigFile()</p>
+
+    <p class="listing-body">{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;writeLinesToFile(10000000);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;response.setBody(testFile);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;response.readyToSend(this);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;String responseString = output.toString();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertSubString("Content-Length: 1000000000", responseString);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertTrue(bytesSent &gt; 1000000000);</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Конечно, в наше время тестовый сценарий следовало бы отключить при помощи атрибута <span class="command char-style-override-1">@Ignore</span> с соответствующей пояснительной строкой: <span class="command char-style-override-1">@Ignore(</span>"<span class="command char-style-override-1">Слишком долго выполняется</span>"<span class="command char-style-override-1">)</span>. Но до появления JUnit 4 запись с начальным символом подчеркивания перед именем метода считалась стандартной. Комментарий, при всей его несерьезности, хорошо доносит свое сообщение до читателя.</p>
+
+    <p>А вот другой, более выразительный пример:</p>
+
+    <p class="listing-body">public static SimpleDateFormat makeStandardHttpDateFormat()</p>
+
+    <p class="listing-body">{</p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;// Класс SimpleDateFormat не является потоково-безопасным,</strong></p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;// поэтому экземпляры должны создаваться независимо друг от друга.</strong></p>
+
+    <p class="listing-body">&nbsp;&nbsp;SimpleDateFormat df = new SimpleDateFormat("EEE, dd MMM&nbsp;&nbsp;yyyy HH:mm:ss z");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;df.setTimeZone(TimeZone.getTimeZone("GMT"));</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return df;</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Возможно, вы возразите, что у задачи есть и более удачные решения. Пожалуй, я соглашусь с вами. Однако комментарий в том виде, в котором он здесь приведен, выглядит абсолютно разумно. По крайней мере он помешает излишне ретивому программисту использовать статический инициализатор по соображениям эффективности.</p>
+
+    <h3>Комментарии TODO</h3>
+
+    <p class="Normal0">Иногда бывает полезно оставить заметки «на будущее» в форме комментариев <span class="command char-style-override-1">//TODO</span>. В следующем примере комментарий TODO объясняет, почему функция имеет вырожденную реализацию и что она должна делать в будущем.</p>
+
+    <p class="listing-body"><strong>// TODO - На данный момент эта функция не используется.</strong></p>
+
+    <p class="listing-body"><strong>// Ситуация изменится при переходе к отладочной модели.</strong></p>
+
+    <p class="listing-body">protected VersionInfo makeVersion() throws Exception</p>
+
+    <p class="listing-body">{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return null;</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Комментарии TODO напоминают о том, что, по мнению программиста, сделать необходимо, но по какой-то причине нельзя сделать прямо сейчас. Например, комментарий может напомнить о необходимости удаления устаревшей функции или предложить кому-то другому поучаствовать в решении проблемы — скажем, придумать более удачное имя или внести изменения, зависящие от запланированного события. Впрочем, чем бы ни был комментарий TODO, это не повод оставлять плохой код в системе.</p>
+
+    <p>В наши дни в любой хорошей рабочей среде имеется функция поиска всех комментариев TODO, так что потеря таких комментариев маловероятна. И все же код не должен загромождаться лишними комментариями TODO. Регулярно просматривайте их и удаляйте те, которые потеряли актуальность.</p>
+
+    <h3>Усиление</h3>
+
+    <p class="Normal0">Комментарий может подчеркивать важность обстоятельства, которое на первый взгляд кажется несущественным.</p>
+
+    <p class="listing-body">String listItemContent = match.group(3).trim();</p>
+
+    <p class="listing-body"><strong>// Вызов trim() очень важен. Он удаляет начальные пробелы,</strong></p>
+
+    <p class="listing-body"><strong>// чтобы строка успешно интерпретировалась как список.</strong></p>
+
+    <p class="listing-body">new ListItemWidget(this, listItemContent, this.level + 1);</p>
+
+    <p class="listing-body">return buildList(text.substring(match.end()));</p>
+
+    <h3>Комментарии Javadoc в общедоступных API</h3>
+
+    <p class="Normal0">С хорошо документированным общедоступным API приятно и легко работать. Документация Javadoc для стандартной библиотеки Java убедительно доказывает это утверждение. Без нее писать Java-программы было бы в лучшем случае непросто.</p>
+
+    <p>Если вы разрабатываете API для общего пользования, несомненно, для него следует написать хорошие комментарии Javadoc. Однако не забывайте об остальных советах этой главы. Комментарии Javadoc могут быть такими же и недостоверными и лживыми, как и любые другие комментарии.</p>
+
+    <h2 id="toc_marker-6-4">Плохие комментарии</h2>
+
+    <p class="Normal0">Большинство комментариев относится именно к этой категории. Обычно такие комментарии представляют собой «подпорки» для некачественного кода или оправдания сомнительных решений, а их текст напоминает рассуждения вслух самого программиста.</p>
+
+    <h3>Бормотание</h3>
+
+    <p class="Normal0">Не стоит лепить комментарии «на скорую руку» только потому, что вам кажется, что это уместно или этого требует процесс. Если уж вы решаете написать комментарий, не жалейте времени и напишите лучший из всех возможных комментариев.</p>
+
+    <p>Например, следующий фрагмент я обнаружил в FitNesse. В самом деле, ком­ментарий здесь бы пригодился. Но автор то ли торопился, то ли не придал особого значения тому, что он пишет. Его бормотание оставляет читателя в недоумении:</p>
+
+    <p class="listing-body">public void loadProperties()</p>
+
+    <p class="listing-body">{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;try</p>
+
+    <p class="listing-body">&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String propertiesPath = propertiesLocation + "/" + PROPERTIES_FILE;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FileInputStream propertiesStream = new FileInputStream(propertiesPath);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;loadedProperties.load(propertiesStream);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;catch(IOException e)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;{</p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;&nbsp;&nbsp;// Если нет файла свойств, загружаются настройки по умолчанию</strong></p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Что означает комментарий в блоке <span class="command char-style-override-1">catch</span>? Очевидно, он что-то означал для автора, но для читателя этот смысл не доходит. Видимо, если мы получаем <span class="command char-style-override-1">IOException</span>, это означает, что файл свойств отсутствует; в этом случае должны загружаться все настройки по умолчанию. Но кто загружает эти настройки? Были ли они загружены перед вызовом <span class="command char-style-override-1">loadProperties</span><span class="command char-style-override-1">.</span><span class="command char-style-override-1">load</span>? Или вызов <span class="command char-style-override-1">loadProperties</span><span class="command char-style-override-1">.</span><span class="command char-style-override-1">load</span> перехватывает исключение, загружает настройки по умолчанию, а затем передает исключение нам, чтобы мы могли его проигнорировать? Или <span class="command char-style-override-1">loadProperties</span><span class="command char-style-override-1">.</span><span class="command char-style-override-1">load</span> загружает настройки по умолчанию до того, как вы попытались загрузить файл? Автор пытался успокоить себя относительно того факта, что он оставил блок <span class="command char-style-override-1">catch</span> пустым? Или — и это самая пугающая возможность — автор хотел напомнить себе, что позднее нужно вернуться и написать код загрузки настроек по умолчанию?</p>
+
+    <p>Чтобы разобраться в происходящем, нам остается только изучить код других частей системы. Любой комментарий, смысл которого приходится искать в других модулях, не несет полезной информации и не стоит битов, затраченных на его написание.</p>
+
+    <h3>Избыточные комментарии</h3>
+
+    <p class="Normal0">В листинге 4.1 приведена простая функция с совершенно лишним заголовочным комментарием. Вероятно, чтение комментария займет больше времени, чем чтение самого кода.</p>
+
+    <p class="Vrezka-head"><strong>Листинг 4.1.</strong> waitForClose</p>
+
+    <p class="listing-body"><strong>// Вспомогательный метод; возвращает управление, когда значение this.closed истинно.</strong></p>
+
+    <p class="listing-body"><strong>// Инициирует исключение при достижении тайм-аута.</strong></p>
+
+    <p class="listing-body">public synchronized void waitForClose(final long timeoutMillis)</p>
+
+    <p class="listing-body">throws Exception</p>
+
+    <p class="listing-body">{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;if(!closed)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;wait(timeoutMillis);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if(!closed)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throw new Exception("MockResponseSender could not be closed");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Какой цели достигает этот комментарий? Конечно, он несет не больше информации, чем программный код. Он не объясняет код, не предоставляет обоснований и не раскрывает намерений. Он читается не проще, чем сам код. Более того, комментарий уступает коду в точности и навязывает читателю эту неточность взамен истинного понимания. Он напоминает жуликоватого торговца подержанными машинами, уверяющего, что вам незачем заглядывать под капот.</p>
+
+    <p>А теперь рассмотрим легион бесполезных, избыточных комментариев Javadoc из листинга 4.2, позаимствованных из Tomcat. Эти комментарии только загромождают код и скрывают его смысл. Никакой пользы для документирования от них нет. Что еще хуже, я привел только несколько начальных комментариев — в этом модуле их намного больше.</p>
+
+    <p class="Vrezka-head"><strong>Листинг 4.2.</strong> ContainerBase.java (Tomcat)</p>
+
+    <p class="listing-body">public abstract class ContainerBase</p>
+
+    <p class="listing-body">&nbsp;&nbsp;implements Container, Lifecycle, Pipeline,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;MBeanRegistration, Serializable {</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;/**</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;* Задержка процессора для этого компонента.</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;*/</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected int backgroundProcessorDelay = -1;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;/**</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;* Поддержка событий жизненного цикла для этого компонента.</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;*/</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected LifecycleSupport lifecycle =</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;new LifecycleSupport(this);</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;/**</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;* Слушатели контейнерных событий для этого контейнера.</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;*/</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected ArrayList listeners = new ArrayList();</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;/**</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;* Реализация загрузчика, связанная с контейнером.</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;*/</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected Loader loader = null;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;/**</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;* Реализация журнального компонента, связанная с контейнером.</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;*/</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected Log logger = null;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;/**</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;* Имя журнального компонента.</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;*/</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected String logName = null;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;/**</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;* Реализация менеджера, связанная с контейнером.</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;*/</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected Manager manager = null;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;/**</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;* Кластер, связанный с контейнером.</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;*/</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected Cluster cluster = null;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;/**</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;* Удобочитаемое имя контейнера.</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;*/</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected String name = null;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;/**</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;* Родительский контейнер, по отношению к которому</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;* данный контейнер является дочерним.</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;*/</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected Container parent = null;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;/**</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;* Загрузчик родительского класса, задаваемый при назначении загрузчика.</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;*/</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected ClassLoader parentClassLoader = null;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;/**</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;* Объект Pipeline, связанный с данным контейнером.</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;*/</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected Pipeline pipeline = new StandardPipeline(this);</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;/**</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;* Объект Realm, связанный с контейнером.</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;*/</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected Realm realm = null;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;/**</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;* Объект ресурсов DirContext, связанный с контейнером</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;*/</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected DirContext resources = null;</p>
+
+    <h3>Недостоверные комментарии</h3>
+
+    <p class="Normal0">Иногда с самыми лучшими намерениями программист делает в комментариях заявления, неточные и не соответствующие истине. Еще раз взгляните на совершенно лишний, но при этом слегка вводящий в заблуждение комментарий из листинга 4.1.</p>
+
+    <p>А вы нашли, в чем этот комментарий обманывает читателя? Метод не возвращает управление, <em>когда</em> значение <span class="command char-style-override-1">this.closed</span> становится истинным. Он возвращает управление, если значение <span class="command char-style-override-1">this.closed</span> истинно; в противном случае метод ожидает истечения тайм-аута, а затем инициирует исключение, если значение <span class="command char-style-override-1">this.closed</span> так и не стало истинным.</p>
+
+    <p>Эта крошечная дезинформация в комментарии, который читается хуже, чем сам код, может заставить другого программиста вызвать функцию в предположении, что она вернет управление сразу же, как только значение <span class="command char-style-override-1">this.closed</span> станет истинным. После этого бедный программист будет долго отлаживать программу, пытаясь понять, почему его код выполняется так медленно.</p>
+
+    <h3>Обязательные комментарии</h3>
+
+    <p class="Normal0">Правила, говорящие, что каждая функция должна иметь комментарий Javadoc или что каждая переменная должна быть помечена комментарием, — обычная глупость. Такие комментарии только загромождают код, распространяют недостоверную информацию и вызывают общую путаницу и дезориентацию.</p>
+
+    <p>Например, требование обязательного комментария Javadoc для каждой функции приводит к появлению монстров вроде листинга 4.3. Бессмысленные комментарии не приносят никакой пользы. Они только запутывают код, повышая риск обмана и недоразумений.</p>
+
+    <p class="Vrezka-head"><strong>Листинг 4.3.</strong></p>
+
+    <p class="listing-body">&nbsp;&nbsp;/**</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;*</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;* @param title&nbsp;&nbsp;Название диска</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;* @param author Автор диска</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;* @param tracks Количество дорожек на диске</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;* @param durationInMinutes Продолжительность воспроизведения в минутах</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;*/</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void addCD(String title, String author,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int tracks, int durationInMinutes) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;CD cd = new CD();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;cd.title = title;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;cd.author = author;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;cd.tracks = tracks;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;cd.duration = duration;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;cdList.add(cd);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <h3>Журнальные комментарии</h3>
+
+    <p class="Normal0">Некоторые программисты добавляют комментарий в начало модуля при каждом его редактировании. Такие комментарии накапливаются, образуя своего рода журнал всех вносимых изменений. Я видел модули, в которых эти журнальные записи растягивались на десятки страниц.</p>
+
+    <p class="listing-body">* Изменения (начиная с 11 октября 2001)</p>
+
+    <p class="listing-body">* --------------------------</p>
+
+    <p class="listing-body">* 11.10.2001&nbsp;&nbsp;: Реорганизация класса и его перемещение в новый пакет</p>
+
+    <p class="listing-body">*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;com.jrefinery.date (DG);</p>
+
+    <p class="listing-body">* 05.11.2001&nbsp;&nbsp;: Добавление метода getDescription(), устранение класса</p>
+
+    <p class="listing-body">*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;NotableDate (DG);</p>
+
+    <p class="listing-body">* 12.11.2001&nbsp;&nbsp;: С устранением класса NotableDate IBD требует включения</p>
+
+    <p class="listing-body">*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;метода setDescription() (DG); исправление ошибок</p>
+
+    <p class="listing-body">*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;в методах getPreviousDayOfWeek(), getFollowingDayOfWeek()</p>
+
+    <p class="listing-body">*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;и getNearestDayOfWeek() (DG);</p>
+
+    <p class="listing-body">* 05.12.2001&nbsp;&nbsp;: Исправление ошибки в классе SpreadsheetDate (DG);</p>
+
+    <p class="listing-body">* 29.05.2002&nbsp;&nbsp;: Перемещение констант месяцев в отдельный интерфейс</p>
+
+    <p class="listing-body">*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(MonthConstants) (DG);</p>
+
+    <p class="listing-body">* 27.08.2002&nbsp;&nbsp;: Исправление ошибки в методе addMonths() с подачи N???levka Petr (DG);</p>
+
+    <p class="listing-body">* 03.10.2002&nbsp;&nbsp;: Исправление ошибок по сообщениям Checkstyle (DG);</p>
+
+    <p class="listing-body">* 13.03.2003&nbsp;&nbsp;: Реализация Serializable (DG);</p>
+
+    <p class="listing-body">* 29.05.2003&nbsp;&nbsp;: Исправление ошибки в методе addMonths (DG);</p>
+
+    <p class="listing-body">* 04.09.2003&nbsp;&nbsp;: Реализация Comparable.&nbsp;&nbsp;Обновление isInRange javadocs (DG);</p>
+
+    <p class="listing-body">* 05.01.2005&nbsp;&nbsp;: Исправление ошибки в методе addYears() (1096282) (DG);</p>
+
+    <p>Когда-то создание и сопровождение журнальных записей в начале каждого модуля было оправдано. У нас еще не было систем управления исходным кодом, которые делали это за нас. В наши дни длинные журналы только загромождают и усложняют код. Их следует полностью удалить из ваших программ.</p>
+
+    <h3>Шум</h3>
+
+    <p class="Normal0">Также в программах нередко встречаются комментарии, не содержащие ничего, кроме «шума». Они лишь утверждают очевидное, не предоставляя никакой новой информации.</p>
+
+    <p class="listing-body">/**</p>
+
+    <p class="listing-body">* Конструктор по умолчанию.</p>
+
+    <p class="listing-body">*/</p>
+
+    <p class="listing-body">protected AnnualDateRule() {</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Да неужели? А как насчет этого:</p>
+
+    <p class="listing-body">/** День месяца. */</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;private int dayOfMonth;</p>
+
+    <p>И наконец, апофеоз избыточности:</p>
+
+    <p class="listing-body">/**</p>
+
+    <p class="listing-body">* Возвращает день месяца.</p>
+
+    <p class="listing-body">*</p>
+
+    <p class="listing-body">* @return день месяца.</p>
+
+    <p class="listing-body">*/</p>
+
+    <p class="listing-body">public int getDayOfMonth() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return dayOfMonth;</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Эти комментарии настолько бесполезны, что мы учимся не обращать на них внимания. В процессе чтения кода наш взгляд просто скользит мимо них. Рано или поздно код вокруг таких комментариев изменяется, и они начинают лгать.</p>
+
+    <p>Первый комментарий в листинге 4.4 кажется уместным. Он объясняет, почему блок <span class="command char-style-override-1">catch</span> игнорируется. Но второй комментарий не несет полезной информации. Видимо, программист настолько вышел из себя при написании этих блоков <span class="command char-style-override-1">try</span>/<span class="command char-style-override-1">catch</span> в этой функции, что ему понадобилось «выпустить пар».</p>
+
+    <p class="Vrezka-head"><strong>Листинг 4.4.</strong> startSending</p>
+
+    <p class="listing-body">private void startSending()</p>
+
+    <p class="listing-body">{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;try</p>
+
+    <p class="listing-body">&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;doSending();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;catch(SocketException e)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;{</p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;&nbsp;&nbsp;</strong><strong>// Нормально</strong><strong>.</strong> <strong>Кто</strong><strong>-</strong><strong>то</strong> <strong>прервал запрос</strong><strong>.</strong></p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;catch(Exception e)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;try</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;response.add(ErrorResponder.makeExceptionString(e));</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;response.closeAll();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;catch(Exception e1)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;{</p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;//</strong> <strong>Ну</strong> <strong>хватит</strong> <strong>уже</strong><strong>!</strong></p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Вместо того чтобы давать выход чувствам в бесполезном комментарии, программисту следовало понять, что раздражение можно было снять улучшением структуры кода. Ему стоило направить свою энергию на выделение последнего блока <span class="command char-style-override-1">try</span>/<span class="command char-style-override-1">catch</span> в отдельную функцию, как показано в листинге 4.5.</p>
+
+    <p class="Vrezka-head"><strong>Листинг 4.5.</strong> startSending (переработанная версия)</p>
+
+    <p class="listing-body">private void startSending()</p>
+
+    <p class="listing-body">{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;try</p>
+
+    <p class="listing-body">&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;doSending();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;catch(SocketException e)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;// Нормально. Кто-то прервал запрос.</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;catch(Exception e)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;addExceptionAndCloseResponse(e);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">private void addExceptionAndCloseResponse(Exception e)</p>
+
+    <p class="listing-body">{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;try</p>
+
+    <p class="listing-body">&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;response.add(ErrorResponder.makeExceptionString(e));</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;response.closeAll();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;catch(Exception e1)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Искушение создать очередной «шумовой комментарий» следует заменить решимостью очистить код. Вы сами увидите, что это сделает вашу работу более приятной и эффективной.</p>
+
+    <h3>Опасный шум</h3>
+
+    <p class="Normal0">Комментарии Javadoc тоже бывают «шумовыми». Какую пользу приносят следующие комментарии (из хорошо известной библиотеки, распространяемой с открытым кодом)? Ответ: никакой. Это избыточные шумовые комментарии, вызванные неуместным желанием как-то документировать свои действия.</p>
+
+    <p class="listing-body">/** Имя. */</p>
+
+    <p class="listing-body">private String name;</p>
+
+    <p class="listing-body">/** Версия. */</p>
+
+    <p class="listing-body">private String version;</p>
+
+    <p class="listing-body">/** Название лицензии. */</p>
+
+    <p class="listing-body">private String licenceName;</p>
+
+    <p class="listing-body">/** Версия. */</p>
+
+    <p class="listing-body">private String info;</p>
+
+    <p>Прочитайте эти комментарии повнимательнее. Заметили ошибку копирования/вставки? Если авторы не следят за ними в момент написания (или вставки), то как можно ожидать, что эти комментарии принесут пользу читателю?</p>
+
+    <h3>Не используйте комментарии там, где можно использовать функцию или переменную</h3>
+
+    <p class="Normal0">Возьмем следующий фрагмент кода:</p>
+
+    <p class="listing-body">// Зависит ли модуль из глобального списка &lt;mod&gt; от подсистемы,</p>
+
+    <p class="listing-body">// частью которой является наш код?</p>
+
+    <p class="listing-body">if (smodule.getDependSubsystems().contains(subSysMod.getSubSystem()))</p>
+
+    <p>Его можно было бы перефразировать без комментария в следующем виде:</p>
+
+    <p class="listing-body">ArrayList moduleDependees = smodule.getDependSubsystems();</p>
+
+    <p class="listing-body">String ourSubSystem = subSysMod.getSubSystem();</p>
+
+    <p class="listing-body">if (moduleDependees.contains(ourSubSystem))</p>
+
+    <p>Возможно (хотя и маловероятно), автор исходного кода сначала написал комментарий, а затем — соответствующий ему код. Но после этого автор должен был переработать свой код, как это сделал я, чтобы комментарий можно было удалить.</p>
+
+    <h3>Позиционные маркеры</h3>
+
+    <p class="Normal0">Некоторые программисты любят отмечать определенные позиции в исходных файлах. Например, недавно я обнаружил в одной из просматриваемых программ следующую строку:</p>
+
+    <p class="listing-body">// Действия //////////////////////////////////</p>
+
+    <p>В отдельных случаях объединение функций под такими заголовками имеет смысл. Но в общем случае они составляют балласт, от которого следует избавиться — особенно от назойливой серии косых черт в конце.</p>
+
+    <p>Взгляните на дело под таким углом: заголовки привлекают внимание только в том случае, если они встречаются не слишком часто. Используйте их умеренно и только тогда, когда они приносят ощутимую пользу. При слишком частом употреблении заголовков читатель воспринимает их как фоновый шум и перестает обращать на них внимание.</p>
+
+    <h3>Комментарии за закрывающей фигурной скобкой</h3>
+
+    <p class="Normal0">Иногда программисты размещают специальные комментарии за закрывающими фигурными скобками, как в листинге 4.6. Применение таких комментариев оправдано в длинных функциях с многоуровневой вложенностью, но они только загромождают компактные специализированные функции, которым мы отдает предпочтение. Итак, если у вас возникает желание прокомментировать закрывающие фигурные скобки, лучше постарайтесь укоротить свои функции.</p>
+
+    <p class="Vrezka-head"><strong>Листинг 4.6.</strong> wc.java</p>
+
+    <p class="listing-body">public class wc {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public static void main(String[] args) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;BufferedReader in = new BufferedReader(new InputStreamReader(System.in));</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String line;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int lineCount = 0;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int charCount = 0;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int wordCount = 0;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;while ((line = in.readLine()) != null) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;lineCount++;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;charCount += line.length();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String words[] = line.split("\\W");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wordCount += words.length;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} //<strong>while</strong></p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.println("wordCount = " + wordCount);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.println("lineCount = " + lineCount);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.println("charCount = " + charCount);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;} // <strong>try</strong></p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;catch (IOException e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.err.println("Error:" + e.getMessage());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;} //catch</p>
+
+    <p class="listing-body">&nbsp;&nbsp;} //<strong>main</strong></p>
+
+    <p class="listing-body">}</p>
+
+    <h3>Ссылки на авторов</h3>
+
+    <p class="listing-body">/* Добавлено Риком */</p>
+
+    <p>Системы контроля исходного кода отлично запоминают, кто и когда внес то или иное исправление. Нет необходимости загрязнять код подобными ссылками. Может показаться, что такие комментарии помогают другим определить, с кем следует обсуждать данный фрагмент кода. Однако в действительности эти комментарии остаются в коде на долгие годы и со временем становятся все менее точными и актуальными.</p>
+
+    <p>И снова лучшим источником подобной информации является система контроля исходного кода.</p>
+
+    <h3>Закомментированный код</h3>
+
+    <p class="Normal0">В программировании редко встречаются привычки более отвратительные, чем закрытие комментариями неиспользуемого кода. Никогда не делайте этого!</p>
+
+    <p class="listing-body">InputStreamResponse response = new InputStreamResponse();</p>
+
+    <p class="listing-body">response.setBody(formatter.getResultStream(), formatter.getByteCount());</p>
+
+    <p class="listing-body">// InputStream resultsStream = formatter.getResultStream();</p>
+
+    <p class="listing-body">// StreamReader reader = new StreamReader(resultsStream);</p>
+
+    <p class="listing-body">// response.setContent(reader.read(formatter.getByteCount()));</p>
+
+    <p>У других программистов, видящих закомментированный код, не хватает храбрости удалить его. Они полагают, что код оставлен не зря и слишком важен для удаления. В итоге закомментированный код скапливается, словно осадок на дне бутылки плохого вина.</p>
+
+    <p>Следующий код взят из общих модулей Apache:</p>
+
+    <p class="listing-body">this.bytePos = writeBytes(pngIdBytes, 0);</p>
+
+    <p class="listing-body">//<strong>hdrPos = bytePos;</strong></p>
+
+    <p class="listing-body">writeHeader();</p>
+
+    <p class="listing-body">writeResolution();</p>
+
+    <p class="listing-body">//<strong>dataPos = bytePos;</strong></p>
+
+    <p class="listing-body">if (writeImageData()) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;writeEnd();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;this.pngBytes = resizeByteArray(this.pngBytes, this.maxPos);</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">else {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;this.pngBytes = null;</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">return this.pngBytes;</p>
+
+    <p>Почему эти две строки кода закомментированы? Они важны? Их оставили как напоминание о будущих изменениях? Или это «хлам», который кто-то закомментировал сто лет назад и не удосужился убрать из программы?</p>
+
+    <p>В 60-е годы закомментированный код мог быть действительно полезен. Но с тех пор у нас давно появились хорошие системы контроля исходного кода. Эти системы запоминают изменения в коде за нас. Нам уже не нужно закрывать их комментариями. Просто удалите ненужный код. Он никуда не исчезнет. Честное слово.</p>
+
+    <h3>Комментарии HTML</h3>
+
+    <p class="Normal0">Как видно из следующего фрагмента, HTML в комментариях к исходному коду выглядит отвратительно. Он затрудняет чтение комментариев именно там, где они должны легко читаться — в редакторе/IDE. Если комментарии должны извлекаться внешним инструментом (например, Javadoc) для отображения в веб-странице, то за украшение комментариев соответствующим кодом HTML должен отвечать этот инструмент, а не программист.</p>
+
+    <p class="listing-body">/**</p>
+
+    <p class="listing-body">* Задача для запуска тестов.</p>
+
+    <p class="listing-body">* Задача запускает тесты fitnesse и публикует результаты.</p>
+
+    <p class="listing-body">* &lt;p/&gt;</p>
+
+    <p class="listing-body">* &lt;pre&gt;</p>
+
+    <p class="listing-body">* Usage:</p>
+
+    <p class="listing-body">* &amp;lt;taskdef name=&amp;quot;execute-fitnesse-tests&amp;quot;</p>
+
+    <p class="listing-body">*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;classname=&amp;quot;fitnesse.ant.ExecuteFitnesseTestsTask&amp;quot;</p>
+
+    <p class="listing-body">*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;classpathref=&amp;quot;classpath&amp;quot; /&amp;gt;</p>
+
+    <p class="listing-body">* OR</p>
+
+    <p class="listing-body">* &amp;lt;taskdef classpathref=&amp;quot;classpath&amp;quot;</p>
+
+    <p class="listing-body">*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;resource=&amp;quot;tasks.properties&amp;quot; /&amp;gt;</p>
+
+    <p class="listing-body">* &lt;p/&gt;</p>
+
+    <p class="listing-body">* &amp;lt;execute-fitnesse-tests</p>
+
+    <p class="listing-body">*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;suitepage=&amp;quot;FitNesse.SuiteAcceptanceTests&amp;quot;</p>
+
+    <p class="listing-body">*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fitnesseport=&amp;quot;8082&amp;quot;</p>
+
+    <p class="listing-body">*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;resultsdir=&amp;quot;${results.dir}&amp;quot;</p>
+
+    <p class="listing-body">*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;resultshtmlpage=&amp;quot;fit-results.html&amp;quot;</p>
+
+    <p class="listing-body">*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;classpathref=&amp;quot;classpath&amp;quot; /&amp;gt;</p>
+
+    <p class="listing-body">* &lt;/pre&gt;</p>
+
+    <p class="listing-body">*/</p>
+
+    <h3>Нелокальная информация</h3>
+
+    <p class="Normal0">Если вы должны написать комментарий, проследите за тем, чтобы он описывал находящийся поблизости код. Не излагайте информацию системного уровня в контексте локального комментария. Примером служит приведенный ниже комментарий Javadoc. Не считая того факта, что комментарий ужасающе избыточен, в него также включена информация о порте по умолчанию, притом что функция никоим образом не может управлять этим значением. И конечно, ничто не гарантирует, что комментарий будет изменен при изменении кода, в котором это значение определяется.</p>
+
+    <p class="listing-body">/**</p>
+
+    <p class="listing-body">* Порт, на котором будет работать fitnesse. По умолчанию &lt;b&gt;8082&lt;/b&gt;.</p>
+
+    <p class="listing-body">*</p>
+
+    <p class="listing-body">* @param fitnessePort</p>
+
+    <p class="listing-body">*/</p>
+
+    <p class="listing-body">public void setFitnessePort(int fitnessePort)</p>
+
+    <p class="listing-body">{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;this.fitnessePort = fitnessePort;</p>
+
+    <p class="listing-body">}</p>
+
+    <h3>Слишком много информации</h3>
+
+    <p class="Normal0">Не включайте в комментарии интересные исторические дискуссии или опи­сания подробностей, не относящиеся к делу. Следующий комментарий был извлечен из модуля, который должен был проверять, что функция кодирует и декодирует данные в формате base64. Читателю кода совершенно не нужна заумная информация, содержащаяся в этом комментарии, — вполне достаточно номера RFC.</p>
+
+    <p class="listing-body">/*</p>
+
+    <p class="listing-body">RFC 2045 - Multipurpose Internet Mail Extensions (MIME)</p>
+
+    <p class="listing-body">Часть 1: Формат тел сообщений</p>
+
+    <p class="listing-body">раздел 6.8.&nbsp;&nbsp;Кодирование данных Base64</p>
+
+    <p class="listing-body">В процессе кодирования 24-разрядные группы входных битов представляются</p>
+
+    <p class="listing-body">в виде выходных строк из 4 закодированных символов. Слева направо 24-разрядная</p>
+
+    <p class="listing-body">входная группа образуется посредством конкатенации 38-разрядных входных групп.</p>
+
+    <p class="listing-body">Далее эти 24 бита интерпретируются как 4 конкатенированных 6-разрядных группы,</p>
+
+    <p class="listing-body">каждая из которых преобразуется в одну цифру алфавита base64. При кодировании</p>
+
+    <p class="listing-body">потока битов в кодировке base64 предполагается, что битовый поток упорядочивается</p>
+
+    <p class="listing-body">от старшего значащего бита. Иначе говоря, первым битом потока будет старший бит</p>
+
+    <p class="listing-body">первого 8-битового байта, а восьмым - младший бит первого 8-битого байта и т.д.</p>
+
+    <p class="listing-body">*/</p>
+
+    <h3>Неочевидные комментарии</h3>
+
+    <p class="Normal0">Связь между комментарием и кодом, который он описывает, должна быть очевидной. Если уж вы берете на себя хлопоты, связанные с написанием комментария, то по крайней мере читатель должен посмотреть на комментарий и на код и понять, о чем говорится в комментарии. Для примера возьмем следующий комментарий из общих модулей Apache:</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/*</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* Начать с массива, размер которого достаточен для хранения</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* всех пикселов (плюс байты фильтра), плюс еще 200 байт</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* для данных заголовка</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*/</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this.pngBytes = new byte[((this.width + 1) * this.height * 3) + 200];</p>
+
+    <p>Что такое «байты фильтра»? Они как-то связаны с +1? Или с *3? И с тем и с другим? Один пиксел соответствует одному байту? И почему 200? Цель комментария — объяснить код, который не объясняет сам себя. Плохо, когда сам комментарий нуждается в объяснениях.</p>
+
+    <h3>Заголовки функций</h3>
+
+    <p class="Normal0">Короткие функции не нуждаются в долгих описаниях. Хорошо выбранное имя компактной функции, которая выполняет одну операцию, обычно лучше заголовка с комментарием.</p>
+
+    <h3>Заголовки Javadoc во внутреннем коде</h3>
+
+    <p class="Normal0">При всей полезности комментариев Javadoc для API общего пользования не ­применяйте их в коде, не предназначенном для общего потребления. Генерирование страниц Javadoc для внутренних классов и функций системы обычно не приносит реальной пользы, а формализм комментариев Javadoc только отвлекает читателя.</p>
+
+    <h3>Пример</h3>
+
+    <p class="Normal0">Модуль в листинге 4.7 был написан для первого учебного курса «XP Immersion». Предполагалось, что он является примером плохого кодирования и стиля комментирования. Кент Бек переработал этот код в куда более приятную форму перед несколькими десятками увлеченных слушателей. Позднее я приспособил этот пример для своей книги «Agile Software Development, Principles, Patterns, and Practices» и статьи в журнале «Software Development». Любопытно, что в то время многие из нас считали этот модуль «хорошо документированным». Теперь мы видим, что он представляет собой ералаш. Посмотрим, сколько разных ошибок комментирования вам удастся найти.</p>
+
+    <p class="Vrezka-head"><strong>Листинг 4.7.</strong> GeneratePrimes.java</p>
+
+    <p class="listing-body">/**</p>
+
+    <p class="listing-body">* Класс генерирует простые числа в диапазоне до максимального значения,</p>
+
+    <p class="listing-body">*&nbsp;&nbsp;заданного пользователем, по алгоритму "Решета Эратосфена".</p>
+
+    <p class="listing-body">* &lt;p&gt;</p>
+
+    <p class="listing-body">* Эратосфен Киренский, 276 год до н.э., Ливия --&nbsp;&nbsp;* 194 год до н.э., Александрия.</p>
+
+    <p class="listing-body">* Первый ученый, вычисливший длину земного меридиана. Известен своими работами</p>
+
+    <p class="listing-body">* о календарях с високосным годом, заведовал Александрийской библиотекой.</p>
+
+    <p class="listing-body">* &lt;p&gt;</p>
+
+    <p class="listing-body">* Алгоритм весьма прост. Берем массив целых чисел, начиная с 2, и вычеркиваем</p>
+
+    <p class="listing-body">* из него все числа, кратные 2. Находим следующее невычеркнутое число</p>
+
+    <p class="listing-body">* и вычеркиваем все его кратные. Повторяем до тех пор, пока не дойдем</p>
+
+    <p class="listing-body">* до квадратного корня верхней границы диапазона.</p>
+
+    <p class="listing-body">*</p>
+
+    <p class="listing-body">* @author Альфонс</p>
+
+    <p class="listing-body">* @version 13 февраля 2002 u</p>
+
+    <p class="listing-body">*/</p>
+
+    <p class="listing-body">import java.util.*;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class GeneratePrimes</p>
+
+    <p class="listing-body">{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;/**</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;* @param maxValue - верхняя граница диапазона.</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;*/</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public static int[] generatePrimes(int maxValue)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (maxValue &gt;= 2) // Единственно допустимый случай</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Объявления</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int s = maxValue + 1; // Размер массива</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;boolean[] f = new boolean[s];</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int i;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Инициализировать массив значениями true.</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (i = 0; i &lt; s; i++)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;f[i] = true;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Удалить числа, заведомо не являющиеся простыми.</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;f[0] = f[1] = false;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Отсев</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int j;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (i = 2; i &lt; Math.sqrt(s) + 1; i++)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (f[i]) // Если элемент i не вычеркнут, вычеркнуть кратные ему.</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (j = 2 * i; j &lt; s; j += i)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;f[j] = false; // Кратные числа не являются простыми.</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Сколько простых чисел осталось?</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int count = 0;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (i = 0; i &lt; s; i++)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (f[i])</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;count++; // Приращение счетчика</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int[] primes = new int[count];</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Переместить простые числа в результат</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (i = 0, j = 0; i &lt; s; i++)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (f[i])&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Если простое</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;primes[j++] = i;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return primes;&nbsp;&nbsp;// Вернуть простые числа</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;else // maxValue &lt; 2</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return new int[0]; // Вернуть пустой массив при недопустимых входных данных.</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>В листинге 4.8 приведена переработанная версия того же модуля. Обратите внимание: применение комментариев стало намного более ограниченным. Во всем модуле осталось всего два комментария пояснительного характера.</p>
+
+    <p class="Vrezka-head"><strong>Листинг 4.8.</strong> PrimeGenerator.java (переработанная версия)</p>
+
+    <p class="listing-body">/**</p>
+
+    <p class="listing-body">* Класс генерирует простые числа до максимального значения, заданного</p>
+
+    <p class="listing-body">* пользователем, по алгоритму "Решета Эратосфена".</p>
+
+    <p class="listing-body">* Берем массив целых чисел, начиная с 2, и вычеркиваем</p>
+
+    <p class="listing-body">* из него все числа, кратные 2. Находим следующее невычеркнутое число</p>
+
+    <p class="listing-body">* и вычеркиваем все числа, кратные ему. Повторяем до тех пор, пока из массива</p>
+
+    <p class="listing-body">* не будут вычеркнуты все кратные.</p>
+
+    <p class="listing-body">*/</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class PrimeGenerator</p>
+
+    <p class="listing-body">{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static boolean[] crossedOut;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static int[] result;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public static int[] generatePrimes(int maxValue)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (maxValue &lt; 2)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return new int[0];</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;else</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;uncrossIntegersUpTo(maxValue);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;crossOutMultiples();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;putUncrossedIntegersIntoResult();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return result;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static void uncrossIntegersUpTo(int maxValue)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;crossedOut = new boolean[maxValue + 1];</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;for (int i = 2; i &lt; crossedOut.length; i++)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;crossedOut[i] = false;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static void crossOutMultiples()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int limit = determineIterationLimit();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;for (int i = 2; i &lt;= limit; i++)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (notCrossed(i))</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;crossOutMultiplesOf(i);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static int determineIterationLimit()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;// Каждое кратное в массиве имеет простой множитель, больший либо равный</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;// квадратному корню из размера массива. Следовательно, вычеркивать элементы,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;// кратные числам, превышающих квадратный корень, не нужно.</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;double iterationLimit = Math.sqrt(crossedOut.length);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return (int) iterationLimit;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static void crossOutMultiplesOf(int i)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;for (int multiple = 2*i;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;multiple &lt; crossedOut.length;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;multiple += i)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;crossedOut[multiple] = true;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static boolean notCrossed(int i)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return crossedOut[i] == false;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static void putUncrossedIntegersIntoResult()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;result = new int[numberOfUncrossedIntegers()];</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;for (int j = 0, i = 2; i &lt; crossedOut.length; i++)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (notCrossed(i))</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result[j++] = i;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static int numberOfUncrossedIntegers()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int count = 0;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;for (int i = 2; i &lt; crossedOut.length; i++)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (notCrossed(i))</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;count++;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return count;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Можно возразить, что первый комментарий избыточен, потому что он практически полностью повторяет код самой функции <span class="command char-style-override-1">generatePrimes</span>. И все же я считаю, что этот комментарий упрощает понимание алгоритма пользователем, поэтому я склонен оставить его.</p>
+
+    <p>Второй комментарий почти стопроцентно необходим. Он объясняет смысл использования квадратного корня как верхней границы цикла. Мне не удалось найти ни простого имени переменной, ни другой структуры кода, которые бы наглядно передавали это обстоятельство. С другой стороны, само использование квадратного корня может быть иллюзией. Действительно ли ограничение цикла квадратным корнем способно сэкономить время? Не уйдет ли на его вычисление больше времени, чем я экономлю? Об этом стоит подумать. Использование квадратного корня в качестве верхней границы цикла тешит мои наклонности старого хакера, работавшего на C и ассемблере, но я не уверен, что оно оправдает время и усилия, необходимые читателям кода для его понимания.</p>
+
+    <h2 id="toc_marker-6-5">Литература</h2>
+
+    <p class="Normal0">[KP78]: Kernighan and Plaugher, The Elements of Programming Style, 2d. ed., McGraw-Hill, 1978.</p>
+
+    <div class="footnotes footnote">
+      <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-21-backlink" id="footnote-319-21">21</a><span class="Superscript char-style-override-2" xml:lang="en-US">1</span> [KP78], p. 144.</p>
+    </div>
+  </div>
+</body>
+</html>

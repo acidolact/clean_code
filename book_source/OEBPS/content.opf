@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package version="2.0" unique-identifier="bookid" xmlns="http://www.idpf.org/2007/opf">
+  <metadata xmlns:opf="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier xmlns:opf="http://www.idpf.org/2007/opf" opf:scheme="ISBN">978-5-4461-0960-9</dc:identifier>
+    <dc:title>Чистый код: создание, анализ и рефакторинг. Библиотека программиста</dc:title>
+    <dc:creator xmlns:opf="http://www.idpf.org/2007/opf" opf:role="aut">Мартин Р.</dc:creator>
+    <dc:description>Даже плохой программный код может работать. Однако если код не является «чистым», это всегда будет мешать развитию проекта и компании-разработчика, отнимая значительные ресурсы на его поддержку и «укрощение». Эта книга посвящена хорошему программированию. Она полна реальных примеров кода. Мы будем рассматривать код с различных направлений: сверху вниз, снизу вверх и даже изнутри. Прочитав книгу, вы узнаете много нового о коде. Более того, вы научитесь отличать хороший код от плохого. Вы узнаете, как писать хороший код и как преобразовать плохой код в хороший. Книга состоит из трех частей. В первой части излагаются принципы, паттерны и приемы написания чистого кода; приводится большой объем примеров кода. Вторая часть состоит из практических сценариев нарастающей сложности. Каждый сценарий представляет собой упражнение по чистке кода или преобразованию проблемного кода в код с меньшим количеством проблем. Третья часть книги — концентрированное выражение ее сути. Она состоит из одной главы с перечнем эвристических правил и «запахов кода», собранных во время анализа. Эта часть представляет собой базу знаний, описывающую наш путь мышления в процессе чтения, написания и чистки кода.</dc:description>
+    <dc:date xmlns:opf="http://www.idpf.org/2007/opf" opf:event="">2019-02-15</dc:date>
+    <dc:date xmlns:opf="http://www.idpf.org/2007/opf" opf:event="">2019-02-15</dc:date>
+    <dc:rights>Все права защищены. Никакая часть данной книги не может быть воспроизведена в какой бы то ни было форме без письменного разрешения владельцев авторских прав.</dc:rights>
+    <dc:language>ru</dc:language>
+    <dc:publisher>Издательский дом &quot;Питер&quot;</dc:publisher>
+    <dc:date xmlns:opf="http://www.idpf.org/2007/opf" opf:event="publication">2019-02-15</dc:date>
+    <dc:date xmlns:opf="http://www.idpf.org/2007/opf" opf:event="modification">2019-02-15</dc:date>
+    <meta name="Sigil version" content="0.9.7" />
+    <dc:identifier id="bookid">urn:uuid:f27449a8-cd98-</dc:identifier>
+    <meta name="cover" content="x44610960.jpg" />
+  </metadata>
+  <manifest>
+    <item id="xcont1" href="Text/cont1.xhtml" media-type="application/xhtml+xml"/>
+    <item id="xcont2" href="Text/cont2.xhtml" media-type="application/xhtml+xml"/>
+    <item id="xcont3" href="Text/cont3.xhtml" media-type="application/xhtml+xml"/>
+    <item id="x978549600487" href="Text/978549600487.xhtml" media-type="application/xhtml+xml"/>
+    <item id="x978549600487-1" href="Text/978549600487-1.xhtml" media-type="application/xhtml+xml"/>
+    <item id="x978549600487-2" href="Text/978549600487-2.xhtml" media-type="application/xhtml+xml"/>
+    <item id="x978549600487-3" href="Text/978549600487-3.xhtml" media-type="application/xhtml+xml"/>
+    <item id="x978549600487-4" href="Text/978549600487-4.xhtml" media-type="application/xhtml+xml"/>
+    <item id="x978549600487-5" href="Text/978549600487-5.xhtml" media-type="application/xhtml+xml"/>
+    <item id="x978549600487-6" href="Text/978549600487-6.xhtml" media-type="application/xhtml+xml"/>
+    <item id="x978549600487-7" href="Text/978549600487-7.xhtml" media-type="application/xhtml+xml"/>
+    <item id="x978549600487-8" href="Text/978549600487-8.xhtml" media-type="application/xhtml+xml"/>
+    <item id="x978549600487-9" href="Text/978549600487-9.xhtml" media-type="application/xhtml+xml"/>
+    <item id="x978549600487-10" href="Text/978549600487-10.xhtml" media-type="application/xhtml+xml"/>
+    <item id="x978549600487-11" href="Text/978549600487-11.xhtml" media-type="application/xhtml+xml"/>
+    <item id="x978549600487-12" href="Text/978549600487-12.xhtml" media-type="application/xhtml+xml"/>
+    <item id="x978549600487-13" href="Text/978549600487-13.xhtml" media-type="application/xhtml+xml"/>
+    <item id="x978549600487-14" href="Text/978549600487-14.xhtml" media-type="application/xhtml+xml"/>
+    <item id="x978549600487-15" href="Text/978549600487-15.xhtml" media-type="application/xhtml+xml"/>
+    <item id="x978549600487-16" href="Text/978549600487-16.xhtml" media-type="application/xhtml+xml"/>
+    <item id="x978549600487-17" href="Text/978549600487-17.xhtml" media-type="application/xhtml+xml"/>
+    <item id="x978549600487-18" href="Text/978549600487-18.xhtml" media-type="application/xhtml+xml"/>
+    <item id="x978549600487-19" href="Text/978549600487-19.xhtml" media-type="application/xhtml+xml"/>
+    <item id="x978549600487-20" href="Text/978549600487-20.xhtml" media-type="application/xhtml+xml"/>
+    <item id="x978549600487-21" href="Text/978549600487-21.xhtml" media-type="application/xhtml+xml"/>
+    <item id="x978549600487-22" href="Text/978549600487-22.xhtml" media-type="application/xhtml+xml"/>
+    <item id="x978549600487-23" href="Text/978549600487-23.xhtml" media-type="application/xhtml+xml"/>
+    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+    <item id="xtemplate.css" href="Styles/template.css" media-type="text/css"/>
+    <item id="x01_01_fmt.png" href="Images/01_01_fmt.png" media-type="image/png"/>
+    <item id="x01_02_fmt.png" href="Images/01_02_fmt.png" media-type="image/png"/>
+    <item id="x01_04_fmt.png" href="Images/01_04_fmt.png" media-type="image/png"/>
+    <item id="x01_05_fmt.png" href="Images/01_05_fmt.png" media-type="image/png"/>
+    <item id="x01_06_fmt.png" href="Images/01_06_fmt.png" media-type="image/png"/>
+    <item id="x01_07_fmt.png" href="Images/01_07_fmt.png" media-type="image/png"/>
+    <item id="x01_08_fmt.png" href="Images/01_08_fmt.png" media-type="image/png"/>
+    <item id="x01_09_fmt.png" href="Images/01_09_fmt.png" media-type="image/png"/>
+    <item id="x01_10_fmt.png" href="Images/01_10_fmt.png" media-type="image/png"/>
+    <item id="x02_01_fmt.png" href="Images/02_01_fmt.png" media-type="image/png"/>
+    <item id="x02_02_fmt.png" href="Images/02_02_fmt.png" media-type="image/png"/>
+    <item id="x02_03_fmt.png" href="Images/02_03_fmt.png" media-type="image/png"/>
+    <item id="x03_01_fmt.png" href="Images/03_01_fmt.png" media-type="image/png"/>
+    <item id="x03_02_fmt.png" href="Images/03_02_fmt.png" media-type="image/png"/>
+    <item id="x03_03_fmt.png" href="Images/03_03_fmt.png" media-type="image/png"/>
+    <item id="x03_04_fmt.png" href="Images/03_04_fmt.png" media-type="image/png"/>
+    <item id="x04_01_fmt.png" href="Images/04_01_fmt.png" media-type="image/png"/>
+    <item id="x04_02_fmt.png" href="Images/04_02_fmt.png" media-type="image/png"/>
+    <item id="x05_01_fmt.png" href="Images/05_01_fmt.png" media-type="image/png"/>
+    <item id="x05_03_fmt.png" href="Images/05_03_fmt.png" media-type="image/png"/>
+    <item id="x05_05_fmt.png" href="Images/05_05_fmt.png" media-type="image/png"/>
+    <item id="x06_01_fmt.png" href="Images/06_01_fmt.png" media-type="image/png"/>
+    <item id="x06_02_fmt.png" href="Images/06_02_fmt.png" media-type="image/png"/>
+    <item id="x07_01_fmt.png" href="Images/07_01_fmt.png" media-type="image/png"/>
+    <item id="x07_02_fmt.png" href="Images/07_02_fmt.png" media-type="image/png"/>
+    <item id="x08_01_fmt.png" href="Images/08_01_fmt.png" media-type="image/png"/>
+    <item id="x09_01_fmt.png" href="Images/09_01_fmt.png" media-type="image/png"/>
+    <item id="x10611.png" href="Images/10611.png" media-type="image/png"/>
+    <item id="x10_01_fmt.png" href="Images/10_01_fmt.png" media-type="image/png"/>
+    <item id="x11_01_fmt.png" href="Images/11_01_fmt.png" media-type="image/png"/>
+    <item id="x12_01_fmt.png" href="Images/12_01_fmt.png" media-type="image/png"/>
+    <item id="x13_01_fmt.png" href="Images/13_01_fmt.png" media-type="image/png"/>
+    <item id="x14_01_fmt.png" href="Images/14_01_fmt.png" media-type="image/png"/>
+    <item id="x15185.png" href="Images/15185.png" media-type="image/png"/>
+    <item id="x15_01_fmt.png" href="Images/15_01_fmt.png" media-type="image/png"/>
+    <item id="x16_01_fmt.png" href="Images/16_01_fmt.png" media-type="image/png"/>
+    <item id="x17959.png" href="Images/17959.png" media-type="image/png"/>
+    <item id="x17_01_fmt.png" href="Images/17_01_fmt.png" media-type="image/png"/>
+    <item id="x20131.png" href="Images/20131.png" media-type="image/png"/>
+    <item id="x20143.png" href="Images/20143.png" media-type="image/png"/>
+    <item id="x20416.png" href="Images/20416.png" media-type="image/png"/>
+    <item id="x22660.png" href="Images/22660.png" media-type="image/png"/>
+    <item id="x22673.png" href="Images/22673.png" media-type="image/png"/>
+    <item id="x22757.png" href="Images/22757.png" media-type="image/png"/>
+    <item id="x23410.png" href="Images/23410.png" media-type="image/png"/>
+    <item id="x23417.png" href="Images/23417.png" media-type="image/png"/>
+    <item id="x23429.png" href="Images/23429.png" media-type="image/png"/>
+    <item id="xepil_01_fmt.png" href="Images/epil_01_fmt.png" media-type="image/png"/>
+    <item id="xid_piter.png" href="Images/id_piter.png" media-type="image/png"/>
+    <item id="PTF55F.ttf" href="Fonts/PTF55F.ttf" media-type="application/x-font-ttf"/>
+    <item id="PTF56F.ttf" href="Fonts/PTF56F.ttf" media-type="application/x-font-ttf"/>
+    <item id="PTF75F.ttf" href="Fonts/PTF75F.ttf" media-type="application/x-font-ttf"/>
+    <item id="PTF76F.ttf" href="Fonts/PTF76F.ttf" media-type="application/x-font-ttf"/>
+    <item id="PTM55F_W.ttf" href="Fonts/PTM55F_W.ttf" media-type="application/x-font-ttf"/>
+    <item id="PTM75F_W.ttf" href="Fonts/PTM75F_W.ttf" media-type="application/x-font-ttf"/>
+    <item id="PTS55F.ttf" href="Fonts/PTS55F.ttf" media-type="application/x-font-ttf"/>
+    <item id="PTS56F.ttf" href="Fonts/PTS56F.ttf" media-type="application/x-font-ttf"/>
+    <item id="PTS75F.ttf" href="Fonts/PTS75F.ttf" media-type="application/x-font-ttf"/>
+    <item id="PTS76F.ttf" href="Fonts/PTS76F.ttf" media-type="application/x-font-ttf"/>
+    <item id="x44610960.jpg" href="Images/44610960.jpg" media-type="image/jpeg"/>
+  </manifest>
+  <spine toc="ncx">
+    <itemref idref="xcont1"/>
+    <itemref idref="xcont2"/>
+    <itemref idref="xcont3"/>
+    <itemref idref="x978549600487"/>
+    <itemref idref="x978549600487-1"/>
+    <itemref idref="x978549600487-2"/>
+    <itemref idref="x978549600487-3"/>
+    <itemref idref="x978549600487-4"/>
+    <itemref idref="x978549600487-5"/>
+    <itemref idref="x978549600487-6"/>
+    <itemref idref="x978549600487-7"/>
+    <itemref idref="x978549600487-8"/>
+    <itemref idref="x978549600487-9"/>
+    <itemref idref="x978549600487-10"/>
+    <itemref idref="x978549600487-11"/>
+    <itemref idref="x978549600487-12"/>
+    <itemref idref="x978549600487-13"/>
+    <itemref idref="x978549600487-14"/>
+    <itemref idref="x978549600487-15"/>
+    <itemref idref="x978549600487-16"/>
+    <itemref idref="x978549600487-17"/>
+    <itemref idref="x978549600487-18"/>
+    <itemref idref="x978549600487-19"/>
+    <itemref idref="x978549600487-20"/>
+    <itemref idref="x978549600487-21"/>
+    <itemref idref="x978549600487-22"/>
+    <itemref idref="x978549600487-23"/>
+  </spine>
+  <guide>
+  </guide>
+</package>

@@ -1,0 +1,990 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Чистый код: создание, анализ и рефакторинг. Библиотека программиста</title>
+  <link href="../Styles/template.css" rel="stylesheet" type="text/css"/>
+</head>
+
+<body id="x978549600487" xml:lang="ru-RU">
+  <div>
+    <h1 id="toc_marker-7">5. Форматирование</h1>
+
+    <p class="Pic-yakor"><span><img alt="05_01.tif" class="frame-10" src="../Images/05_01_fmt.png"/></span>&nbsp;</p>
+
+    <p>Мы хотим, чтобы читатель, заглянувший «под капот» программы, был поражен увиденным — нашей аккуратностью, логичностью и вниманием к мелочам. Мы хотим, чтобы на него произвела впечатление стройность кода. Мы хотим, чтобы он уважительно поднял брови при просмотре модулей. Мы хотим, чтобы наша работа выглядела профессионально. Если вместо этого читатель видит беспорядочную массу кода, словно написанного шайкой пьяных матросов, то он заключит, что такое же неуважение к мелочам проникло и во все остальные аспекты проекта.</p>
+
+    <p>Вы должны позаботиться о том, чтобы ваш код был хорошо отформатирован. Выберите набор простых правил, определяющих формат кода, и последовательно­ применяйте их в своей работе. Если вы работаете в составе группы, то группа должна выработать согласованный набор правил форматирования, соблюдаемых всеми участниками. Также полезно иметь средства автоматизации, которые применяют правила форматирования за вас.</p>
+
+    <h2 id="toc_marker-7-1">Цель форматирования</h2>
+
+    <p class="Normal0">Прежде всего я твердо заявляю: форматирование кода важно. Оно слишком важно, чтобы не обращать на него внимания, и слишком важно, чтобы относиться к нему с религиозным пылом. Форматирование кода направлено на передачу информации, а передача информации является первоочередной задачей профессионального разработчика.</p>
+
+    <p>Возможно, вы думали, что первоочередная задача профессионального разработчика – «сделать так, чтобы программа заработала». Надеюсь, к этому моменту книга уже заставила вас отказаться от этих представлений. Функциональность, созданная сегодня, вполне может измениться в следующей версии, но удобочитаемость вашего кода окажет сильное воздействие на все изменения, которые когда-либо будут внесены. Стиль кодирования и удобочитаемость создают прецеденты, которые продолжают влиять на сопровождаемость и расширяемость кода уже после того, как исходный код изменился до неузнаваемости. Стиль и дисциплина программирования продолжают жить, даже если ваш код остался в прошлом. Так какие же аспекты форматирования помогают нам лучше передать свои мысли?</p>
+
+    <h3>Вертикальное форматирование</h3>
+
+    <p class="Normal0">Начнем с вертикальных размеров. Насколько большим должен быть исходный файл? В Java размер файла тесно связан с размером класса. Мы поговорим о размерах классов, когда речь пойдет о классах, а пока давайте займемся размером файлов.</p>
+
+    <p>Насколько большими должны быть исходные файлы Java? Оказывается, существует широчайший диапазон размеров и весьма заметные различия в стиле. Некоторые из этих различий показаны на рис. 5.1.</p>
+
+    <p>На рисунке изображены семь разных проектов: Junit, FitNesse, TestNG, Time and Money (Tam), JDepend, Ant и Tomcat. Отрезки, проходящие через прямоуголь­ники, показывают минимальную и максимальную длину файла в каждом проекте.­ Прямоугольник изображает приблизительно одну треть (стандартное отклонение<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-22" id="footnote-319-22-backlink">22</a></span>) от диапазона длин файлов. Середина прямоугольника соответствует среднему арифметическому. Таким образом, средний размер файла в проекте FitNesse составляет около 65 строк, а около трети файлов имеет размер от 40 до 100+ строк. Наибольший файл FitNesse занимает около 400 строк, а наименьший — всего 6 строк. Обратите внимание: на графике используется логарифмическая шкала, поэтому незначительные изменения в вертикальной координате подразумевают очень большие изменения в абсолютном размере.</p>
+
+    <p class="Pic-yakor"><span><img alt="20131.png" class="frame-11" src="../Images/20131.png"/></span>&nbsp;</p>
+
+    <p class="Pic-nazv"><strong>Рис. 5.1.</strong> Распределение длин файлов по логарифмической шкале&nbsp;&nbsp;(высота прямоугольника = сигма)</p>
+
+    <p>Junit, FitNesse и Time and Money состоят из относительно небольших файлов. Ни один размер файла не превышает 500 строк, а большинство файлов не превышает 200 строк. Напротив, в Tomcat и Ant встречаются файлы из нескольких тысяч строк, а около половины имеет длину более 200 строк.</p>
+
+    <p>Что это означает для нас? То, что достаточно серьезную систему (объем FitNesse приближается к 50 000 строк) можно построить из файлов, типичная длина которых составляет 200 строк, с верхним пределом в 500 строк. Хотя это не должно считаться раз и навсегда установленным правилом, такие показатели весьма желательны. Маленькие файлы обычно более понятны, чем большие.</p>
+
+    <h3>Газетная метафора</h3>
+
+    <p class="Normal0">Представьте себе хорошо написанную газетную статью. Естественно, статья читается по вертикали. В самом начале обычно располагается заголовок с общей темой статьи; он помогает вам решить, представляет ли статья интерес для вас. В первом абзаце приводится краткое изложение сюжета на уровне общих концепций, без приведения каких-либо подробностей. По мере продвижения к концу статьи объем детализации непрерывно растет, пока вы не узнаете все даты, имена, цитаты и т.д.</p>
+
+    <p>Исходный файл должен выглядеть как газетная статья. Имя файла должно быть простым, но содержательным. Одного имени должно быть достаточно для того, чтобы читатель понял, открыл ли он нужный модуль или нет. Начальные блоки исходного файла описывают высокоуровневые концепции и алгоритмы. Степень детализации увеличивается при перемещении к концу файла, а в самом конце собираются все функции и подробности низшего уровня в исходном файле.</p>
+
+    <p>Газета состоит из множества статей, в большинстве своем очень коротких. Другие статьи чуть длиннее. И лишь немногие статьи занимают всю газетную страницу. Собственно, именно этим газеты так удобны. Если бы они состояли из одной длинной статьи с неупорядоченной подборкой фактов, дат и имен, то мы бы просто не смогли их читать.</p>
+
+    <h3>Вертикальное разделение концепций</h3>
+
+    <p class="Normal0">Практически весь код читается слева направо и сверху вниз. Каждая строка представляет выражение или условие, а каждая группа строк представляет законченную мысль. Эти мысли следует отделять друг от друга пустыми строками.</p>
+
+    <p>Для примера возьмем листинг 5.1. Объявление пакета, директива(-ы) импорта и все функции разделяются пустыми строками. Это чрезвычайно простое правило оказывает глубокое воздействие на визуальную структуру кода. Каждая пустая строка становится зрительной подсказкой, указывающей на начало новой самостоятельной концепции. В ходе просмотра листинга ваш взгляд привлекает первая строка, следующая за пустой строкой.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/5 Форматирование/5.1.BoldWidget.java">📄 Открыть исходный код в IDE</a></p>Листинг 5.1.</strong> BoldWidget.java</p>
+
+    <p class="listing-body">package fitnesse.wikitext.widgets;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">import java.util.regex.*;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class BoldWidget extends ParentWidget {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public static final String REGEXP = "'''.+?'''";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static final Pattern pattern = Pattern.compile("'''(.+?)'''",</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;Pattern.MULTILINE + Pattern.DOTALL</p>
+
+    <p class="listing-body">&nbsp;&nbsp;};</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public BoldWidget(ParentWidget parent, String text) throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;super(parent);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;Matcher match = pattern.matcher(text);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;match.find();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;addChildWidgets(match.group(1));</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/5 Форматирование/5.1.BoldWidget.java">📄 Открыть исходный код в IDE</a></p>Листинг 5.1</strong> (продолжение)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public String render() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;StringBuffer html = new StringBuffer("&lt;b&gt;");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;html.append(childHtml()).append("&lt;/b&gt;");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return html.toString();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Удаление пустых строк, как в листинге 5.2, имеет весьма тяжелые последствия для удобочитаемости кода.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/5 Форматирование/5.2.BoldWidget.java">📄 Открыть исходный код в IDE</a></p>Листинг 5.2.</strong> BoldWidget.java</p>
+
+    <p class="listing-body">package fitnesse.wikitext.widgets;</p>
+
+    <p class="listing-body">import java.util.regex.*;</p>
+
+    <p class="listing-body">public class BoldWidget extends ParentWidget {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public static final String REGEXP = "'''.+?'''";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static final Pattern pattern = Pattern.compile("'''(.+?)'''",</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;Pattern.MULTILINE + Pattern.DOTALL);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public BoldWidget(ParentWidget parent, String text) throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;super(parent);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;Matcher match = pattern.matcher(text);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;match.find();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;addChildWidgets(match.group(1));}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public String render() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;StringBuffer html = new StringBuffer("&lt;b&gt;");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;html.append(childHtml()).append("&lt;/b&gt;");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return html.toString();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Эффект становится еще более заметным, если на секунду отвести глаза от листинга. В первом примере группировка строк сразу бросается в глаза, а второй пример выглядит как сплошная каша, притом что два листинга различаются только вертикальными разделителями.</p>
+
+    <h3>Вертикальное сжатие</h3>
+
+    <p class="Normal0">Если вертикальные пропуски разделяют концепции, то вертикальное сжатие подчеркивает тесные связи. Таким образом, строки кода, между которыми существует тесная связь, должны быть «сжаты» по вертикали. Обратите внимание на то, как бесполезные комментарии в листинге 5.3 нарушают группировку двух переменных экземпляров.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/5 Форматирование/5.3.ReporterConfig.java">📄 Открыть исходный код в IDE</a></p>Листинг 5.3</strong></p>
+
+    <p class="listing-body">public class ReporterConfig {</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;/**</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;* Имя класса слушателя</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;*/</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String m_className;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;/**</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;* Свойства слушателя</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;*/</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private List&lt;Property&gt; m_properties = new ArrayList&lt;Property&gt;();</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void addProperty(Property property) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;m_properties.add(property);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/5 Форматирование/5.4.ReporterConfig.java">📄 Открыть исходный код в IDE</a></p>Листинг 5.4 читается гораздо проще. Он нормально воспринимается «с одного взгляда» — по крайней мере, для меня. Я смотрю на него и сразу вижу, что передо мной класс с двумя переменными и одним методом; для этого мне не приходится вертеть головой или бегать по строчкам глазами. В предыдущем листинге для ­достижения того же уровня понимания приходится потрудиться намного больше.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/5 Форматирование/5.4.ReporterConfig.java">📄 Открыть исходный код в IDE</a></p>Листинг 5.4</strong></p>
+
+    <p class="listing-body">public class ReporterConfig {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String m_className;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private List&lt;Property&gt; m_properties = new ArrayList&lt;Property&gt;();</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void addProperty(Property property) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;m_properties.add(property);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <h3>Вертикальные расстояния</h3>
+
+    <p class="Normal0">Вам когда-нибудь доводилось метаться по классу, прыгая от одной функции к другой, прокручивая исходный файл вверх-вниз, пытаясь разобраться, как функции связаны друг с другом и как они работают, — только для того, чтобы окончательно заблудиться в его запутанных нагромождениях? Когда-нибудь искали определение функции или переменной по цепочкам наследования? Все это крайне неприятно, потому что вы стараетесь понять, как работает система, а вместо этого вам приходится тратить время и интеллектуальные усилия на поиски и запоминание местонахождения отдельных фрагментов.</p>
+
+    <p>Концепции, тесно связанные друг с другом, должны находиться поблизости друг от друга по вертикали [G10]. Разумеется, это правило не работает для концепций, находящихся в разных файлах. Но тесно связанные концепции и не должны находиться в разных файлах, если только это не объясняется очень вескими доводами. Кстати, это одна из причин, по которой следует избегать защищенных переменных.</p>
+
+    <p>Если концепции связаны настолько тесно, что они находятся в одном исходном файле, их вертикальное разделение должно показывать, насколько они важны для понимания друг друга. Не заставляйте читателя прыгать туда-сюда по исходным файлам и классам.</p>
+
+    <p><strong>Объявления переменных</strong>. Переменные следует объявлять как можно ближе к месту использования. Так как мы имеем дело с очень короткими функциями, локальные переменные должны перечисляться в начале каждой функции, как в следующем примере из Junit 4.3.</p>
+
+    <p class="listing-body">private static void readPreferences() {</p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;InputStream is= null;</strong></p>
+
+    <p class="listing-body">&nbsp;&nbsp;try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;is= new FileInputStream(getPreferencesFile());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;setPreferences(new Properties(getPreferences()));</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;getPreferences().load(is);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;} catch (IOException e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (is != null)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;is.close();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} catch (IOException e1) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Управляющие переменные циклов обычно объявляются внутри конструкции цикла, как в следующей симпатичной маленькой функции из того же источника.</p>
+
+    <p class="listing-body">public int countTestCases() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int count= 0;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;for (Test each : tests)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;count += each.countTestCases();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return count;</p>
+
+    <p class="listing-body">}</p>
+
+    <p>В отдельных случаях переменная может объявляться в начале блока или непосредственно перед циклом в длинной функции. Пример такого объявления представлен в следующем фрагменте очень длинной функции из TestNG.</p>
+
+    <p class="listing-body">...</p>
+
+    <p class="listing-body">for (XmlTest test : m_suite.getTests()) {</p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong><strong>TestRunner tr = m_runnerFactory.newTestRunner(this, test);</strong></p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tr.addListener(m_textReporter);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;m_testRunners.add(tr);</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;invoker = tr.getInvoker();</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (ITestNGMethod m : tr.getBeforeSuiteMethods()) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;beforeSuiteMethods.put(m.getMethod(), m);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (ITestNGMethod m : tr.getAfterSuiteMethods()) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;afterSuiteMethods.put(m.getMethod(), m);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">...</p>
+
+    <p><strong>Переменные экземпляров</strong>, напротив, должны объявляться в начале класса. Это не увеличивает вертикальное расстояние между переменными, потому что в хорошо спроектированном классе они используются многими, если не всеми, методами класса.</p>
+
+    <p>Размещение переменных экземпляров становилось причиной ожесточенных споров. В C++ обычно применялось так называемое <em>правило ножниц</em>, при котором все переменные экземпляров размещаются внизу. С другой стороны, в Java они обычно размещаются в начале класса. Я не вижу причин для использования каких-либо других конвенций. Здесь важно то, что переменные экземпляров должны объявляться в одном хорошо известном месте. Все должны знать, где следует искать объявления.</p>
+
+    <p>Для примера рассмотрим странный класс TestSuite из JUnit 4.3.1. Я основательно сократил этот класс, чтобы лучше выразить свою мысль. Где-то в середине листинга вдруг обнаруживаются объявления двух переменных экземпляров. Если бы автор сознательно хотел спрятать их, трудно найти более подходящее место. Читатель кода может наткнуться на эти объявления только случайно (как я).</p>
+
+    <p class="listing-body">public class TestSuite implements Test {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;static public Test createTest(Class&lt;? extends TestCase&gt; theClass,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String name) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public static Constructor&lt;? extends TestCase&gt;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;getTestConstructor(Class&lt;? extends TestCase&gt; theClass)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;throws NoSuchMethodException {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;...</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public static Test warning(final String message) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;...</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static String exceptionToString(Throwable t) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;...</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;private String fName;</strong></p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;private Vector&lt;Test&gt; fTests= new Vector&lt;Test&gt;(10);</strong></p>
+
+    <p class="listing-body">&nbsp;&nbsp;public TestSuite() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public TestSuite(final Class&lt;? extends TestCase&gt; theClass) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;...</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public TestSuite(Class&lt;? extends TestCase&gt;&nbsp;&nbsp;theClass, String name) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;...</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;... ... ... ... ...</p>
+
+    <p class="listing-body">}</p>
+
+    <p><strong>Зависимые функции</strong>. Если одна функция вызывает другую, то эти функции должны располагаться вблизи друг от друга по вертикали, а вызывающая функция должна находиться над вызываемой (если это возможно). Тем самым формируется естественная структура программного кода. Если это правило будет последовательно соблюдаться, читатели кода будут уверены в том, что определения функций следуют неподалеку от их вызовов. Для примера возьмем фрагмент FitNesse из листинга 5.5. Обратите внимание на то, как верхняя функция вызывает нижние, и как они, в свою очередь, вызывают функции более низкого уровня. Такая структура позволяет легко найти вызываемые функции и значительно улучшает удобочитаемость всего модуля.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/5 Форматирование/5.5.WikiPageResponder.java">📄 Открыть исходный код в IDE</a></p>Листинг 5.5.</strong> WikiPageResponder.java</p>
+
+    <p class="listing-body">public class WikiPageResponder implements SecureResponder {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected WikiPage page;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected PageData pageData;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected String pageTitle;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected Request request;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected PageCrawler crawler;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public Response makeResponse(FitNesseContext context, Request request)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String pageName = getPageNameOrDefault(request, "FrontPage");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;loadPage(pageName, context);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (page == null)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return notFoundResponse(context, request);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;else</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return makePageResponse(context);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String getPageNameOrDefault(Request request, String defaultPageName)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String pageName = request.getResource();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (StringUtil.isBlank(pageName))</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pageName = defaultPageName;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return pageName;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected void loadPage(String resource, FitNesseContext context)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;WikiPagePath path = PathParser.parse(resource);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;crawler = context.root.getPageCrawler();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;crawler.setDeadEndStrategy(new VirtualEnabledPageCrawler());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;page = crawler.getPage(context.root, path);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (page != null)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pageData = page.getData();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private Response notFoundResponse(FitNesseContext context, Request request)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return new NotFoundResponder().makeResponse(context, request);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private SimpleResponse makePageResponse(FitNesseContext context)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;pageTitle = PathParser.render(crawler.getFullPath(page));</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String html = makeHtml(context);</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;SimpleResponse response = new SimpleResponse();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;response.setMaxAge(0);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;response.setContent(html);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return response;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">...</p>
+
+    <p>Заодно этот фрагмент дает хороший пример хранения констант на соответствующем уровне [G35]. Константу «FrontPage» можно было бы объявить в функции <span class="command char-style-override-1">getPageNameOrDefault</span>, но тогда хорошо известная и ожидаемая константа оказалась бы погребенной в функции неуместно низкого уровня. Лучше переместить эту константу вниз – от того места, где ее следовало бы ввести, к месту ее фактического использования.</p>
+
+    <p><strong>Концептуальное родство</strong>. Некоторые фрагменты кода <em>требуют</em>, чтобы их разместили вблизи от других фрагментов. Такие фрагменты обладают определенным концептуальным родством. Чем сильнее родство, тем меньше должно быть вертикальное расстояние между ними.</p>
+
+    <div class="frame-4"><img alt="05_03.tif" class="frame-3" src="../Images/05_03_fmt.png"/></div>
+
+    <p>Как мы уже видели, родство может быть основано на прямой зависимости (когда одна функция вызывает другую) или на использовании переменных в функциях. Однако существуют и другие разновидности родства. Например, родство возникает в том случае, если группа функций выполняет аналогичные операции. Возьмем следующий фрагмент кода из Junit 4.3.1:</p>
+
+    <p class="listing-body">public class Assert {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;static public void assertTrue(String message, boolean condition) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (!condition)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fail(message);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;static public void assertTrue(boolean condition) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertTrue(null, condition);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;static public void assertFalse(String message, boolean condition) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertTrue(message, !condition);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;static public void assertFalse(boolean condition) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertFalse(null, condition);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">...</p>
+
+    <p>Эти функции обладают сильным концептуальным родством, потому что они ­используют единую схему выбора имен и выполняют разные варианты одной ­базовой операции. Тот факт, что они вызывают друг друга, вторичен. Даже без него эти функции все равно следовало бы разместить поблизости друг от друга.</p>
+
+    <h3>Вертикальное упорядочение</h3>
+
+    <p class="Normal0">Как правило, взаимозависимые функции должны размещаться в нисходящем порядке. Иначе говоря, вызываемая функция должна располагаться ниже вызывающей функции. Так формируется логичная структура модуля исходного кода – от высокого уровня к более низкому.</p>
+
+    <p>Как и в газетных статьях, читатель ожидает, что самые важные концепции будут изложены сначала, причем с минимальным количеством второстепенных де­талей. Низкоуровневые подробности естественно приводить в последнюю ­очередь. Это позволяет нам бегло просматривать исходные файлы, извлекая суть из нескольких начальных функций, без погружения в подробности. <p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/5 Форматирование/5.5.WikiPageResponder.java">📄 Открыть исходный код в IDE</a></p>Листинг 5.5 имеет именно такую структуру. Возможно, еще лучшие примеры встречаются в листинге 15.5 на с. 299 и в листинге 3.7 на с. 75.</p>
+
+    <h2 id="toc_marker-7-2">Горизонтальное форматирование</h2>
+
+    <p class="Normal0">Насколько широкой должна быть строка? Чтобы ответить на этот вопрос, мы проанализируем ширину строк в типичных программах. Как и в предыдущем случае, будут проанализированы семь разных проектов. На рис. 5.2 показано распределение длин строк во всех семи проектах. Закономерность впечатляет, особенно около 45 символов. Фактически каждый размер от 20 до 60 соответствует примерно одному проценту от общего количества строк. Целых 40 процентов! Возможно, еще 30 процентов составляют строки с длиной менее 10 символов. Помните, что на графике используется логарифмическая шкала, поэтому разброс в области свыше 80 символов очень важен. Программисты явно предпочитают более короткие строки.</p>
+
+    <p>Это наводит на мысль, что строки лучше делать по возможности короткими. Установленное Холлеритом старое ограничение в 80 символов выглядит излишне жестким; я ничего не имеют против строк длиной в 100 и даже 120 символов. Но более длинные строки, вероятно, вызваны небрежностью программиста.</p>
+
+    <p class="Pic-yakor"><span><img alt="20143.png" class="frame-2" src="../Images/20143.png"/></span>&nbsp;</p>
+
+    <p class="Pic-nazv"><strong>Рис. 5.2.</strong> Распределение ширины строк в Java</p>
+
+    <p>Прежде я использовал это правило, чтобы мне не приходилось прокручивать программный код вправо. Но современные мониторы стали настолько широкими, а молодые программисты выбирают настолько мелкие шрифты, что на экране помещается до 200 символов. Не делайте этого. Лично я установил себе «верхнюю планку» в 120 символов.</p>
+
+    <h3>Горизонтальное разделение и сжатие</h3>
+
+    <p class="Normal0">Горизонтальные пропуски используются для группировки взаимосвязанных ­элементов и разделения разнородных элементов. Рассмотрим следующую ­функцию:</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void measureLine(String line) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;lineCount++;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int lineSize = line.length();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;totalChars += lineSize;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;lineWidthHistogram.addLine(lineSize, lineCount);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;recordWidestLine(lineSize);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p>Знаки присваивания окружены пробелами, обеспечивающими их визуальное выделение. Операторы присваивания состоят из двух основных элементов: левой и правой частей. Пробелы наглядно подчеркивают это разделение.</p>
+
+    <p>С другой стороны, я не стал отделять имена функций от открывающих скобок. Это обусловлено тем, что имя функции тесно связано с ее аргументами. Пробелы изолируют их вместо того, чтобы объединять. Я также разделил аргументы в скобках пробелами, чтобы выделить запятые и подчеркнуть, что аргументы не зависят друг от друга.</p>
+
+    <p>Пробелы также применяются для визуального обозначения приоритета операторов:</p>
+
+    <p class="listing-body">public class Quadratic {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public static double root1(double a, double b, double c) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;double determinant = determinant(a, b, c);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return (-b + Math.sqrt(determinant)) / (2*a);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public static double root2(int a, int b, int c) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;double determinant = determinant(a, b, c);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return (-b - Math.sqrt(determinant)) / (2*a);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static double determinant(double a, double b, double c) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return b*b - 4*a*c;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Обратите внимание, как хорошо читаются формулы. Между множителями нет пробелов, потому что они обладают высоким приоритетом. Слагаемые разделяются пробелами, так как сложение и вычитание имеют более низкий приоритет.</p>
+
+    <p>К сожалению, в большинстве программ форматирования кода приоритет операторов не учитывается, и во всех случаях применяются одинаковые пропуски. Нетривиальные изменения расстояний, как в приведенном примере, теряются после переформатирования кода.</p>
+
+    <h3>Горизонтальное выравнивание</h3>
+
+    <p class="Normal0">Когда я был ассемблерным программистом<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-23" id="footnote-319-23-backlink">23</a></span>, горизонтальное выравнивание использовалось для визуального выделения некоторых структур. Когда я перешел на C, C++, а в конце концов и на Java, я продолжал выравнивать все имена переменных в группах объявлений или все правосторонние значения в группах команд присваивания. Мой код выглядел примерно так:</p>
+
+    <p class="listing-body">public class FitNesseExpediter implements ResponseSender</p>
+
+    <p class="listing-body">{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private&nbsp;&nbsp;&nbsp;Socket&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;socket;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private&nbsp;&nbsp;&nbsp;InputStream&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;input;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private&nbsp;&nbsp;&nbsp;OutputStream&nbsp;&nbsp;&nbsp;&nbsp;output;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private&nbsp;&nbsp;&nbsp;Request&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;request;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private&nbsp;&nbsp;&nbsp;Response&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;response;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private&nbsp;&nbsp;&nbsp;FitNesseContext context;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected long&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;requestParsingTimeLimit;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private&nbsp;&nbsp;&nbsp;long&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;requestProgress;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private&nbsp;&nbsp;&nbsp;long&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;requestParsingDeadline;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private&nbsp;&nbsp;&nbsp;boolean&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hasError;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public FitNesseExpediter(Socket s,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FitNesseContext context) throws Exception</p>
+
+    <p class="listing-body">&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;this.context =&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;context;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;socket =&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;s;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;input =&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;s.getInputStream();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;output =&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;s.getOutputStream();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;requestParsingTimeLimit = 10000;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p>Однако потом я обнаружил, что такое выравнивание не приносит пользы. Оно визуально выделяет совсем не то, что требуется, и отвлекает читателя от моих истинных намерений. Например, в приведенном выше списке объявлений читатель просматривает имена переменных, не обращая внимания на их типы. Аналогичным образом в списке команд присваивания возникает соблазн просмотреть правосторонние значения, не замечая оператора присваивания. Ситуация усугубляется тем, что средства автоматического форматирования обычно удаляют подобное выравнивание.</p>
+
+    <p>Поэтому в итоге я отказался от этого стиля форматирования. Сейчас я отдаю предпочтение невыровненным объявлениям и присваиваниям, как в следующем фрагменте, потому что они помогают выявить один важный дефект. Если в программе встречаются длинные списки, нуждающиеся в выравнивании, то проблема кроется в длине списка, а не в отсутствии выравнивания. Длина списков объявлений в классе FitNesseExpediter наводит на мысль, что этот класс необходимо разделить.</p>
+
+    <p class="listing-body">public class FitNesseExpediter implements ResponseSender</p>
+
+    <p class="listing-body">{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private Socket socket;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private InputStream input;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private OutputStream output;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private Request request;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private Response response;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private FitNesseContext context;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected long requestParsingTimeLimit;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private long requestProgress;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private long requestParsingDeadline;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private boolean hasError;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public FitNesseExpediter(Socket s, FitNesseContext context) throws Exception</p>
+
+    <p class="listing-body">&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;this.context = context;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;socket = s;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;input = s.getInputStream();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;output = s.getOutputStream();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;requestParsingTimeLimit = 10000;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <h3>Отступы</h3>
+
+    <p class="Normal0">Исходный файл имеет иерархическую структуру. В нем присутствует ин­формация, относящаяся к файлу в целом; к отдельным классам в файле; к методам ­внутри классов; к блокам внутри методов и рекурсивно – к блокам внутри ­блоков. Каждый уровень этой иерархии образует область видимости, в которой могут объявляться имена и в которой интерпретируются исполняемые команды.</p>
+
+    <p>Чтобы создать наглядное представление этой иерархии, мы снабжаем строки исходного кода отступами, размер которых соответствует их позиции в иерархии. Команды уровня файла (такие, как большинство объявлений классов) отступов не имеют. Методы в классах сдвигаются на один уровень вправо от уровня класса. Реализации этих методов сдвигаются на один уровень вправо от объявления класса. Реализации блоков сдвигаются на один уровень вправо от своих внишних блоков и т.д.</p>
+
+    <p>Программисты широко используют эту схему расстановки отступов в своей работе. Чтобы определить, к какой области видимости принадлежат строки кода, они визуально группируют строки по левому краю. Это позволяет им быстро пропускать области видимости, не относящиеся к текущей ситуации (например, реализации команд <span class="command char-style-override-1">if</span> и <span class="command char-style-override-1">while</span>). У левого края ищутся объявления новых методов, новые переменные и даже новые классы. Без отступов программа становится практически нечитаемой для людей. Следующие программы идентичны с синтаксической и семантической точки зрения:</p>
+
+    <p class="listing-body">public class FitNesseServer implements SocketServer { private FitNesseContext</p>
+
+    <p class="listing-body">context; public FitNesseServer(FitNesseContext context) { this.context =</p>
+
+    <p class="listing-body">context; } public void serve(Socket s) { serve(s, 10000); } public void</p>
+
+    <p class="listing-body">serve(Socket s, long requestTimeout) { try { FitNesseExpediter sender = new</p>
+
+    <p class="listing-body">FitNesseExpediter(s, context);</p>
+
+    <p class="listing-body">sender.setRequestParsingTimeLimit(requestTimeout); sender.start(); }</p>
+
+    <p class="listing-body">catch(Exception e) { e.printStackTrace(); } } }</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">-----</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class FitNesseServer implements SocketServer {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private FitNesseContext context;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public FitNesseServer(FitNesseContext context) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;this.context = context;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void serve(Socket s) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;serve(s, 10000);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void serve(Socket s, long requestTimeout) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FitNesseExpediter sender = new FitNesseExpediter(s, context);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sender.setRequestParsingTimeLimit(requestTimeout);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sender.start();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;catch (Exception e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;e.printStackTrace();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Наше зрение быстро охватывает структуру файла с отступами. Мы почти мгновенно находим переменные, конструкторы и методы. Всего за несколько секунд можно понять, что класс предоставляет простой интерфейс для работы с сокетом, с поддержкой тайм-аута. С другой стороны, разобраться в версии без отступов без тщательного анализа практически невозможно.</p>
+
+    <p><strong>Нарушения отступов</strong>. Иногда возникает соблазн нарушить правила расстановки отступов в коротких командах <span class="command char-style-override-1">if</span>, коротких циклах <span class="command char-style-override-1">while</span> или коротких функциях. Но каждый раз, когда я поддавался этому искушению, я почти всегда возвращался и расставлял отступы, как положено. Таким образом, я стараюсь не сворачивать блоки в одну строку, как в этом фрагменте:</p>
+
+    <p class="listing-body">public class CommentWidget extends TextWidget</p>
+
+    <p class="listing-body">{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public static final String REGEXP = "^#[^\r\n]*(?:(?:\r\n)|\n|\r)?";</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public CommentWidget(ParentWidget parent, String text){super(parent, text);}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public String render() throws Exception {return ""; }</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Вместо этого я предпочитаю развернутые блоки с правильными отступами:</p>
+
+    <p class="listing-body">public class CommentWidget extends TextWidget {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public static final String REGEXP = "^#[^\r\n]*(?:(?:\r\n)|\n|\r)?";</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public CommentWidget(ParentWidget parent, String text) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;super(parent, text);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public String render() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return "";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <h3>Вырожденные области видимости</h3>
+
+    <p class="Normal0">Иногда тело цикла <span class="command char-style-override-1">while</span>&nbsp;&nbsp;или команды <span class="command char-style-override-1">for</span> не содержит команд, то есть является вырожденным, как в следующем фрагменте. Я не люблю такие структуры и стараюсь избегать их. А когда это невозможно, я по крайней мере слежу за тем, чтобы пустое тело имело правильные отступы и было заключено в фигурные скобки. Вы не представляете, как часто меня обманывала точка с запятой, молчаливо прячущаяся в конце цикла <span class="command char-style-override-1">while</span> в той же строке. Если не сделать эту точку хорошо заметной, разместив ее в отдельной строке, ее попросту слишком сложно разглядеть:</p>
+
+    <p class="listing-body">while (dis.read(buf, 0, readBufferSize) != -1)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;;</p>
+
+    <h3>Правила форматирования в группах</h3>
+
+    <div class="frame-4"><img alt="05_05.tif" class="frame-6" src="../Images/05_05_fmt.png"/></div>
+
+    <p class="Normal0">У каждого программиста есть свои любимые правила форматирования, но если он работает в группе, то должен руководствоваться групповыми правилами.</p>
+
+    <p>Группа разработчиков согласует единый стиль форматирования, который в дальнейшем применяется всеми участниками. Код программного продукта должен быть оформлен в едином стиле. Он не должен выглядеть так, словно был написан несколькими личностями, расходящимися во мнениях по поводу оформления.</p>
+
+    <p>В начале работы над проектом FitNesse в 2002 году я провел встречу с группой для выработки общего стиля программирования. На это потребовалось около 10 минут. Мы решили, где будем расставлять фигурные скобки, каким будет размер отступов, по какой схеме будут присваиваться имена классов, переменных и методов и т.д. Затем эти правила были закодированы в системе форматирования кода нашей рабочей среды, и в дальнейшем мы неуклонно придерживались их. Это были не те правила, которые предпочитаю лично я; это были правила, выбранные группой. И я, как участник группы, неуклонно соблюдал их при написании кода в проекте FitNesse.</p>
+
+    <p>Хорошая программная система состоит из набора удобочитаемых документов, оформленных в едином, согласованном стиле. Читатель должен быть уверен в том, что форматные атрибуты, встречающиеся в одном исходном файле, будут иметь точно такой же смысл в других файлах. Ни в коем случае не усложняйте исходный код, допуская его оформление в нескольких разных стилях.</p>
+
+    <h3>Правила форматирования от дядюшки Боба</h3>
+
+    <p class="Normal0">Правила, которые использую лично я, очень просты; они представлены в коде листинга 5.6. Перед вами пример того, как сам код становится лучшим документом, описывающим стандарты кодирования.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/5 Форматирование/5.6.CodeAnalyzer.java">📄 Открыть исходный код в IDE</a></p>Листинг 5.6.</strong> CodeAnalyzer.java</p>
+
+    <p class="listing-body">public class CodeAnalyzer implements JavaFileAnalysis {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private int lineCount;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private int maxLineWidth;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private int widestLineNumber;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private LineWidthHistogram lineWidthHistogram;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private int totalChars;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public CodeAnalyzer() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;lineWidthHistogram = new LineWidthHistogram();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public static List&lt;File&gt; findJavaFiles(File parentDirectory) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;List&lt;File&gt; files = new ArrayList&lt;File&gt;();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;findJavaFiles(parentDirectory, files);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return files;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static void findJavaFiles(File parentDirectory, List&lt;File&gt; files) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;for (File file : parentDirectory.listFiles()) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (file.getName().endsWith(".java"))</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;files.add(file);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else if (file.isDirectory())</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;findJavaFiles(file, files);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void analyzeFile(File javaFile) throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;BufferedReader br = new BufferedReader(new FileReader(javaFile));</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String line;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;while ((line = br.readLine()) != null)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;measureLine(line);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void measureLine(String line) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;lineCount++;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int lineSize = line.length();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;totalChars += lineSize;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;lineWidthHistogram.addLine(lineSize, lineCount);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;recordWidestLine(lineSize);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void recordWidestLine(int lineSize) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (lineSize &gt; maxLineWidth) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;maxLineWidth = lineSize;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;widestLineNumber = lineCount;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public int getLineCount() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return lineCount;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public int getMaxLineWidth() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return maxLineWidth;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public int getWidestLineNumber() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return widestLineNumber;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public LineWidthHistogram getLineWidthHistogram() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return lineWidthHistogram;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/5 Форматирование/5.6.CodeAnalyzer.java">📄 Открыть исходный код в IDE</a></p>Листинг 5.6</strong> (продолжение)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public double getMeanLineWidth() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return (double)totalChars/lineCount;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public int getMedianLineWidth() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;Integer[] sortedWidths = getSortedWidths();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int cumulativeLineCount = 0;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;for (int width : sortedWidths) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cumulativeLineCount += lineCountForWidth(width);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (cumulativeLineCount &gt; lineCount/2)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return width;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;throw new Error("Cannot get here");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private int lineCountForWidth(int width) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return lineWidthHistogram.getLinesforWidth(width).size();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private Integer[] getSortedWidths() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;Set&lt;Integer&gt; widths = lineWidthHistogram.getWidths();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;Integer[] sortedWidths = (widths.toArray(new Integer[0]));</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;Arrays.sort(sortedWidths);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return sortedWidths;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <div class="footnotes">
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-22-backlink" id="footnote-319-22">22</a><span class="Superscript char-style-override-2" xml:lang="en-US">1</span> Прямоугольник представляет диапазон «сигма/2» выше и ниже среднего значения. Да, я знаю, что распределение длин файлов не является нормальным, поэтому стандартное отклонение не может считаться математически точным. Но я и не стремлюсь к точности. Я хочу лишь дать представление о происходящем.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-23-backlink" id="footnote-319-23">23</a> Кого я пытаюсь обмануть? Я так и остался ассемблерным программистом. Парня можно разлучить с «металлом», но в душе «металл» все равно живет!</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

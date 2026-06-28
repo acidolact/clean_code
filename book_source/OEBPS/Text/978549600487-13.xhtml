@@ -1,0 +1,754 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Чистый код: создание, анализ и рефакторинг. Библиотека программиста</title>
+  <link href="../Styles/template.css" rel="stylesheet" type="text/css"/>
+</head>
+
+<body id="x978549600487" xml:lang="ru-RU">
+  <div>
+    <h1 id="toc_marker-13">11. Системы</h1>
+
+    <p class="Epigraph-avtor">Кевин Дин Уомплер</p>
+
+    <p class="Pic-yakor"><span><img alt="11_01.tif" class="frame-17" src="../Images/11_01_fmt.png"/></span>&nbsp;</p>
+
+    <p class="Epigraph">Сложность убивает. Она вытягивает жизненные силы из разработчиков, затрудняя планирование, построение и тестирование продуктов.</p>
+
+    <p class="Epigraph-avtor">Рэй Оззи, технический директор Microsoft Corporation</p>
+
+    <h2 id="toc_marker-13-1">Как бы вы строили город?</h2>
+
+    <p class="Normal0">Смогли бы вы лично разработать план до последней мелочи? Вероятно, нет. Даже управление существующим городом не под силу одному человеку. Да, города работают (в основном). Они работают, потому что в городах есть группы людей, управляющие определенными аспектами городской жизни: водопроводом, электричеством, транспортом, соблюдением законности, правилами застройки и т.д. Одни отвечают за общую картину, другие занимаются мелочами.</p>
+
+    <p>Города работают еще и потому, что в них развились правильные уровни абстракции и модульности, которые обеспечивают эффективную работу людей и «компонентов», находящихся под их управлением, — даже без понимания полной картины.</p>
+
+    <p>Группы разработки программного обеспечения тоже организуются по анало­гичным принципам, но системы, над которыми они работают, часто не имеют ана­логичного разделения обязанностей и уровней абстракции. Чистый код помогает достичь этой цели на нижних уровнях абстракции. В этой главе мы поговорим о том, как сохранить чистоту на более высоких уровнях, то есть на уровне <em>системы</em>.</p>
+
+    <h2 id="toc_marker-13-2">Отделение конструирования системы&nbsp;&nbsp;от ее использования</h2>
+
+    <p class="Normal0">Прежде всего необходимо понять, что конструирование и использование системы — два совершенно разных процесса. Когда я пишу эти строки, из моего окна в Чикаго виден новый строящийся отель. Сейчас это голая бетонная коробка со строительным краном и лифтом, закрепленным на наружной стене. Все рабочие носят каски и спецовки. Через год-другой строительство будет завершено. Кран и служебный лифт исчезнут. Здание очистится, заблестит стеклянными окнами и новой краской. Люди, работающие и останавливающиеся в нем, тоже будут выглядеть совершенно иначе.</p>
+
+    <p>В программных системах фаза инициализации, в которой конструируются объекты приложения и «склеиваются» основные зависимости, тоже должна отделяться от логики времени выполнения, получающей управление после ее завершения.</p>
+
+    <p>Фаза <em>инициализации</em> присутствует в каждом приложении. Это первая из <em>областей ответственности</em> (concerns), которую мы рассмотрим в этой главе, а сама концепция <em>разделения ответственности</em> относится к числу самых старых и важных приемов нашего ремесла.</p>
+
+    <p>К сожалению, во многих приложениях такое разделение отсутствует. Код инициализации пишется бессистемно и смешивается с логикой времени выполнения.</p>
+
+    <p>Типичный пример:</p>
+
+    <p class="listing-body">public Service getService() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;if (service == null)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;service = new MyServiceImpl(...);&nbsp;&nbsp;// Инициализация по умолчанию,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// подходящая для большинства случаев?</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return service;</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Идиома ОТЛОЖЕННОЙ ИНИЦИАЛИЗАЦИИ обладает определенными достоинствами. Приложение не тратит времени на конструирование объекта до ­момента его фактического использования, а это может ускорить процесс инициализации. Кроме того, мы следим за тем, чтобы функция никогда не возвращала <span class="command char-style-override-1">null</span>.</p>
+
+    <p>Однако в программе появляется жестко закодированная зависимость от класса <span class="command char-style-override-1">MyServiceImpl</span> и всего, что необходимо для его конструктора (который я не привел). Программа не компилируется без разрешения этих зависимостей, даже если объект этого типа ни разу не используется во время выполнения!</p>
+
+    <p>Проблемы могут возникнуть и при тестировании. Если <span class="command char-style-override-1">MyServiceImpl</span> представляет собой тяжеловесный объект, нам придется позаботиться о том, чтобы перед вызовом метода в ходе модульного тестирования в поле <span class="command char-style-override-1">service</span> был сохранен соответствующий ТЕСТОВЫЙ ДУБЛЕР [Mezzaros07] или ФИКТИВНЫЙ ОБЪЕКТ. А поскольку логика конструирования смешана с логикой нормальной обработки, мы должны протестировать все пути выполнения (в частности, проверку <span class="command char-style-override-1">null</span> и ее блок). Наличие обеих обязанностей означает, что метод выполняет более одной операции, а это указывает на некоторое нарушение принципа единой ответственности.</p>
+
+    <p>Но хуже всего другое — мы не знаем, является ли <span class="command char-style-override-1">MyServiceImpl</span> правильным объектом во всех случаях. Я намекнул на это в комментарии. Почему класс с этим методом должен знать глобальный контекст? Можем ли мы вообще определить, какой объект должен здесь использоваться? И вообще, может ли один тип быть подходящим для всех возможных контекстов?</p>
+
+    <p>Конечно, одно вхождение ОТЛОЖЕННОЙ ИНИЦИАЛИЗАЦИИ не создает серьезных проблем. Однако в приложениях идиомы инициализации обычно встречаются во множество экземпляров. Таким образом, глобальная стратегия инициализации (если она здесь вообще присутствует) распределяется по всему приложению, с минимальной модульностью и значительным дублированием кода.</p>
+
+    <p>Если вы действительно стремитесь к созданию хорошо структурированных, надежных систем, никогда не допускайте, чтобы удобные идиомы вели к нарушению модульности. Процесс конструирования объектов и установления связей не является исключением. Этот процесс должен быть отделен от нормальной логики времени выполнения, а вы должны позаботиться о выработке глобальной, последовательной стратегии разрешения основных зависимостей.</p>
+
+    <h2 id="toc_marker-13-3">Отделение main</h2>
+
+    <p class="Normal0">Один из способов отделения конструирования от использования заключается в простом перемещении всех аспектов конструирования в <span class="command char-style-override-1">main</span> (или модули, вызываемые из <span class="command char-style-override-1">main</span>). Далее весь остальной код системы пишется в предположении, что все объекты были успешно сконструированы и правильно связаны друг с другом (рис. 11.1).</p>
+
+    <p class="Pic-yakor"><span><img alt="22660.png" class="frame-18" src="../Images/22660.png"/></span>&nbsp;</p>
+
+    <p class="Pic-nazv"><strong>Рис. 11.1.</strong> Изоляция конструирования в main</p>
+
+    <p>На рисунке хорошо видна последовательность передачи управления. Функция <span class="command char-style-override-1">main</span> строит объекты, необходимые для системы, а затем передает их приложению, которое их просто использует. Обратите внимание на направление стрелок зависимостей, пересекающих границу между <span class="command char-style-override-1">main</span> и приложением. Все стрелки указывают в одном направлении — от <span class="command char-style-override-1">main</span>. Это означает, что приложение ничего не знает о <span class="command char-style-override-1">main</span> или о процессе конструирования. Оно просто ожидает, что все объекты были построены правильно.</p>
+
+    <h3>Фабрики</h3>
+
+    <p class="Normal0">Конечно, в некоторых ситуациях момент создания объекта должен определяться приложением. Например, в системе обработки заказов приложение должно создать экземпляры товаров <span class="command char-style-override-1">LineItem</span> для включения их в объект заказа <span class="command char-style-override-1">Order</span>. В этом случае можно воспользоваться паттерном АБСТРАКТНАЯ ФАБРИКА [GOF], чтобы приложение могло само выбрать момент для создания <span class="command char-style-override-1">LineItem</span>, но при этом подробности конструирования были отделены от кода приложения (рис. 11.2).</p>
+
+    <p>И снова обратите внимание на то, что все стрелки зависимостей ведут от <span class="command char-style-override-1">main</span> к приложению <span class="command char-style-override-1">OrderProcessing</span>. Это означает, что приложение изолировано от подробностей построения <span class="command char-style-override-1">LineItem</span>. Вся информация хранится в реализации <span class="command char-style-override-1">LineItemFactoryImplementation</span>, находящейся на стороне <span class="command char-style-override-1">main</span>. Тем не менее приложение полностью управляет моментом создания экземпляров <span class="command char-style-override-1">LineItem</span> и даже может передать аргументы конструктора, специфические для конкретного приложения.</p>
+
+    <p class="Pic-yakor"><span><img alt="22673.png" class="frame-1" src="../Images/22673.png"/></span>&nbsp;</p>
+
+    <p class="Pic-nazv"><strong>Рис. 11.2.</strong> Отделение конструирования с применением фабрики</p>
+
+    <h3>Внедрение зависимостей</h3>
+
+    <p class="Normal0">Внедрение зависимостей (DI, Dependency Injection) — мощный механизм отделения конструирования от использования, практическое применение обращения контроля (IoC, Inversion of Control) в области управления зависимостями<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-34" id="footnote-319-34-backlink">34</a></span>. Обращение контроля перемещает вторичные обязанности объекта в другие объекты, созданные специально для этой цели, тем самым способствуя соблюдению принципа единой ответственности. В контексте управления зависимостями объект не должен брать на себя ответственность за создание экземпляров зависимостей. Вместо этого он передает эту обязанность другому «уполномоченному» механизму. Так как инициализация является глобальной областью ответственности, этим уполномоченным механизмом обычно является либо функция <span class="command char-style-override-1">main</span>, либо специализированный <em>контейнер</em>.</p>
+
+    <p>Примером «частичной» реализации внедрения зависимостей является запрос JNDI, когда объект обращается к серверу каталоговой информации с запросом на предоставление «сервиса» с заданным именем:</p>
+
+    <p class="listing-body">MyService myService = (MyService)(jndiContext.lookup("NameOfMyService"));</p>
+
+    <p>Вызывающий объект не управляет тем, какой именно объект будет возвращен (конечно, при условии, что этот объект реализует положенный интерфейс), но при этом происходит активное разрешение зависимости.</p>
+
+    <p>Истинное внедрение зависимостей идет еще на один шаг вперед. Класс не предпринимает непосредственных действий по разрешению своих зависимостей; он остается абсолютно пассивным. Вместо этого он предоставляет <span class="command char-style-override-1">set</span>-методы&nbsp;&nbsp;и/или аргументы конструктора, используемые для внедрения зависимостей. В процессе конструирования контейнер DI создает экземпляры необходимых объектов (обычно по требованию) и использует аргументы конструктора или <span class="command char-style-override-1">set</span>-методы для скрепления зависимостей. Фактически используемые зависимые объекты задаются в конфигурационном файле или на программном уровне в специализированном конструирующем модуле.</p>
+
+    <p>Самый известный DI-контейнер для Java присутствует в Spring Framework<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-35" id="footnote-319-35-backlink">35</a></span>. Подключаемые объекты перечисляются в конфигурационном файле XML, после чего конкретный объект запрашивается по имени в коде Java. Пример будет рассмотрен ниже.</p>
+
+    <p>Но как же преимущества ОТЛОЖЕННОЙ ИНИЦИАЛИЗАЦИИ? Эта идиома иногда бывает полезной и при внедрении зависимостей. Во-первых, большинство DI-контейнеров не конструирует объекты до того момента, когда это станет необходимо. Во-вторых, многие из этих контейнеров предоставляют механизмы использования фабрик или конструирования посредников (proxies), которые могут использоваться для ОТЛОЖЕННОЙ ИНИЦИАЛИЗАЦИИ и других аналогичных оптимизаций<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-36" id="footnote-319-36-backlink">36</a></span>.</p>
+
+    <h2 id="toc_marker-13-4">Масштабирование</h2>
+
+    <p class="Normal0">Города вырастают из городков, которые, в свою очередь, появляются на месте деревень. Дороги сначала узки и едва заметны, но со временем они расширяются и покрываются камнем. Мелкие строения и пустые места заполняются более крупными зданиями, часть из которых в конечном итоге будет заменена небоскребами.</p>
+
+    <p>На первых порах в городе полностью отсутствует инфраструктура: водопровод, электричество, канализация и (о ужас!) Интернет. Все эти возможности добавляются позднее, с ростом населения и плотности застройки.</p>
+
+    <p>Рост не обходится без проблем. Сколько раз вам приходилось едва ползти в потоке машин вдоль проекта по «расширению дороги», когда вы спрашивали себя: «Почему нельзя было сразу построить дорогу достаточной ширины?!»</p>
+
+    <p>Но иначе и быть не могло. Кто сможет объяснить затраты на строительство шестиполосной магистрали в середине маленького городка, которому предрекают расширение? Да и кто бы захотел иметь такую дорогу в своем городе?</p>
+
+    <p>Возможность построить «правильную систему с первого раза» — миф. Вместо этого мы сегодня реализуем текущие потребности, а завтра перерабатываем и расширяем систему для реализации новых потребностей. В этом заключается суть итеративной, пошаговой гибкой разработки. Разработка через тестирование, рефакторинг и полученный в результате их применения чистый код обеспечивают работу этой схемы на уровне кода.</p>
+
+    <p>А как же системный уровень? Разве архитектура системы не требует предварительного планирования? Не может же она последовательно расти от простого к сложному?</p>
+
+    <p class="Vrezka-body">В этом проявляется важнейшее отличие программных систем от физических. Архитектура программных систем <em>может</em> развиваться последовательно, если обеспечить правильное разделение ответственности.</p>
+
+    <p>Как вы вскоре убедитесь, нематериальная природа программных систем делает это возможным. Но давайте начнем с контрпримера архитектуры, в которой нормальное разделение ответственности отсутствует.</p>
+
+    <p>Исходные архитектуры EJB1 и EJB2 не обеспечивали должного разделения областей ответственности и поэтому создавали лишние барьеры для естественного роста. Возьмем хотя бы <em>компонент-сущность</em> (Entity Bean) для постоянного (persistent) класса. Компонентом-сущностью называется представление реляционных данных (иначе говоря, записи таблицы) в памяти.</p>
+
+    <p>Для начала необходимо определить локальный (внутрипроцессный) или удаленный (на отдельной JVM) интерфейс, который будет использоваться клиентами. Возможный локальный интерфейс представлен в листинге 11.1.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/11 Системы/11.1.java">📄 Открыть исходный код в IDE</a></p>Листинг 11.1.</strong> Локальный интерфейс EJB2 для EJB Bank</p>
+
+    <p class="listing-body">package com.example.banking;</p>
+
+    <p class="listing-body">import java.util.Collections;</p>
+
+    <p class="listing-body">import javax.ejb.*;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public interface BankLocal extends java.ejb.EJBLocalObject {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;String getStreetAddr1() throws EJBException;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;String getStreetAddr2() throws EJBException;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;String getCity() throws EJBException;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;String getState() throws EJBException;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;String getZipCode() throws EJBException;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;void setStreetAddr1(String street1) throws EJBException;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;void setStreetAddr2(String street2) throws EJBException;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;void setCity(String city) throws EJBException;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;void setState(String state) throws EJBException;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;void setZipCode(String zip) throws EJBException;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;Collection getAccounts() throws EJBException;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;void setAccounts(Collection accounts) throws EJBException;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;void addAccount(AccountDTO accountDTO) throws EJBException;</p>
+
+    <p class="listing-body">}</p>
+
+    <p>В интерфейс включены некоторые атрибуты адреса <span class="command char-style-override-1">Bank</span>, а также коллекция счетов, принадлежащих банку; данные каждого счета представляются отдельным EJB <span class="command char-style-override-1">Account</span>. В листинге 11.2 приведен соответствующий класс реализации компонента <span class="command char-style-override-1">Bank</span>.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/11 Системы/11.2.BankEntity.java">📄 Открыть исходный код в IDE</a></p>Листинг 11.2.</strong> Соответствующая реализация компонента-сущности EJB2</p>
+
+    <p class="listing-body">package com.example.banking;</p>
+
+    <p class="listing-body">import java.util.Collections;</p>
+
+    <p class="listing-body">import javax.ejb.*;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public abstract class Bank implements javax.ejb.EntityBean {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;// Бизнес-логика...</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public abstract String getStreetAddr1();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public abstract String getStreetAddr2();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public abstract String getCity();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public abstract String getState();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public abstract String getZipCode();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public abstract void setStreetAddr1(String street1);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public abstract void setStreetAddr2(String street2);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public abstract void setCity(String city);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public abstract void setState(String state);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public abstract void setZipCode(String zip);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public abstract Collection getAccounts();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public abstract void setAccounts(Collection accounts);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void addAccount(AccountDTO accountDTO) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;InitialContext context = new InitialContext();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;AccountHomeLocal accountHome = context.lookup("AccountHomeLocal");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;AccountLocal account = accountHome.create(accountDTO);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;Collection accounts = getAccounts();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;accounts.add(account);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;// Логика контейнера EJB</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public abstract void setId(Integer id);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public abstract Integer getId();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public Integer ejbCreate(Integer id) { ... }</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void ejbPostCreate(Integer id) { ... }</p>
+
+    <p class="listing-body">&nbsp;&nbsp;// Остальные методы должны быть реализованы, но обычно остаются пустыми:</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void setEntityContext(EntityContext ctx) {}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void unsetEntityContext() {}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void ejbActivate() {}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void ejbPassivate() {}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void ejbLoad() {}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void ejbStore() {}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void ejbRemove() {}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>В листинге не приведен ни соответствующий интерфейс <span class="command char-style-override-1">LocalHome</span> (по сути — фабрика, используемая для создания объектов), ни один из возможных методов поиска <span class="command char-style-override-1">Bank</span>, которые вы можете добавить.</p>
+
+    <p>Наконец, вы должны написать один или несколько дескрипторов в формате XML, которые определяют подробности соответствия между объектом и реляционными­&nbsp;&nbsp;данными, желаемое транзакционное поведение, ограничения безопасности и т.д.</p>
+
+    <p>Бизнес-логика тесно привязана к «контейнеру» приложения EJB2. Вы должны субклассировать контейнерные типы, а также предоставить многие методы жизненного цикла, необходимые для контейнера.</p>
+
+    <p>Привязка к тяжеловесному контейнеру затрудняет изолированное модульное тестирование. Приходится либо имитировать контейнер, что непросто, либо тратить много времени на развертывание EJB и тестов на реальном сервере. Повторное использование за пределами архитектуры EJB2 практически невозможно из-за жесткой привязки.</p>
+
+    <p>Наконец, такое решение противоречит принципам объектно-ориентированного программирования. Один компонент не может наследовать от другого компонента. Обратите внимание на логику добавления нового счета. В EJB2 компоненты часто определяют «объекты передачи данных» (DTO), которые фактически представляют собой «структуры без поведения». Обычно это приводит к появлению избыточных типов, содержащих по сути одинаковые данные, и необходимости использования стереотипного кода для копирования данных между объектами.</p>
+
+    <h3>Поперечные области ответственности</h3>
+
+    <p class="Normal0">В некоторых областях архитектура EJB2 приближается к полноценному разделению ответственности. Например, желательное поведение в области транзакционности, безопасности и сохранения объектов объявляется в дескрипторах&nbsp;&nbsp;независимо от исходного кода.</p>
+
+    <p>Такие области, как сохранение объектов, выходят за рамки естественных границ объектов предметной области. Например, все объекты обычно сохраняются по одной стратегии, с использованием определенной СУБД<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-37" id="footnote-319-37-backlink">37</a></span> вместо неструктурированных файлов, с определенной схемой выбора имен таблиц и столбцов, единой транзакционной семантикой и т.д.</p>
+
+    <p>Теоретически возможен модульный, инкапсулированный подход к определению стратегии сохранения объектов. Однако на практике вам приходится повторять по сути одинаковый код, реализующий стратегию сохранения, во многих объектах. Для подобных областей используется термин «<em>поперечные области ответственности</em>». При этом инфраструктура сохранения может быть модульной, и логика предметной области, рассматриваемая в изоляции, тоже может быть модульной. Проблемы возникают в точках пересечения этих областей. Можно сказать, что подход, использованный в архитектуре EJB по отношению к сохранению объектов, безопасности и транзакциям, предвосхитил <em>аспектно-ориентированное программирование</em> (АОП<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-38" id="footnote-319-38-backlink">38</a></span>), которое представляет собой универсальный подход к восстановлению модульности для поперечных областей ответственности.</p>
+
+    <p>В АОП специальные модульные конструкции, называемые <em>аспектами</em>, определяют, в каких точках системы поведение должно меняться некоторым последовательным образом в соответствии с потребностями определенной области ответственности. Определение осуществляется на уровне декларативного или программного механизма.</p>
+
+    <p>В примере с сохранением объектов вы объявляете, какие объекты, атрибуты и т.д. должны сохраняться, а затем делегируете задачи сохранения своей инфраструктуре сохранения. Изменения в поведении вносятся инфраструктурой АОП без вмешательства в целевой код<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-39" id="footnote-319-39-backlink">39</a></span>. Рассмотрим три аспекта (или «аспекто-подобных» механизма) в Java.</p>
+
+    <h2 id="toc_marker-13-5">Посредники</h2>
+
+    <p class="Normal0"><em>Посредники</em> (proxies) хорошо подходят для простых ситуаций — например, для создания «оберток» для вызова методов отдельных объектов или классов. Тем не менее динамические посредники, содержащиеся в JDK, работают только с интерфейсами. Чтобы создать посредника для класса, приходится использовать библиотеки для выполнения манипуляций с байт-кодом — такие, как CGLIB, ASM или Javassist<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-40" id="footnote-319-40-backlink">40</a></span>.</p>
+
+    <p>В листинге 11.3 приведена заготовка посредника JDK, обеспечивающего поддержку сохранения объектов в нашем приложении <span class="command char-style-override-1">Bank</span> (представлены только методы чтения/записи списка счетов).</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/11 Системы/11.3.JDKProxy.java">📄 Открыть исходный код в IDE</a></p>Листинг 11.3.</strong> Пример посредника JDK</p>
+
+    <p class="listing-body">// Bank.java (подавление имен пакетов...)</p>
+
+    <p class="listing-body">import java.utils.*;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">// Абстрактное представление банка.</p>
+
+    <p class="listing-body">public interface Bank {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;Collection&lt;Account&gt; getAccounts();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;void setAccounts(Collection&lt;Account&gt; accounts);</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">// BankImpl.java</p>
+
+    <p class="listing-body">import java.utils.*;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">// POJO-объект ("Plain Old Java Object"), реализующий абстракцию.</p>
+
+    <p class="listing-body">public class BankImpl implements Bank {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private List&lt;Account&gt; accounts;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public Collection&lt;Account&gt; getAccounts() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return accounts;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void setAccounts(Collection&lt;Account&gt; accounts) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;this.accounts = new ArrayList&lt;Account&gt;();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;for (Account account: accounts) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this.accounts.add(account);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">// BankProxyHandler.java</p>
+
+    <p class="listing-body">import java.lang.reflect.*;</p>
+
+    <p class="listing-body">import java.util.*;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">// Реализация InvocationHandler, необходимая для API посредника.</p>
+
+    <p class="listing-body">public class BankProxyHandler implements InvocationHandler {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private Bank bank;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public BankHandler (Bank bank) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;this.bank = bank;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;// Метод, определенный в InvocationHandler</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public Object invoke(Object proxy, Method method, Object[] args)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throws Throwable {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String methodName = method.getName();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (methodName.equals("getAccounts")) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bank.setAccounts(getAccountsFromDatabase());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return bank.getAccounts();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;} else if (methodName.equals("setAccounts")) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bank.setAccounts((Collection&lt;Account&gt;) args[0]);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;setAccountsToDatabase(bank.getAccounts());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return null;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;} else {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;// Подробности:</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected Collection&lt;Account&gt; getAccountsFromDatabase() { ... }</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected void setAccountsToDatabase(Collection&lt;Account&gt; accounts) { ... }</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">// В другом месте...</p>
+
+    <p class="listing-body">Bank bank = (Bank) Proxy.newProxyInstance(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;Bank.class.getClassLoader(),</p>
+
+    <p class="listing-body">&nbsp;&nbsp;new Class[] { Bank.class },</p>
+
+    <p class="listing-body">&nbsp;&nbsp;new BankProxyHandler(new BankImpl()));</p>
+
+    <p>Мы определили интерфейс <span class="command char-style-override-1">Bank</span>, который будет инкапсулироваться посредником, и POJO-объект («Plain&nbsp;&nbsp;Old Java Object», то есть «обычный Java-объект») <span class="command char-style-override-1">BankImpl</span>, реализующий бизнес-логику. (Вскоре мы вернемся к теме POJO-объектов).</p>
+
+    <p>Для работы посредника необходим объект <span class="command char-style-override-1">InvocationHandler</span>, который вызывается для реализации всех вызовов методов <span class="command char-style-override-1">Bank</span>, обращенных к посреднику. Наша реализация <span class="command char-style-override-1">BankProxyHandler</span> использует механизм рефлексии Java для отображения вызовов обобщенных методов на соответствующие методы <span class="command char-style-override-1">BankImpl</span>.</p>
+
+    <p>Код получается <em>весьма</em> объемистым и относительно сложным, даже в этом простом случае<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-41" id="footnote-319-41-backlink">41</a></span>. Не меньше проблем создает и использование библиотек для манипуляций с байт-кодом. Объем и сложность кода — два основных недостатка посредников. Эти два фактора усложняют создание чистого кода! Кроме того, у посредников не существует механизма определения «точек интереса» общесистемного уровня, необходимых для полноценного АОП-решения<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-42" id="footnote-319-42-backlink">42</a></span>.</p>
+
+    <h2 id="toc_marker-13-6">АОП-инфраструктуры на «чистом» Java</h2>
+
+    <p class="Normal0">К счастью, большая часть шаблонного кода посредников может автоматически обрабатываться вспомогательными средствами. Посредники используются во внутренней реализации нескольких инфраструктур Java — например, Spring AOP и JBoss AOP — для реализации аспектов непосредственно на уровне Java<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-43" id="footnote-319-43-backlink">43</a></span>.</p>
+
+    <p>В Spring бизнес-логика записывается в форме POJO-объектов. Такие объекты полностью сосредоточены на своей предметной области. Они не имеют зависимостей во внешних инфраструктурах (или любых других областях); соответственно им присуща большая концептуальная простота и удобство тестирования. Благодаря относительной простоте вам будет проще обеспечить правильную реализацию соответствующих пожеланий пользователей, а также сопровождение и эволюцию кода при появлении новых пожеланий.</p>
+
+    <p>Вся необходимая инфраструктура приложения, включая поперечные области ответственности (сохранение объектов, транзакции, безопасность, кэширование, преодоление отказов и т.д.), определяется при помощи декларативных конфигурационных файлов или API. Во многих случаях вы фактически определяете аспекты библиотек Spring или JBoss, а инфраструктура берет на себя всю механику использования посредников Java или библиотек байт-кода в режиме, прозрачном для пользователя. Объявления управляют контейнером внедрения зависимостей (DI), который создает экземпляры основных объектов и связывает их по мере необходимости.</p>
+
+    <p>В листинге 11.4 приведен типичный фрагмент конфигурационного файла Spring V2.5 <em>app.xml</em> <span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-44" id="footnote-319-44-backlink">44</a></span>.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/11 Системы/11.4.SpringConfig.xml">📄 Открыть исходный код в IDE</a></p>Листинг 11.4.</strong> Конфигурационный файл Spring 2.X</p>
+
+    <p class="listing-body">&lt;beans&gt;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;...</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&lt;bean id="appDataSource"</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;class="org.apache.commons.dbcp.BasicDataSource"</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;destroy-method="close"</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;p:driverClassName="com.mysql.jdbc.Driver"</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;p:url="jdbc:mysql://localhost:3306/mydb"</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;p:username="me"/&gt;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&lt;bean id="bankDataAccessObject"</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;class="com.example.banking.persistence.BankDataAccessObject"</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;p:dataSource-ref="appDataSource"/&gt;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&lt;bean id="bank"</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;class="com.example.banking.model.Bank"</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;p:dataAccessObject-ref="bankDataAccessObject"/&gt;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;...</p>
+
+    <p class="listing-body">&lt;/beans&gt;</p>
+
+    <p>Каждый компонент напоминает одну из частей русской «матрешки»: объект предметной области <span class="command char-style-override-1">Bank</span> «упаковывается» в объект доступа к данным DAO (Data Accessor Object), который, в свою очередь, упаковывается в объект источника данных JDBC (рис. 11.3).</p>
+
+    <p class="Pic-yakor"><span><img alt="22757.png" class="frame-19" src="../Images/22757.png"/></span>&nbsp;</p>
+
+    <p class="Pic-nazv"><strong>Рис. 11.3.</strong> «Матрешка» из декораторов</p>
+
+    <p>Клиент полагает, что он вызывает метод <span class="command char-style-override-1">getAccounts</span><span class="command char-style-override-1">()</span> объекта <span class="command char-style-override-1">Bank</span>, но в дейст­вительности он взаимодействует с внешним объектом из набора вложенных ДЕКОРАТОРОВ [GOF], расширяющих базовое поведение POJO-объекта <span class="command char-style-override-1">Bank</span>. Мы могли бы добавить другие декораторы для транзакций, кэширования и т.д.</p>
+
+    <p>Чтобы запросить у DI-контейнера объекты верхнего уровня, заданные в файле XML, достаточно включить в приложение несколько строк:</p>
+
+    <p class="listing-body">XmlBeanFactory bf =</p>
+
+    <p class="listing-body">&nbsp;&nbsp;new XmlBeanFactory(new ClassPathResource("app.xml", getClass()));</p>
+
+    <p class="listing-body">Bank bank = (Bank) bf.getBean("bank");</p>
+
+    <p>Так как объем кода, специфического для Spring, минимален, приложение почти полностью изолировано от Spring. Тем самым устраняются все проблемы жесткой привязки, характерные для таких систем, как EJB2.</p>
+
+    <p>Хотя код XML занимает много места и плохо читается<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-45" id="footnote-319-45-backlink">45</a></span>, определяемая в этих конфигурационных файлах «политика» все же проще сложной логики посредников и аспектов, скрытой от наших глаз и создаваемой автоматически. Архитектура выглядит настолько заманчиво, что инфраструктуры вроде Spring привели к полной переработке стандарта EJB для версии 3. EJB3 в значительной мере следует характерной для Spring модели декларативной поддержки поперечных областей ответственности с использованием конфигурационных файлов XML и/или аннотаций Java 5.</p>
+
+    <p>В листинге 11.5 приведен объект <span class="command char-style-override-1">Bank</span>, переписанный для EJB3<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-46" id="footnote-319-46-backlink">46</a></span>.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/11 Системы/11.5.EJB3Bank.java">📄 Открыть исходный код в IDE</a></p>Листинг 11.5.</strong> Компонент Bank для EBJ3</p>
+
+    <p class="listing-body">package com.example.banking.model;</p>
+
+    <p class="listing-body">import javax.persistence.*;</p>
+
+    <p class="listing-body">import java.util.ArrayList;</p>
+
+    <p class="listing-body">import java.util.Collection;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">@Entity</p>
+
+    <p class="listing-body">@Table(name = "BANKS")</p>
+
+    <p class="listing-body">public class Bank implements java.io.Serializable {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;@Id @GeneratedValue(strategy=GenerationType.AUTO)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;private int id;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;@Embeddable // Объект "встраивается" в запись базы данных Bank</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public class Address {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;protected String streetAddr1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;protected String streetAddr2;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;protected String city;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;protected String state;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;protected String zipCode;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;@Embedded</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;private Address address;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mappedBy="bank")</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;private Collection&lt;Account&gt; accounts = new ArrayList&lt;Account&gt;();</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public int getId() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return id;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void setId(int id) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this.id = id;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void addAccount(Account account) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;account.setBank(this);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;accounts.add(account);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public Collection&lt;Account&gt; getAccounts() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return accounts;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;public void setAccounts(Collection&lt;Account&gt; accounts) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this.accounts = accounts;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Этот вариант кода намного чище исходного кода EJB2. Некоторые подробности о сущностях все еще присутствуют в аннотациях. Тем не менее, поскольку эта информация не выходит за пределы аннотаций, код остается чистым, понятным, а следовательно, простым в тестировании, сопровождении и т.д.</p>
+
+    <p>Часть информации о сохранении объектов, содержащейся в аннотациях, можно при желании переместить в дескрипторы XML, оставив действительно чистый POJO-объект. Если детали сохранения объектов изменяются относительно редко, многие группы отдадут предпочтение аннотациям, но с гораздо меньшими отрицательными последствиями по сравнению с EJB2.</p>
+
+    <h2 id="toc_marker-13-7">Аспекты AspectJ</h2>
+
+    <p class="Normal0">Наконец, самым полнофункциональным инструментом для разделения областей ответственности посредством использования аспектов является язык AspectJ<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-47" id="footnote-319-47-backlink">47</a></span> — расширение Java, предоставляющее «полноценную» поддержку аспектов как модульных конструкций. Чистых Java-решений на базе Spring и JBoss достаточно для 80–90% ситуаций, в которых применяются аспекты. Тем не менее AspectJ предоставляет очень мощный и разносторонний инструментарий для реализации разделения ответственности. Недостатком AspectJ является необходимость освоения нескольких новых инструментов, а также изучения новых языковых конструкций и идиом.</p>
+
+    <p>Эти проблемы отчасти компенсируются появившейся недавно «аннотационной» формой AspectJ, в которой аннотации Java 5 используются для определения аспектов в «чистом» коде Java. Кроме того, Spring Framework также содержит ряд функций, существенно упрощающих внедрение аспектов на базе аннотаций в рабочих группах с ограниченным опытом применения AspectJ.</p>
+
+    <p>Полное описание AspectJ выходит за рамки книги. За дополнительной информацией обращайтесь к [AspectJ], [Colyer] и [Spring].</p>
+
+    <h2 id="toc_marker-13-8">Испытание системной архитектуры</h2>
+
+    <p class="Normal0">Трудно переоценить потенциал разделения ответственности посредством аспектных решений. Если вы можете написать логику предметной области своего приложения в виде POJO-объектов, отделенных от любых архитектурных областей ответственности на кодовом уровне, то перед вами открывается возможность проведения полноценных испытаний вашей архитектуры. Вы сможете развивать ее от простого к сложному, как потребует ситуация, подбирая новые технологии по мере надобности. Не обязательно создавать Большой Изначальный Проект (BDUF, Big Design Up Front)<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-48" id="footnote-319-48-backlink">48</a></span>. Более того, это даже вредно, потому что BDUF снижает возможность адаптации к изменениям из-за нашего психологического нежелания расставаться с результатами уже затраченных усилий; кроме того, изначально принятые решения влияют на наши последующие представления об архитектуре.</p>
+
+    <p>Архитекторы, занимающиеся строительством зданий, вынуждены работать по принципу BDUF, потому что они не могут вносить радикальные архитектурные изменения в наполовину возведенное физическое строение<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-49" id="footnote-319-49-backlink">49</a></span>.&nbsp;&nbsp;Программные продукты тоже обладают собственной физикой<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-50" id="footnote-319-50-backlink">50</a></span>, но радикальные изменения в них могут оказаться экономически оправданными — при условии, что в программном проекте эффективно реализовано разделение ответственности.</p>
+
+    <p>Это означает, что мы можем начать программный проект с «простой до наивности», но лишенной жестких привязок архитектуры, быстро реализовать пожелания пользователей, а затем добавлять новую инфраструктуру по мере масштабирования. Некоторые из крупнейших мировых сайтов достигли высочайших показателей доступности и производительности, с применением сложного кэширования данных, безопасности, виртуализации и т.д., и все это делается эффективно и гибко — и только потому, что на каждом уровне абстракции их архитектура оставалась простой и обладала минимальными привязками.</p>
+
+    <p>Конечно, это не означает, что за проект нужно браться по принципу «как-нибудь по ходу разберемся». Вы уже в определенной степени представляете себе общий масштаб, цели и график проекта, а также общую структуру итоговой системы. Однако при этом необходимо сохранить возможность «смены курса» в соответствии с изменяющимися обстоятельствами.</p>
+
+    <p>Ранняя архитектура EJB была всего лишь одним из многих API, которые отличались излишней сложностью, нарушавшей принцип разделения ответственности. Впрочем, даже хорошо спроектированный API может оказаться «перебором» в конкретной ситуации, если его применение не объясняется реальной необходимостью. Хороший API должен исчезать из вида большую часть времени, чтобы большая часть творческих усилий группы расходовалась на реализацию пожеланий пользователей. В противном случае архитектурные ограничения помешают оптимальной реализации интересов клиента.</p>
+
+    <p>Подведем итог.</p>
+
+    <p class="Vrezka-body">Оптимальная архитектура системы состоит из модульных областей ответственности, каждая из которых реализуется на базе POJO-объектов. Области интегрируются между собой при помощи аспектов или аналогичных средств, минимальным образом вмешивающихся в их работу. Такая архитектура может строиться на базе методологии разработки через тестирование, как и программный код.</p>
+
+    <h2 id="toc_marker-13-9">Оптимизация принятия решений</h2>
+
+    <p class="Normal0">Модульность и разделение ответственности позволяют децентрализовать управление и принятие решений. В достаточно крупной системе, будь то город или программный проект, один человек не может принять все необходимые решения.</p>
+
+    <p>Как известно, ответственные решения лучше всего поручить самому квалифицированному. Однако мы часто забываем, что принятие решений лучше всего откладывать до последнего момента. Дело не в лени или безответственности; просто это позволяет принять информированное решение с максимумом возможной информации. Преждевременное решение принимается на базе неполной информации. Принимая решение слишком рано, мы лишаемся всего полезного, что происходит на более поздних стадиях: обратной связи от клиентов, возможности поразмышлять над текущим состоянием проекта и опыта применения решений из области реализации.</p>
+
+    <p class="Vrezka-body">Гибкость POJO-системы с модульными областями ответственности позволяет при­нимать оптимальные, своевременные решения на базе новейшей информации. Кроме того, она способствует снижению сложности таких решений.</p>
+
+    <h2 id="toc_marker-13-10">Применяйте стандарты разумно,&nbsp;&nbsp;когда они приносят <em>очевидную</em> пользу</h2>
+
+    <p class="Normal0">Строительство кажется настоящим чудом из-за темпов, которым возводятся новые здания (даже в разгар зимы), и из-за необычных архитектурных дизайнов, ставших возможными благодаря современным технологиям. Строительство стало развитой областью промышленности с высокой оптимизацией частей, методов и стандартов, сформированных под давлением времени.</p>
+
+    <p>Многие группы использовали архитектуру EJB2 только потому, что она считалась стандартом, даже если в их проектах хватило бы более легких и прямолинейных решений. Я видел группы, которые теряли голову от <em>разрекламированных</em> стандартов и забывали о своей главной задаче: реализовывать интересы клиента.</p>
+
+    <p class="Vrezka-body">Стандарты упрощают повторное использование идей и компонентов, привлечение людей с необходимым опытом, воплощение удачных идей и связывание компонентов. Тем не менее, процесс создания стандарта иногда занимает слишком много времени (а отрасль не стоит на месте), в результате чего стандарты теряют связь с реальными потребностями тех людей, которым они должны служить.</p>
+
+    <h3>Системам необходимы предметно-ориентированные языки</h3>
+
+    <p class="Normal0">В области строительства, как и в большинстве технических областей, сформировался богатый язык со своим словарем, идиомами и паттернами<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-51" id="footnote-319-51-backlink">51</a></span>, позволяющими четко и лаконично передать важную информацию. В области разработки программного обеспечения в последнее время снова возобновился интерес к предметно-ориентированным языкам<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-52" id="footnote-319-52-backlink">52</a></span> (DSL, Domain-Specic Languages) — отдельным маленьким сценарным языкам или API стандартных языков, код которых читается как структурированная форма текста, написанного экспертом в данной предметной области.</p>
+
+    <p>Хороший предметно-ориентированный язык сводит к минимуму «коммуникационный разрыв» между концепцией предметной области и кодом, реализующим эту концепцию — по аналогии с тем, как гибкие методологии оптимизируют обмен информацией между группой и ключевыми участниками проекта. Реализация логики предметной области на языке, используемом экспертом в этой области, снижает риск неверного представления предметной области в коде.</p>
+
+    <p>Предметно-ориентированные языки, когда они используются эффективно, поднимают уровень абстракции над программными идиомами и паттернами проектирования. Они позволяют разработчику выразить свои намерения на соответствующем уровне абстракции.</p>
+
+    <p class="Vrezka-body">Предметно-ориентированные языки позволяют выразить в форме POJO-объектов все уровни абстракции и все предметные области приложения, от высокоуровневых политик до низкоуровневых технических подробностей.</p>
+
+    <h2 id="toc_marker-13-11">Заключение</h2>
+
+    <p class="Normal0">Чистым должен быть не только код, но и архитектура системы. Агрессивная, «всепроникающая» архитектура скрывает логику предметной области и снижает гибкость. Первое приводит к снижению качества: ошибкам проще спрятаться в коде, а разработчику труднее реализовать пожелания пользователей. Второе оборачивается снижением производительности, а также потерей всех преимуществ TDD.</p>
+
+    <p>Намерения разработчика должны быть четко выражены на всех уровнях абстракции. Это произойдет только в том случае, если он создает POJO-объекты, и использует аспекты (или другие аналогичные механизмы) для неагрессивного воплощения других сторон реализации.</p>
+
+    <p>Независимо от того, проектируете ли вы целую систему или ее отдельные модули, помните: <em>используйте самое простое решение из всех возможных</em>.</p>
+
+    <h2 id="toc_marker-13-12">Литература</h2>
+
+    <p class="Normal0">[Alexander]: Christopher Alexander,&nbsp;&nbsp;A Timeless Way of Building, Oxford University Press, New York, 1979.</p>
+
+    <p>[AOSD]: Aspect-Oriented Software Development port, <a href="http://aosd.net">http://aosd.net</a></p>
+
+    <p>[ASM]: ASM Home Page, <a href="http://asm.objectweb.org">http://asm.objectweb.org</a></p>
+
+    <p>[AspectJ]: <a href="http://eclipse.org/aspectj">http://eclipse.org/aspectj</a></p>
+
+    <p>[CGLIB]: Code Generation Library, <a href="http://cglib.sourceforge.net">http://cglib.sourceforge.net</a></p>
+
+    <p>[Colyer]: Adrian Colyer, Andy Clement, George Hurley, Mathew Webster,&nbsp;&nbsp;Eclipse</p>
+
+    <p>AspectJ, Person Education, Inc., Upper Saddle River, NJ, 2005.</p>
+
+    <p>[DSL]: Domain-speciﬁc programming language, <a href="http://en.wikipedia.org/wiki/Domain-speci%EF%AC%81c_programming_language">http://en.wikipedia.org/wiki/Domain-speciﬁc_programming_language</a></p>
+
+    <p>[Fowler]: Inversion of Control Containers and the Dependency Injection pattern, <a href="http://martinfowler.com/articles/injection.html">http://martinfowler.com/articles/injection.html</a></p>
+
+    <p>[Goetz]: Brian Goetz, Java Theory and Practice: Decorating with Dynamic Proxies, <a href="http://www.ibm.com/developerworks/java/library/j-jtp08305.html">http://www.ibm.com/developerworks/java/library/j-jtp08305.html</a></p>
+
+    <p>[Javassist]: Javassist Home Page, <a href="http://www.csg.is.titech.ac.jp/~chiba/javassist">http://www.csg.is.titech.ac.jp/~chiba/javassist</a></p>
+
+    <p>[JBoss]: JBoss Home Page, <a href="http://jboss.org">http://jboss.org</a></p>
+
+    <p>[JMock]: JMock — A Lightweight Mock Object Library for Java, <a href="http://jmock.org">http://jmock.org</a></p>
+
+    <p>[Kolence]: Kenneth W. Kolence, Software physics and computer performance measurements, Proceedings of the ACM annual conference—Volume 2, Boston, Massachusetts, pp. 1024–1040, 1972.</p>
+
+    <p>[Spring]: The Spring Framework, <a href="http://www.springframework.org">http://www.springframework.org</a></p>
+
+    <p>[Mezzaros07]: XUnit Patterns, Gerard Mezzaros, Addison-Wesley, 2007.</p>
+
+    <p>[GOF]: Design Patterns: Elements of Reusable Object Oriented Software, Gamma et al., Addison-Wesley, 1996.</p>
+
+    <div class="footnotes">
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-34-backlink" id="footnote-319-34">34</a> Например, см. [Fowler].</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-35-backlink" id="footnote-319-35">35</a> См. [Spring] и описание Spring.NET.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-36-backlink" id="footnote-319-36">36</a> Не забывайте, что отложенная инициализация — всего лишь разновидность оптимизации… и возможно, преждевременная!</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-37-backlink" id="footnote-319-37">37</a><span class="Superscript char-style-override-2" xml:lang="en-US">1</span> Система управления базами данных.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-38-backlink" id="footnote-319-38">38</a> За общей информацией об аспектах обращайтесь к [<span xml:lang="en-US">AOSD</span>], а за конкретной информацией об <span xml:lang="en-US">AspectJ</span> — к [<span xml:lang="en-US">AspectJ</span>] и [<span xml:lang="en-US">Colyer</span>].</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-39-backlink" id="footnote-319-39">39</a> То есть без необходимости ручного редактирования целевого кода.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-40-backlink" id="footnote-319-40">40</a> См<span xml:lang="en-US">. [CGLIB], [ASM]</span> и <span xml:lang="en-US">[Javassist].</span></p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-41-backlink" id="footnote-319-41">41</a> Более подробные примеры <span xml:lang="en-US">API</span> посредников и его использования можно найти, например, в [<span xml:lang="en-US">Goetz</span>].</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-42-backlink" id="footnote-319-42">42</a> Методологию АОП иногда путают с приемами, используемыми для ее реализации например перехватом методов и «инкапсуляцией» посредников. Подлинная ценность АОП-системы заключается в способности модульного, компактного определения системного поведения.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-43-backlink" id="footnote-319-43">43</a> См<span xml:lang="en-US">. [Spring]</span> и <span xml:lang="en-US">[JBoss].</span> «Непосредственно на уровне <span xml:lang="en-US">Java</span>» в данном случае означает «без применения <span xml:lang="en-US">AspectJ</span>».</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-44-backlink" id="footnote-319-44">44</a> По материалам <a href="http://www.theserverside.com/tt/articles/article.tss?l=IntrotoSpring25">http://www.theserverside.com/tt/articles/article.tss?l=IntrotoSpring25</a>.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-45-backlink" id="footnote-319-45">45</a> Приведенный пример можно упростить — существуют специальные механизмы, использующие правила конфигурации и аннотации <span xml:lang="en-US">Java</span> 5 для сокращения объема явно определяемой «связующей» логики.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-46-backlink" id="footnote-319-46">46</a> По материалам <a href="http://www.onjava.com/pub/a/onjava/2006/05/17/standardizing-with-ejb3-java-persistence-api.html">http://www.onjava.com/pub/a/onjava/2006/05/17/standardizing-with-ejb3-java-persistence-api.html</a>.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-47-backlink" id="footnote-319-47">47</a> См<span xml:lang="en-US">. [AspectJ]</span> и <span xml:lang="en-US">[Colyer].</span></p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-48-backlink" id="footnote-319-48">48</a> Не путайте с полезной практикой упреждающего проектирования<span xml:lang="en-US">. BDUF</span> — привычка проектировать заранее <em>все</em> <em>без исключения</em>, до написания какого-либо кода реализации.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-49-backlink" id="footnote-319-49">49</a> Впрочем, даже после начала строительства идут серьезные итеративные исследования и обсуждения подробностей.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-50-backlink" id="footnote-319-50">50</a> Выражение «физика программного продукта» впервые было использовано в [Kolence].</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-51-backlink" id="footnote-319-51">51</a> Работа [<span xml:lang="en-US">Alexander</span>] оказала особенно заметное влияние на сообщество разработчиков ПО.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-52-backlink" id="footnote-319-52">52</a> Например<span xml:lang="en-US">,</span> см<span xml:lang="en-US">.</span> [<span xml:lang="en-US">DSL</span>]. [<span xml:lang="en-US">JMock</span>] — хороший пример <span xml:lang="en-US">Java</span> <span xml:lang="en-US">API</span>, создавшего свой предметно-ориентированный язык.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

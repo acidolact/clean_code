@@ -1,0 +1,820 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Чистый код: создание, анализ и рефакторинг. Библиотека программиста</title>
+  <link href="../Styles/template.css" rel="stylesheet" type="text/css"/>
+</head>
+
+<body id="x978549600487" xml:lang="ru-RU">
+  <div>
+    <h1 id="toc_marker-18">16. Переработка SerialDate</h1>
+
+    <p class="Pic-yakor"><span><img alt="16_01.tif" class="frame-23" src="../Images/16_01_fmt.png"/></span>&nbsp;</p>
+
+    <p>Посетив страницу <a href="http://www.jfree.org/jcommon/index.php"><em>http</em><em>://</em><em>www</em><em>.</em><em>jfree</em><em>.</em><em>org</em><em>/</em><em>jcommon</em><em>/</em><em>index</em><em>.</em><em>php</em></a>, вы найдете на ней описание библиотеки JCommon. Глубоко в недрах этой библиотеки скрыт пакет <em>org</em><em>.</em><em>jfree</em><em>.</em><em>date</em>. Пакет содержит класс с именем <span class="command char-style-override-1">Seri</span><span class="command char-style-override-1">alDate</span>. В этой главе мы займемся анализом этого класса.</p>
+
+    <p>Класс <span class="command char-style-override-1">SerialDate</span> написан Дэвидом Гилбертом (David Gilbert). Несомненно, Дэвид является опытным и компетентным программистом. Как вы сами убедитесь, в этом коде он проявил значительную степень профессионализма и дисциплины. Во всех отношениях это «хороший код». А сейчас я намерен разнести его в пух и прах.</p>
+
+    <p>Дело вовсе не в злом умысле. И я вовсе не считаю, что я намного лучше Дэвида и поэтому имею право критиковать его код. Действительно, если заглянуть в мой код, я уверен, что вы найдете в нем немало поводов для критики.</p>
+
+    <p>Нет, дело не в моем скверном характере или надменности. Я всего лишь намерен проанализировать код с профессиональной точки зрения, не более и не менее. Это то, что все мы должны делать спокойно и без угрызений совести. И все мы должны только приветствовать, когда такой анализ кто-то проводит за нас. Только после подобной критики мы узнаем нечто новое. Это делают врачи. Это делают пилоты. Это делают адвокаты. И мы, программисты, тоже должны этому научиться.</p>
+
+    <p>И еще одно замечание по поводу Дэвида Гилберта: Дэвид — не просто хороший программист. У него хватило смелости и доброй воли на то, чтобы бесплатно предоставить свой код сообществу. Дэвид разместил свой код в открытом доступе и предложил всем желающим использовать и обсуждать его. Отличная работа!</p>
+
+    <p>Класс <span class="command char-style-override-1">SerialDate</span> (листинг Б.1, с. 390) представляет даты в языке Java. Зачем ­нужен класс для представления дат, если в Java уже имеются готовые классы <span class="command char-style-override-1">java.util.Date</span>, <span class="command char-style-override-1">java.util.Calendar</span> и т.д.? Автор написал свой класс из-за проблемы, с которой часто сталкивался сам. Ее суть хорошо разъясняется в от­крывающем комментарии Javadoc (строка 67). Возможно, кому-то такое решение покажется радикальным, но мне и самому приходилось сталкиваться с этой проблемой, и я приветствую класс, ориентированный на работу с датой вместо времени.</p>
+
+    <h2 id="toc_marker-18-1">Прежде всего — заставить работать</h2>
+
+    <p class="Normal0">В классе <span class="command char-style-override-1">SerialDateTests</span> содержится набор модульных тестов (листинг Б.2, с. 411). Все тесты проходят. К сожалению, беглое изучение тестов показывает, что тестирование не покрывает часть кода [T1]. Например, поиск показывает, что метод <span class="command char-style-override-1">MonthCodeToQuarter</span> (строка 334) не используется [F4]. Соответственно он не включается в модульные тесты.</p>
+
+    <p>Итак, я запустил Clover, чтобы узнать, какая часть кода реально покрывается модульными тестами. Clover сообщает, что модульные тесты выполняют только 91 из 185 исполняемых команд <span class="command char-style-override-1">SerialDate</span> (около 50%) [T2]. Карта покрытия напоминала лоскутное одеяло, а по всему классы были разбросаны большие пятна невыполняемого кода.</p>
+
+    <p>Моей целью было полное понимание и переработка кода этого класса. Я не мог добиться этого без значительного улучшения тестового покрытия, поэтому мне пришлось написать собственный набор абсолютно независимых модульных тестов (листинг Б.4, с. 419).</p>
+
+    <p>Просматривая код тестов, можно заметить, что многие из них закомментированы. Эти тесты не проходили в исходном варианте. Однако они представляют поведение, которым, на мой взгляд, должен обладать класс <span class="command char-style-override-1">SerialDate</span>. Соответственно, в ходе переработки <span class="command char-style-override-1">SerialDate</span> я буду работать над тем, чтобы эти тесты тоже проходили.</p>
+
+    <p>Даже с несколькими закомментированными тестами Clover сообщает, что новые модульные тесты покрывают 170 (92%) из 185 исполняемых команд. Неплохо, хотя я думаю, что и этот показатель можно улучшить.</p>
+
+    <p>Возможно, в нескольких первых закомментированных тестах (строки 23–63) я слегка хватил через край. Их прохождение не было формально заложено при проектировании программы, но данное поведение казалось мне абсолютно очевидным [G2].</p>
+
+    <p>Я не знаю, зачем создавался метод <span class="command char-style-override-1">testWeekdayCodeToString</span>, но раз уж он был написан, казалось очевидным, что в работе метода не должен учитываться регистр символов. Написать соответствующий тест было элементарно [T3]. Заставить его работать было еще проще; я просто изменил строки 259 и 263, чтобы в них использовалась функция <span class="command char-style-override-1">equalsIgnoreCase</span>.</p>
+
+    <p>Тесты в строках 32 и 45 остались закомментированными, так как мне было неясно, нужно ли поддерживать сокращения вида «tues» и «thurs».</p>
+
+    <p>Тесты в строках 153 и 154 не проходят. Хотя, естественно, должны про­ходить [G2]. Проблема (а заодно и тесты в строках 163–213) легко исправляется внесением следующих изменений в функцию <span class="command char-style-override-1">stringToMonthCode</span>.</p>
+
+    <p class="listing-body">457&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if ((result &lt; 1) || (result &gt; 12)) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result = -1;</p>
+
+    <p class="listing-body">458&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (int i = 0; i &lt; monthNames.length; i++) {</p>
+
+    <p class="listing-body">459&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (s.equalsIgnoreCase(shortMonthNames[i])) {</p>
+
+    <p class="listing-body">460&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result = i + 1;</p>
+
+    <p class="listing-body">461&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</p>
+
+    <p class="listing-body">462&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">463&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (s.equalsIgnoreCase(monthNames[i])) {</p>
+
+    <p class="listing-body">464&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result = i + 1;</p>
+
+    <p class="listing-body">465&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</p>
+
+    <p class="listing-body">466&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">467&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">468&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p>Закомментированный тест в строке 318 выявляет ошибку в методе <span class="command char-style-override-1">get­FollowingDayOfWeek</span> (строка 672). 25 декабря 2004 года было субботой. Следующей субботой было 1 января 2005 года. Тем не менее при запуске теста <span class="command char-style-override-1">getFollowingDayOfWeek</span> утверждает, что первой субботой, предшествующей 25 декабря, было 25 декабря. Разумеется, это неверно [G3],[T1]. Проблема — типичная ошибка граничного условия [T5] — кроется в строке 685. Строка должна читаться следующим образом:</p>
+
+    <p class="listing-body">685&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (baseDOW &gt;= targetWeekday) {</p>
+
+    <p>Интересно, что проблемы с этой функцией возникали и раньше. Из истории изменений (строка 43) видно, что в функциях <span class="command char-style-override-1">getPreviousDayOfWeek</span>, <span class="command char-style-override-1">getFollowingDayOfWeek</span> и <span class="command char-style-override-1">getNearestDayOfWeek</span> [T6] «исправлялись ошибки».</p>
+
+    <p>Модульный тест <span class="command char-style-override-1">testGetNearestDayOfWeek</span> (строка 329), проверяющий работу метода <span class="command char-style-override-1">getNearestDayOfWeek</span> (строка 705), изначально был не таким длинным и исчерпывающим, как в окончательной версии. Я включил в него много дополнительных тестовых сценариев, потому что не все исходные тесты проходили успешно [T6]. Посмотрите, какие тестовые сценарии были закомментированы — закономерность проявляется достаточно очевидно [T7]. Сбой в алгоритме происходит в том случае, если ближайший день находится в будущем. Очевидно, и здесь происходит какая-то ошибка граничного условия [T5].</p>
+
+    <p>Результаты тестового покрытия кода, полученные от Clover, тоже весьма интересны [T8]. Строка 719 никогда не выполняется! Следовательно, условие <span class="command char-style-override-1">if</span> в строке 718 всегда ложно. С первого взгляда на код понятно, что это действительно так. Переменная <span class="command char-style-override-1">adjust</span> всегда отрицательна, она не может быть больше либо равна 4. Значит, алгоритм попросту неверен.</p>
+
+    <p>Правильный алгоритм выглядит так:</p>
+
+    <p class="listing-body">int delta = targetDOW - base.getDayOfWeek();</p>
+
+    <p class="listing-body">int positiveDelta = delta + 7;</p>
+
+    <p class="listing-body">int adjust = positiveDelta % 7;</p>
+
+    <p class="listing-body">if (adjust &gt; 3)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;adjust -= 7;</p>
+
+    <p class="listing-body">return SerialDate.addDays(adjust, base);</p>
+
+    <p>Наконец, для прохождения тестов в строках 417 и 429 достаточно инициировать исключение <span class="command char-style-override-1">IllegalArgumentException</span> вместо возвращения строки ошибки в функциях <span class="command char-style-override-1">weekInMonthToString</span> и <span class="command char-style-override-1">relativeToString</span>.</p>
+
+    <p>После таких изменений все модульные тесты проходят. Вероятно, класс <span class="command char-style-override-1">SerialDate</span> теперь действительно работает. Теперь пришло время «довести его до ума».</p>
+
+    <h2 id="toc_marker-18-2">…Потом очистить код</h2>
+
+    <p class="Normal0">Мы проанализируем код <span class="command char-style-override-1">SerialDate</span> от начала до конца, усовершенствуя его в ходе просмотра. Хотя ниже об этом не упоминается, после каждого вносимого изменения выполнялись все модульные тесты JCommon, включая мой доработанный модульный тест <span class="command char-style-override-1">SerialDate</span>. Итак, вы можете быть уверены в том, что вносимые изменения не нарушают работы JCommon.</p>
+
+    <p>Начнем со строки 1. В ней приводятся многословные комментарии с информацией о лицензии, авторских правах, авторах и истории изменений. Бесспорно, существуют некоторые юридические формальности, которые необходимо соблюдать, поэтому авторские права и лицензии должны остаться. С другой стороны, история изменений является пережитком из 1960-х годов. Сегодня у нас имеются системы управления исходным кодом, которые все это делают за нас. Историю следует удалить [C1].</p>
+
+    <p>Список импорта, начинающийся в строке 61, следует сократить при помощи конструкций <span class="command char-style-override-1">java.text.*</span> и <span class="command char-style-override-1">java.util.*</span> [J1].</p>
+
+    <p>К форматированию HTML в Javadoc (строка 67) я отношусь без восторга. Меня беспокоят исходные файлы, написанные более чем на одном языке. В этом комментарии встречаются четыре языка: Java, английский, Javadoc и HTML [G1]. При таком количестве языков трудно поддерживать порядок в коде. Например, аккуратное размещение строк 71 и 72 теряется при генерировании кода Javadoc, да и кому захочется видеть теги <span class="command char-style-override-1">&lt;ul&gt;</span> и <span class="command char-style-override-1">&lt;li&gt;</span> в исходном коде? Правильнее было бы просто заключить весь комментарий в теги <span class="command char-style-override-1">&lt;pre&gt;</span>, чтобы форматирование в исходном коде сохранилось в Javadoc<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-71" id="footnote-319-71-backlink">71</a></span>.</p>
+
+    <p>Строка 86 содержит объявление класса. Почему этот класс называется <span class="command char-style-override-1">SerialDate</span>? Почему в нем присутствует слово «serial» — только потому, что класс объявлен производным от <span class="command char-style-override-1">Serializable</span>? Это выглядит маловероятно.</p>
+
+    <p>Не буду держать вас в неведении. Я знаю (или по крайней мере полагаю, что знаю), почему было использовано слово «serial». На это указывают константы <span class="command char-style-override-1">SERIAL_LOWER_BOUND</span> и <span class="command char-style-override-1">SERIAL_UPPER_BOUND</span> в строках 98 и 101. Еще более очевидная подсказка содержится в комментарии, начинающемся в строке 830. Класс ­назван <span class="command char-style-override-1">SerialDate</span>, потому что его реализация построена на использовании «порядкового номера» (serial number), то есть количества дней с 30 декабря 1899 года.</p>
+
+    <p>На мой взгляд, у такого решения два недостатка. Во-первых, термин «порядковый номер» некорректен. Кому-то это покажется пустяком, но выбранное представление представляет собой относительное смещение, а не порядковый номер. Термин «порядковый номер» скорее относится к маркировке промышленных изделий, а не к датам. Так что, на мой взгляд, название получилось не слишком содержательным [N1].</p>
+
+    <p>Второй недостаток более важен. Имя <span class="command char-style-override-1">SerialDate</span> подразумевает определенную реализацию. Однако класс является абстрактным и для него реализацию скорее нужно скрывать! Я считаю, что выбранное имя находится на неверном уровне абстракции [N2]. По моему мнению, класс было бы лучше назвать <span class="command char-style-override-1">Date</span>.</p>
+
+    <p>К сожалению, в библиотеку Java входит слишком много классов с именем <span class="command char-style-override-1">Date</span>; вероятно, это не лучший вариант. Поскольку класс скорее ориентирован на работу с сутками, я подумывал о том, чтобы назвать его <span class="command char-style-override-1">Day</span>, но и это имя часто используется в других местах. В конечном итоге я решил, что лучшим компромиссом будет имя <span class="command char-style-override-1">DayDate</span>.</p>
+
+    <p>В дальнейшем обсуждении будет использоваться имя <span class="command char-style-override-1">DayDate</span>. Не забывайте, что в листингах, на которые вы будете смотреть, класс по-прежнему называется <span class="command char-style-override-1">SerialDate</span>.</p>
+
+    <p>Я понимаю, почему <span class="command char-style-override-1">DayDate</span> наследует от <span class="command char-style-override-1">Comparable</span> и <span class="command char-style-override-1">Serializable</span>. Но почему он наследует от <span class="command char-style-override-1">MonthConstants</span>? Класс <span class="command char-style-override-1">MonthConstants</span> (листинг Б.3, с. 417) представляет собой простой набор статических констант, определяющих месяцы. Наследование от классов с константами — старый трюк, который использовался Java-программистами, чтобы избежать выражений вида <span class="command char-style-override-1">MonthConstants.January</span>, но это неудачная мысль [J2]. <span class="command char-style-override-1">MonthConstants</span> следовало бы оформить в виде перечисления.</p>
+
+    <p class="listing-body">public abstract class DayDate implements Comparable,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Serializable {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public static enum Month {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;JANUARY(1),</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;FEBRUARY(2),</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;MARCH(3),</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;APRIL(4),</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;MAY(5),</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;JUNE(6),</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;JULY(7),</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;AUGUST(8),</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;SEPTEMBER(9),</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;OCTOBER(10),</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;NOVEMBER(11),</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;DECEMBER(12);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;Month(int index) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this.index = index;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public static Month make(int monthIndex) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (Month m : Month.values()) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (m.index == monthIndex)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return m;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throw new IllegalArgumentException("Invalid month index " + monthIndex);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public final int index;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p>Преобразование <span class="command char-style-override-1">MonthConstants</span> в <span class="command char-style-override-1">enum</span> инициирует ряд изменений в классе <span class="command char-style-override-1">DayDate</span> и всех его пользователях. На внесение всех изменений мне потребовалось около часа. Однако теперь любая функция, прежде получавшая <span class="command char-style-override-1">int</span> вместо месяца, теперь получает значение из перечисления <span class="command char-style-override-1">Month</span>. Это означает, что мы можем удалить метод <span class="command char-style-override-1">isValidMonthCode</span> (строка 326), а также все проверки ошибок кодов месяцев — например, <span class="command char-style-override-1">monthCodeToQuarter</span> (строка 356) [G5].</p>
+
+    <p>Далее возьмем строку 91, <span class="command char-style-override-1">serialVersionUID</span>. Переменная используется для управления сериализацией данных. Если изменить ее, то данные <span class="command char-style-override-1">DayDate</span>, записанные старой версией программы, перестанут читаться, а попытки приведут к исключению <span class="command char-style-override-1">InvalidClassException</span>. Если вы не объявите переменную <span class="command char-style-override-1">serialVersionUID</span>, компилятор автоматически сгенерирует ее за вас, причем значение переменной будет различаться при каждом внесении изменений в модуль. Я знаю, что во всей документации рекомендуется управлять этой переменной вручную, но мне кажется, что автоматическое управление сериализацией надежнее [G4]. В конце концов, я предпочитаю отлаживать исключение <span class="command char-style-override-1">InvalidClassException</span>, чем необъяснимое поведение программы в результате того, что я забыл изменить <span class="command char-style-override-1">serialVersionUID</span>. Итак, я собираюсь удалить эту переменную — по крайней мере пока.</p>
+
+    <p>Комментарий в строке 93 выглядит избыточным. Избыточные комментарии только распространяют лживую и недостоверную информацию [C2]. Соответственно, я удаляю его вместе со всеми аналогами.</p>
+
+    <p>В комментариях в строках 97 и 100 упоминаются порядковые номера, о которых говорилось ранее [C1]. Комментарии описывают самую раннюю и самую позднюю дату, представляемую классом <span class="command char-style-override-1">DayDate</span>. Их можно сделать более понятными [N1].</p>
+
+    <p class="listing-body">public static final int EARLIEST_DATE_ORDINAL = 2;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// 1/1/1900</p>
+
+    <p class="listing-body">public static final int LATEST_DATE_ORDINAL = 2958465; // 12/31/9999</p>
+
+    <p>Мне неясно, почему значение <span class="command char-style-override-1">EARLIEST</span><span class="command char-style-override-1">_</span><span class="command char-style-override-1">DATE</span><span class="command char-style-override-1">_</span><span class="command char-style-override-1">ORDINAL</span> равно 2, а не 0. Комментарий в строке 829 подсказывает, что это как-то связано с представлением дат в Microsoft Excel. Более подробное объяснение содержится в производном от <span class="command char-style-override-1">DayDate</span> классе с именем <span class="command char-style-override-1">SpreadsheetDate</span> (листинг Б.5, с. 428). Комментарий в строке 71 хорошо объясняет суть дела.</p>
+
+    <p>Проблема в том, что такой выбор относится к реализации <span class="command char-style-override-1">SpreadsheetDate</span> и не имеет ничего общего с <span class="command char-style-override-1">DayDate</span>. Из этого я заключаю, что <span class="command char-style-override-1">EARLIEST_DATE_ORDINAL</span> и <span class="command char-style-override-1">LATEST_DATE_ORDINAL</span> реально не относятся к DayDate и их следует переместить в <span class="command char-style-override-1">SpreadsheetDate</span> [G6].</p>
+
+    <p>Поиск по коду показывает, что эти переменные используются только в <span class="command char-style-override-1">Spread­sheetDate</span>. Они не используются ни в <span class="command char-style-override-1">DayDate</span>, ни в других классах JCommon. Соответственно, я перемещаю их в <span class="command char-style-override-1">SpreadsheetDate</span>.</p>
+
+    <p>Со следующими переменными, <span class="command char-style-override-1">MINIMUM_YEAR_SUPPORTED</span> и <span class="command char-style-override-1">MAXIMUM_YEAR_</span><span class="command char-style-override-1">SUPPORTED</span> (строки 104 и 107), возникает дилемма. Вроде бы понятно, что если <span class="command char-style-override-1">DayDate</span> является абстрактным классом, то он не должен содержать информации о минимальном или максимальном годе. У меня снова возникло искушение переместить эти переменные в <span class="command char-style-override-1">SpreadsheetDate</span> [G6]. Тем не менее поиск показал, что эти переменные используются еще в одном классе: <span class="command char-style-override-1">RelativeDayOfWeekRule</span> (листинг Б.6, с. 438). В строках 177 и 178 функция <span class="command char-style-override-1">getDate</span>&nbsp;&nbsp;проверяет, что в ее аргументе передается действительный год. Дилемма состоит в том, что пользователю абстрактного класса необходима информация о его реализации.</p>
+
+    <p>Наша задача — предоставить эту информацию, не загрязняя самого класса <span class="command char-style-override-1">DayDate</span>. В общем случае мы могли бы получить данные реализации из экземпляра производного класса, однако функция <span class="command char-style-override-1">getDate</span> не получает экземпляр <span class="command char-style-override-1">DayDate</span>. С другой стороны, она возвращает такой экземпляр, а это означает, что она его где-то создает. Из строк 187–205 можно заключить, что экземпляр <span class="command char-style-override-1">DayDate</span> создается при вызове одной из трех функций: <span class="command char-style-override-1">getPreviousDayOfWeek</span>, <span class="command char-style-override-1">getNearestDayOfWeek</span> или <span class="command char-style-override-1">getFollowingDayOfWeek</span>. Обратившись к листингу <span class="command char-style-override-1">DayDate</span>, мы видим, что все эти функции (строки 638–724) возвращают дату, созданную функцией <span class="command char-style-override-1">addDays</span> (строка 571), которая вызывает <span class="command char-style-override-1">createInstance</span> (строка 808), которая создает <span class="command char-style-override-1">SpreadsheetDate</span>! [G7].</p>
+
+    <p>В общем случае базовые классы не должны располагать информацией о своих производных классах. Проблема решается применением паттерна АБСТРАКТНАЯ ФАБРИКА [GOF] и созданием класса <span class="command char-style-override-1">DayDateFactory</span>. Фабрика создает экземпляры <span class="command char-style-override-1">DayDate</span>, а также предоставляет информацию по поводу реализации — в частности, минимальное и максимальное значение даты.</p>
+
+    <p class="listing-body">public abstract class DayDateFactory {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static DayDateFactory factory = new SpreadsheetDateFactory();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public static void setInstance(DayDateFactory factory) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;DayDateFactory.factory = factory;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected abstract DayDate _makeDate(int ordinal);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected abstract DayDate _makeDate(int day, DayDate.Month month, int year);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected abstract DayDate _makeDate(int day, int month, int year);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected abstract DayDate _makeDate(java.util.Date date);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected abstract int _getMinimumYear();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected abstract int _getMaximumYear();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public static DayDate makeDate(int ordinal) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return factory._makeDate(ordinal);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public static DayDate makeDate(int day, DayDate.Month month, int year) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return factory._makeDate(day, month, year);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public static DayDate makeDate(int day, int month, int year) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return factory._makeDate(day, month, year);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public static DayDate makeDate(java.util.Date date) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return factory._makeDate(date);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public static int getMinimumYear() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return factory._getMinimumYear();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public static int getMaximumYear() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return factory._getMaximumYear();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Фабрика заменяет методы <span class="command char-style-override-1">createInstance</span> методами <span class="command char-style-override-1">makeDate</span>, в результате чего имена выглядят гораздо лучше [N1]. По умолчанию используется <span class="command char-style-override-1">SpreadsheetDateFactory</span>, но этот класс можно в любой момент заменить другой фабрикой. Статические методы, делегирующие выполнение операций абстрактным методам, используют комбинацию паттернов СИНГЛЕТ [GOF], ДЕКОРАТОР [GOF] и АБСТРАКТНАЯ ФАБРИКА.</p>
+
+    <p>Класс <span class="command char-style-override-1">SpreadsheetDateFactory</span> выглядит так:</p>
+
+    <p class="listing-body">public class SpreadsheetDateFactory extends DayDateFactory {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public DayDate _makeDate(int ordinal) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return new SpreadsheetDate(ordinal);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public DayDate _makeDate(int day, DayDate.Month month, int year) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return new SpreadsheetDate(day, month, year);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public DayDate _makeDate(int day, int month, int year) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return new SpreadsheetDate(day, month, year);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public DayDate _makeDate(Date date) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;final GregorianCalendar calendar = new GregorianCalendar();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;calendar.setTime(date);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return new SpreadsheetDate(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;calendar.get(Calendar.DATE),</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DayDate.Month.make(calendar.get(Calendar.MONTH) + 1),</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;calendar.get(Calendar.YEAR));</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected int _getMinimumYear() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return SpreadsheetDate.MINIMUM_YEAR_SUPPORTED;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;protected int _getMaximumYear() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return SpreadsheetDate.MAXIMUM_YEAR_SUPPORTED;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Как видите, я уже переместил переменные <span class="command char-style-override-1">MINIMUM</span><span class="command char-style-override-1">_</span><span class="command char-style-override-1">YEAR</span><span class="command char-style-override-1">_</span><span class="command char-style-override-1">SUPPORTED</span> и <span class="command char-style-override-1">MAXIMUM</span><span class="command char-style-override-1">_</span><span class="command char-style-override-1">YEAR</span><span class="command char-style-override-1">_</span><span class="command char-style-override-1">SUPPORTED</span> в класс <span class="command char-style-override-1">SpreadsheetDate</span>, в котором им положено находиться [G6].</p>
+
+    <p>Следующая проблема <span class="command char-style-override-1">DayDate</span> — константы дней, начинающиеся со строки 109. Их следует оформить в виде другого перечисления [J3]. Мы уже видели, как это делается, поэтому я не буду повторяться. При желании посмотрите в итоговом листинге.</p>
+
+    <p>Далее мы видим серию таблиц, начинающуюся с <span class="command char-style-override-1">LAST_DAY_OF_MONTH</span> в строке 140. Моя первая претензия к этим таблицам состоит в том, что описывающие их комментарии избыточны [C3]. Одних имен вполне достаточно, поэтому я собираюсь удалить комментарии.</p>
+
+    <p>Также неясно, почему эта таблица не объявлена приватной [G8], потому что в классе имеется статическая функция <span class="command char-style-override-1">lastDayOfMonth</span>, предоставляющая те же данные.</p>
+
+    <p>Следующая таблица, <span class="command char-style-override-1">AGGREGATE_DAYS_TO_END_OF_MO</span><span class="command char-style-override-1">NTH</span>, выглядит загадочно — она ни разу не используется в JCommon [G9]. Я удалил ее.</p>
+
+    <p>То же произошло с <span class="command char-style-override-1">LEAP_YEAR_AGGREGATE_DAYS_TO_END_OF_MONTH</span>.</p>
+
+    <p>Следующая таблица, <span class="command char-style-override-1">AGGREGATE_DAYS_TO_END_OF_PRECEDING_MONTH</span>, используется только в <span class="command char-style-override-1">SpreadsheetDate</span> (строки 434 и 473). Так почему бы не переместить ее в <span class="command char-style-override-1">SpreadsheetDate</span>? Против перемещения говорит тот факт, что таблица не привязана ни к какой конкретной реализации [G6]. С другой стороны, никаких реализаций, кроме <span class="command char-style-override-1">SpreadsheetDate</span>, фактически не существует, поэтому таблицу следует переместить ближе к месту ее использования [G10].</p>
+
+    <p>Для меня решающим обстоятельством является то, что для обеспечения логи­ческой согласованности [G11] таблицу следует объявить приватной и предоставить доступ к ней через функцию вида <span class="command char-style-override-1">julianDateOfLastDayOfMonth</span>. Но похоже, такая функция никому не нужна. Более того, если этого потребует новая реализация <span class="command char-style-override-1">DayDate</span>, таблицу можно будет легко вернуть на место. Поэтому я ее переместил.</p>
+
+    <p>Далее следуют три группы констант, которые можно преобразовать в перечисления (строки 162–205).</p>
+
+    <p>Первая из трех групп предназначена для выбора недели в месяце. Я преобразовал ее в перечисление с именем <span class="command char-style-override-1">WeekInMonth</span>.</p>
+
+    <p class="listing-body">public enum WeekInMonth {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;FIRST(1), SECOND(2), THIRD(3), FOURTH(4), LAST(0);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public final int index;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;WeekInMonth(int index) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this.index = index;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p>Со второй группой констант (строки 177–187) дело обстоит сложнее. Константы <span class="command char-style-override-1">INCLUDE_NONE</span>, <span class="command char-style-override-1">INCLUDE_FIRST</span>, <span class="command char-style-override-1">INCLUDE_SECOND</span> и <span class="command char-style-override-1">INCLUDE_BOTH</span> определяют, должны ли включаться в диапазон конечные даты. В математике в подобных случаях используются термины «открытый интервал», «полуоткрытый интервал» и «замкнутый интервал». Мне кажется, что математические названия выглядят более понятно [N3], поэтому я преобразовал группу в перечисление <span class="command char-style-override-1">DateInterval</span> с элементами <span class="command char-style-override-1">CLOSED</span>, <span class="command char-style-override-1">CLOSED_LEFT</span>, <span class="command char-style-override-1">CLOSED</span><span class="command char-style-override-1">_RIGHT</span> и <span class="command char-style-override-1">OPEN</span>.</p>
+
+    <p>Третья группа констант (строки 18–205) определяет, должно ли в результате по­иска конкретного дня недели возвращаться последнее, предыдущее или ­ближайшее вхождение. Выбрать подходящее имя для такого перечисления не­просто. В итоге я остановился на имени <span class="command char-style-override-1">WeekdayRange</span> с элементами <span class="command char-style-override-1">LAST</span>, <span class="command char-style-override-1">NEXT</span> и <span class="command char-style-override-1">NEAREST</span>.</p>
+
+    <p>Возможно, вы не согласитесь с выбранными мной именами. Мне они кажутся логичными, но у вас может быть свое мнение. Однако сейчас константы приведены к форме, которая позволяет легко изменить их в случае необходимости [J3]. Они передаются не в виде целых чисел, а в виде символических имен. Я могу воспользоваться функцией переименования своей рабочей среды для изменения имен или типов, не беспокоясь о том, что я пропустил где-то в коде <span class="command char-style-override-1">-1</span> или <span class="command char-style-override-1">2</span> или объявление аргумента <span class="command char-style-override-1">int</span> осталось плохо описанным.</p>
+
+    <p>Поле <span class="command char-style-override-1">description</span> в строке 208 нигде не используется. Я удалил его вместе с методами доступа [G9].</p>
+
+    <p>Также был удален вырожденный конструктор по умолчанию в строке 213 [G12]. Компилятор сгенерирует его за нас.</p>
+
+    <p>Метод <span class="command char-style-override-1">isValidWeekdayCode</span> (строки 216–238) пропускаем — мы удалили его при создании перечисления <span class="command char-style-override-1">Day</span>.</p>
+
+    <p>Мы подходим к методу <span class="command char-style-override-1">stringToWeekdayCode</span> (строки 242–270). Комментарии Javadoc, не добавляющие полезной информации к сигнатуре метода, только ­загромождают код [C3],[G12]. В комментарии есть всего один содержательный момент — он описывает возвращаемое значение <span class="command char-style-override-1">-1</span>. Но после перехода на ­пе­речисление <span class="command char-style-override-1">Day</span> этот комментарий стал неверным [C2]. Сейчас метод сообщает об ошибке, выдавая исключение <span class="command char-style-override-1">IllegalArgumentException</span>. Я удалил комментарий.</p>
+
+    <p>Также я удалил все ключевые слова <span class="command char-style-override-1">final</span> в объявлениях аргументов и переменных. На мой взгляд, реальной пользы от них не было, а программу они загромождают [G12]. Удаление <span class="command char-style-override-1">final</span> противоречит мнению некоторых экспертов. Например, Роберт Симмонс (Robert Simmons) [Simmons04, p. 73] настоятельно рекомендует «…почаще вставлять <span class="command char-style-override-1">final</span> в своем коде». Разумеется, я с этим не согласен. У <span class="command char-style-override-1">final</span> имеются свои полезные применения (например, при объявлении отдельных констант),&nbsp;&nbsp;но в остальных случаях это ключевое слово не приносит реальной пользы. Возможно, я так считаю еще и потому, что типичные ошибки, выявляемые при помощи <span class="command char-style-override-1">final</span>, уже выявляются написанными мной модульными тестами.</p>
+
+    <p>Мне не понравились повторяющиеся команды <span class="command char-style-override-1">if</span> [G5] внутри цикла <span class="command char-style-override-1">for</span> (строки 259 и 263); они были объединены в одну команду <span class="command char-style-override-1">if</span> при помощи оператора <span class="command char-style-override-1">||</span>. Также я использовал перечисление <span class="command char-style-override-1">Day</span> для управления циклом <span class="command char-style-override-1">for</span> и внес ряд других косметических изменений.</p>
+
+    <p>Мне пришло в голову, что метод в действительности не принадлежит <span class="command char-style-override-1">DayDate</span>. Фактически это функция разбора <span class="command char-style-override-1">Day</span>, поэтому я переместил ее в перечисление <span class="command char-style-override-1">Day</span>. Но после этого перечисление <span class="command char-style-override-1">Day</span> стало занимать довольно много места. Поскольку концепция <span class="command char-style-override-1">Day</span> не зависит от <span class="command char-style-override-1">DayDate</span>, я вывел перечисление <span class="command char-style-override-1">Day</span> из класса <span class="command char-style-override-1">DayDate</span> в собственный исходный файл [G13].</p>
+
+    <p>Кроме того, я переместил следующую функцию <span class="command char-style-override-1">weekdayCodeToString</span> (строки 272–286) в перечисление <span class="command char-style-override-1">Day</span> и переименовал ее в <span class="command char-style-override-1">toString</span>.</p>
+
+    <p class="listing-body">public enum Day {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;MONDAY(Calendar.MONDAY),</p>
+
+    <p class="listing-body">&nbsp;&nbsp;TUESDAY(Calendar.TUESDAY),</p>
+
+    <p class="listing-body">&nbsp;&nbsp;WEDNESDAY(Calendar.WEDNESDAY),s</p>
+
+    <p class="listing-body">&nbsp;&nbsp;THURSDAY(Calendar.THURSDAY),</p>
+
+    <p class="listing-body">&nbsp;&nbsp;FRIDAY(Calendar.FRIDAY),</p>
+
+    <p class="listing-body">&nbsp;&nbsp;SATURDAY(Calendar.SATURDAY),</p>
+
+    <p class="listing-body">&nbsp;&nbsp;SUNDAY(Calendar.SUNDAY);</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public final int index;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static DateFormatSymbols dateSymbols = new DateFormatSymbols();</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;Day(int day) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;index = day;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public static Day make(int index) throws IllegalArgumentException {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;for (Day d : Day.values())</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (d.index == index)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return d;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;throw new IllegalArgumentException(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String.format("Illegal day index: %d.", index));</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public static Day parse(String s) throws IllegalArgumentException {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String[] shortWeekdayNames =</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dateSymbols.getShortWeekdays();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String[] weekDayNames =</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dateSymbols.getWeekdays();</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;s = s.trim();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;for (Day day : Day.values()) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (s.equalsIgnoreCase(shortWeekdayNames[day.index]) ||</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;s.equalsIgnoreCase(weekDayNames[day.index])) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return day;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;throw new IllegalArgumentException(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String.format("%s is not a valid weekday string", s));</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public String toString() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return dateSymbols.getWeekdays()[index];</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>В программе две функции <span class="command char-style-override-1">getMonths</span> (строки 288–316); первая функция вызывает вторую. Вторая функция не вызывается никем, кроме первой функцией. Я свернул две функции в одну, что привело к значительному упрощению кода [G9],[G12],[F4]. В завершение я переименовал итоговую функцию, присвоив ей более содержательное имя [N1].</p>
+
+    <p class="listing-body">public static String[] getMonthNames() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return dateFormatSymbols.getMonths();</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Функция <span class="command char-style-override-1">isValidMonthCode</span> (строки 326–346) потеряла актуальность после введения перечисления <span class="command char-style-override-1">Month</span>, поэтому я ее удалил [G9].</p>
+
+    <p>Функция <span class="command char-style-override-1">monthCodeToQuarter</span> (строки 356–375) отдает ФУНКЦИОНАЛЬНОЙ ЗАВИСТЬЮ [Refactoring]; вероятно, ее логичнее включить в перечисление <span class="command char-style-override-1">Month</span> в виде метода с именем <span class="command char-style-override-1">quarter</span>. Я выполнил замену.</p>
+
+    <p class="listing-body">public int quarter() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return 1 + (index-1)/3;</p>
+
+    <p class="listing-body">}</p>
+
+    <p>В результате перечисление <span class="command char-style-override-1">Month</span> стало достаточно большим для выделения в отдельный класс. Я убрал его из <span class="command char-style-override-1">DayDate</span> по образцу перечисления <span class="command char-style-override-1">Day</span> [G11],[G13].</p>
+
+    <p>Следующие два метода называются <span class="command char-style-override-1">monthCodeToString</span> (строки 377–426). И снова мы видим, как один метод вызывает своего «двойника» с передачей флага. Обычно передавать флаг в аргументе не рекомендуется, особенно если он просто выбирает формат вывода [G15]. Я переименовал, упростил и реструктурировал эти функции и переместил их в перечисление <span class="command char-style-override-1">Month</span> [N1],[N3],[C3],[G14].</p>
+
+    <p class="listing-body">public String toString() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return dateFormatSymbols.getMonths()[index - 1];</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">public String toShortString() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return dateFormatSymbols.getShortMonths()[index - 1];</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Далее в листинге идет метод <span class="command char-style-override-1">stringToMonthCode</span> (строки 428–472). Я пере­именовал его, переместил в перечисление <span class="command char-style-override-1">Month</span> и упростил [N1],[N3],[C3],[G14],[G12].</p>
+
+    <p class="listing-body">public static Month parse(String s) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;s = s.trim();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;for (Month m : Month.values())</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (m.matches(s))</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return m;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return make(Integer.parseInt(s));</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;catch (NumberFormatException e) {}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;throw new IllegalArgumentException("Invalid month " + s);</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">private boolean matches(String s) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return s.equalsIgnoreCase(toString()) ||</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;s.equalsIgnoreCase(toShortString());</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Метод <span class="command char-style-override-1">isLeapYear</span> (строки 495–517) можно сделать более выразительным [G16].</p>
+
+    <p class="listing-body">public static boolean isLeapYear(int year) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;boolean fourth = year % 4 == 0;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;boolean hundredth = year % 100 == 0;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;boolean fourHundredth = year % 400 == 0;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return fourth &amp;&amp; (!hundredth || fourHundredth);</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Следующая функция, <span class="command char-style-override-1">leapYearCount</span> (строки 519–536), не принадлежит <span class="command char-style-override-1">DayDate</span>. Она не вызывается никем, кроме двух методов <span class="command char-style-override-1">SpreadsheetDate</span>. Я переместил ее в производный класс [G6].</p>
+
+    <p>Функция <span class="command char-style-override-1">lastDayOfMonth</span> (строки 538–560) использует массив <span class="command char-style-override-1">LAST_DAY_OF_MONTH</span>. Этот массив принадлежит перечислению <span class="command char-style-override-1">Month</span> [G17], поэтому функция была перемещена. Заодно я упростил ее код и сделал его более выразительным [G16].</p>
+
+    <p class="listing-body">public static int lastDayOfMonth(Month month, int year) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;if (month == Month.FEBRUARY &amp;&amp; isLeapYear(year))</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return month.lastDay() + 1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;else</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return month.lastDay();</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Начинается самое интересное. Далее в листинге идет функция <span class="command char-style-override-1">addDays</span> (строки 562–576). Прежде всего, поскольку эта функция работает с переменными <span class="command char-style-override-1">DayDate</span>, она не должна быть статической [G18]. Соответственно, я преобразовал ее в метод экземпляра. Также она вызывает функцию <span class="command char-style-override-1">toSerial</span>, которую правильнее называть <span class="command char-style-override-1">toOrdinal</span> [N1]. Наконец, метод можно несколько упростить.</p>
+
+    <p class="listing-body">public DayDate addDays(int days) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return DayDateFactory.makeDate(toOrdinal() + days);</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Сказанное относится и к функции <span class="command char-style-override-1">addMonths</span> (строки 578–602). Она должна быть оформлена в виде метода экземпляра [G18]. Алгоритм относительно сложен, поэтому я воспользовался ПОЯСНИТЕЛЬНЫМИ ВРЕМЕННЫМИ ПЕРЕМЕННЫМИ [Beck97] [G19], чтобы сделать его смысл более прозрачным. Заодно метод <span class="command char-style-override-1">getYYY</span> был переименован в <span class="command char-style-override-1">getYear</span> [N1].</p>
+
+    <p class="listing-body">public DayDate addMonths(int months) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int thisMonthAsOrdinal = 12 * getYear() + getMonth().index - 1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int resultMonthAsOrdinal = thisMonthAsOrdinal + months;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int resultYear = resultMonthAsOrdinal / 12;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;Month resultMonth = Month.make(resultMonthAsOrdinal % 12 + 1);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int lastDayOfResultMonth = lastDayOfMonth(resultMonth, resultYear);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int resultDay = Math.min(getDayOfMonth(), lastDayOfResultMonth);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return DayDateFactory.makeDate(resultDay, resultMonth, resultYear);</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Функция <span class="command char-style-override-1">addYears</span> (строки 604–626) преобразуется по тем же принципам, что и ее аналоги.</p>
+
+    <p class="listing-body">public DayDate plusYears(int years) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int resultYear = getYear() + years;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int lastDayOfMonthInResultYear = lastDayOfMonth(getMonth(), resultYear);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int resultDay = Math.min(getDayOfMonth(), lastDayOfMonthInResultYear);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return DayDateFactory.makeDate(resultDay, getMonth(), resultYear);</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Преобразование статических методов в методы экземпляров вызвало у меня некоторое беспокойство. Поймет ли читатель при виде выражения <span class="command char-style-override-1">date</span><span class="command char-style-override-1">.</span><span class="command char-style-override-1">addDays</span><span class="command char-style-override-1">(5)</span>, что объект <span class="command char-style-override-1">date</span> не изменяется, а вместо этого возвращается новый экземпляр <span class="command char-style-override-1">DayDate</span>? Или он ошибочно решит, что к объекту <span class="command char-style-override-1">date</span> прибавляются пять дней? Казалось бы, проблема не столь серьезна, но конструкции вроде следующей могут оказаться очень коварными [G20].</p>
+
+    <p class="listing-body">DayDate date = DateFactory.makeDate(5, Month.DECEMBER, 1952);</p>
+
+    <p class="listing-body">date.addDays(7); // Смещение date на одну неделю.</p>
+
+    <p>Скорее всего, читатель кода предположит, что вызов <span class="command char-style-override-1">addDays</span> изменяет объект <span class="command char-style-override-1">date</span>. Значит, нам понадобится имя, разрушающее эту двусмысленность [N4]. Я переименовал методы в <span class="command char-style-override-1">plusDays</span> и <span class="command char-style-override-1">plusMonths</span>. Мне кажется, что предназначение данного метода отлично отражается конструкциями вида</p>
+
+    <p class="listing-body">DayDate date = oldDate.plusDays(5);</p>
+
+    <p>С другой стороны, следующая конструкция читается недостаточно бегло, чтобы читатель сразу предположил, что изменяется объект <span class="command char-style-override-1">date</span>:</p>
+
+    <p class="listing-body">date.plusDays(5);</p>
+
+    <p>Алгоритмы становятся все интереснее. Функция <span class="command char-style-override-1">getPreviousDayOfWeek</span> (строки 628–660) работает, но выглядит слишком сложно. После некоторых размышлений относительно того, что же в действительности происходит в этой функции [G21], мне удалось упростить ее и воспользоваться ПОЯСНИТЕЛЬНЫМИ ВРЕМЕННЫМИ ПЕРЕМЕННЫМИ [G19], чтобы сделать код более понятным. Я также преобразовал статический метод в метод экземпляра [G18] и избавился от дублирующего метода экземпляра [G5] (строки 997–1008).</p>
+
+    <p class="listing-body">public DayDate getPreviousDayOfWeek(Day targetDayOfWeek) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int offsetToTarget = targetDayOfWeek.index - getDayOfWeek().index;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;if (offsetToTarget &gt;= 0)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;offsetToTarget -= 7;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return plusDays(offsetToTarget);</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Абсолютно такой же анализ с тем же результатом был проведен для метода <span class="command char-style-override-1">getFollowingDayOfWeek</span> (строки 662–693).</p>
+
+    <p class="listing-body">public DayDate getFollowingDayOfWeek(Day targetDayOfWeek) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int offsetToTarget = targetDayOfWeek.index - getDayOfWeek().index;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;if (offsetToTarget &lt;= 0)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;offsetToTarget += 7;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return plusDays(offsetToTarget);</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Далее идет функция <span class="command char-style-override-1">getNearestDayOfWeek</span> (строки 695–726), которую мы исправляли на с. 309. Внесенные тогда изменения не соответствуют тому шаблону, по которому были преобразованы две последние функции [G11]. Я преобразовал функцию по тем же правилам, а также воспользовался ПОЯСНИТЕЛЬНЫМИ ВРЕМЕННЫМИ ПЕРЕМЕННЫМИ [G19] для разъяснения алгоритма.</p>
+
+    <p class="listing-body">public DayDate getNearestDayOfWeek(final Day targetDay) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int offsetToThisWeeksTarget = targetDay.index - getDayOfWeek().index;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int offsetToFutureTarget = (offsetToThisWeeksTarget + 7) % 7;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int offsetToPreviousTarget = offsetToFutureTarget - 7;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;if (offsetToFutureTarget &gt; 3)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return plusDays(offsetToPreviousTarget);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;else</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return plusDays(offsetToFutureTarget);</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Метод <span class="command char-style-override-1">getEndOfCurrentMonth</span> (строки 728–740) выглядит немного странно — перед нами метод экземпляра, который «завидует» [G14] собственному классу, получая аргумент <span class="command char-style-override-1">DayDate</span>. Я преобразовал его в полноценный метод экземпляра, а также заменил несколько имен более содержательными.</p>
+
+    <p class="listing-body">public DayDate getEndOfMonth() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;Month month = getMonth();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int year = getYear();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int lastDay = lastDayOfMonth(month, year);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return DayDateFactory.makeDate(lastDay, month, year);</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Переработка <span class="command char-style-override-1">weekInMonthToString</span> (строки 742–761) оказалась очень интересным делом. Используя средства рефакторинга своей IDE, я сначала переместил метод в перечисление <span class="command char-style-override-1">WeekInMonth</span>, созданное ранее на с. 312. Затем я переименовал его в <span class="command char-style-override-1">toString</span> и преобразовал из статического метода в метод экземпляра. Все тесты прошли успешно. (Догадываетесь, к чему я клоню?)</p>
+
+    <p>Затем я полностью удалил метод! Пять проверок завершились неудачей (строки 411–415, листинг Б.4, с. 417). Я изменил эти строки так, чтобы в них использовались имена из перечисления (<span class="command char-style-override-1">FIRST</span>, <span class="command char-style-override-1">SECOND</span>, . . .). И все тесты прошли. А вы догадываетесь, почему? И понимаете ли вы, почему каждый из этих шагов был необходим? Функция рефакторинга проследила за тем, чтобы все предыдущие вызовы <span class="command char-style-override-1">weekInMonthToString</span> были заменены вызовами <span class="command char-style-override-1">toString</span> для перечисления <span class="command char-style-override-1">weekInMonth</span>, а во всех перечислениях реализация <span class="command char-style-override-1">toString</span> просто возвращает имена…</p>
+
+    <p>К сожалению, мои ухищрения ни к чему не привели. Как бы элегантно ни выглядела эта замечательная цепочка рефакторинга, в итоге я понял, что единственными пользователями этой функции были тесты, которые я только что изменил. И я удалил тесты.</p>
+
+    <p>Стыдно дважды наступать на одни грабли! Определив, что функция <span class="command char-style-override-1">relative­ToString</span> (строки 765–781) не вызывается нигде, кроме тестов, я просто удалил функцию вместе с ее тестами.</p>
+
+    <p>Наконец-то мы добрались до абстрактных методов абстрактного класса. Первый метод выглядит знакомо: <span class="command char-style-override-1">toSerial</span> (строки 838–844). На с. 316 я присвоил ему имя <span class="command char-style-override-1">toOrdinal</span>. Рассматривая его в новом контексте, я решил, что его лучше переименовать в <span class="command char-style-override-1">getOrdinalDay</span>.</p>
+
+    <p>Следующий абстрактный метод, <span class="command char-style-override-1">toDate</span> (строки 838–844), преобразует <span class="command char-style-override-1">DayDate</span> в <span class="command char-style-override-1">java</span><span class="command char-style-override-1">.</span><span class="command char-style-override-1">util</span><span class="command char-style-override-1">.</span><span class="command char-style-override-1">Date</span>. Почему метод объявлен абстрактным? Присмотревшись к его реализации в <span class="command char-style-override-1">SpreadsheetDate</span> (строки 198–207, листинг Б.5, с. 428), мы видим, что он не зависит ни от каких подробностей реализации класса [G6]. Поэтому я поднял его на более высокий уровень абстракции.</p>
+
+    <p>Методы <span class="command char-style-override-1">getYYYY</span>, <span class="command char-style-override-1">getMonth</span> и <span class="command char-style-override-1">getDayOfMonth</span> абстрактны. Метод <span class="command char-style-override-1">getDayOfWeek</span> — еще один метод, который следовало бы извлечь из <span class="command char-style-override-1">SpreadSheetDate</span> — тоже не зависит от <span class="command char-style-override-1">DayDate</span>. Или все-таки зависит? Присмотревшись внимательно (строка 247, листинг Б.5, с. 428), мы видим, что алгоритм неявно зависит от «точки отсчета» дней недели (иначе говоря, от того, какой день недели считается днем 0). Таким образом, хотя функция не имеет физических зависимостей, которые нельзя было бы переместить в <span class="command char-style-override-1">DayDate</span>, у нее имеются логические зависимости.</p>
+
+    <p>Подобные логические зависимости беспокоят меня [G22]. Если что-то зависит от реализации на логическом уровне, то что-то должно зависеть и на физическом уровне. Кроме того, мне кажется, что сам алгоритм можно было бы сделать более универсальным, чтобы существенно меньшая его часть зависела от реализации [G6].</p>
+
+    <p>Я создал в <span class="command char-style-override-1">DayDate</span> абстрактный метод с именем <span class="command char-style-override-1">getDayOfWeekForOrdinalZero</span> и реализовал его в <span class="command char-style-override-1">SpreadsheetDate</span> так, чтобы он возвращал <span class="command char-style-override-1">Day.SATURDAY</span>. Затем я переместил метод <span class="command char-style-override-1">getDayOfWeek</span> наверх по цепочке в <span class="command char-style-override-1">DayDate</span> и изменил его так, чтобы в нем вызывались методы <span class="command char-style-override-1">getOrdinalDay</span> и <span class="command char-style-override-1">getDayOfWeekForOrdinalZero</span>.</p>
+
+    <p class="listing-body">public Day getDayOfWeek() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;Day startingDay = getDayOfWeekForOrdinalZero();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int startingOffset = startingDay.index - Day.SUNDAY.index;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return Day.make((getOrdinalDay() + startingOffset) % 7 + 1);</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Заодно присмотритесь к комментарию в строках с 895 по 899. Так ли необходимо это повторение? Как и в предыдущих случаях, я удалил этот комментарий вместе со всеми остальными.</p>
+
+    <p>Переходим к следующему методу <span class="command char-style-override-1">compare</span> (строки 902–913). Уровень абстракции этого метода снова выбран неправильно [G6], поэтому я поднял его реализацию в <span class="command char-style-override-1">DayDate</span>. Кроме того, его имя недостаточно содержательно [N1]. В действительности этот метод возвращает промежуток в днях, начиная с аргумента, поэтому я переименовал его в <span class="command char-style-override-1">daysSince</span>. Также я заметил, что для этого метода нет ни одного теста, и написал их.</p>
+
+    <p>Следующие шесть функций (строки 915–980) представляют собой абстрактные методы, которые должны реализовываться в <span class="command char-style-override-1">DayDate</span>. Я извлек из <span class="command char-style-override-1">SpreadsheetDate</span>.</p>
+
+    <p>Последнюю функцию <span class="command char-style-override-1">isInRange</span> (строки 982–995) также необходимо извлечь и переработать. Команда <span class="command char-style-override-1">switch</span> выглядит некрасиво [G23]; ее можно заменить, переместив условия в перечисление <span class="command char-style-override-1">DateInterval</span>.</p>
+
+    <p class="listing-body">public enum DateInterval {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;OPEN {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public boolean isIn(int d, int left, int right) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return d &gt; left &amp;&amp; d &lt; right;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;},</p>
+
+    <p class="listing-body">&nbsp;&nbsp;CLOSED_LEFT {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public boolean isIn(int d, int left, int right) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return d &gt;= left &amp;&amp; d &lt; right;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;},</p>
+
+    <p class="listing-body">&nbsp;&nbsp;CLOSED_RIGHT {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public boolean isIn(int d, int left, int right) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return d &gt; left &amp;&amp; d &lt;= right;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;},</p>
+
+    <p class="listing-body">&nbsp;&nbsp;CLOSED {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public boolean isIn(int d, int left, int right) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return d &gt;= left &amp;&amp; d &lt;= right;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;};</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public abstract boolean isIn(int d, int left, int right);</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public boolean isInRange(DayDate d1, DayDate d2, DateInterval interval) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int left = Math.min(d1.getOrdinalDay(), d2.getOrdinalDay());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int right = Math.max(d1.getOrdinalDay(), d2.getOrdinalDay());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return interval.isIn(getOrdinalDay(), left, right);</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Мы подошли к концу класса <span class="command char-style-override-1">DayDate</span>. Сейчас я еще раз пройдусь по всему классу и напомню, что было сделано.</p>
+
+    <p>Открывающий комментарий был слишком длинным и неактуальным; я сократил и доработал его [C2].</p>
+
+    <p>Затем все оставшиеся перечисления были выделены в отдельные файлы&nbsp;&nbsp;[G12].</p>
+
+    <p>Статическая переменная (<span class="command char-style-override-1">dateFormatSymbols</span>) и три статических метода (<span class="command char-style-override-1">getMonthNames</span>, <span class="command char-style-override-1">isLeapYear</span>, <span class="command char-style-override-1">lastDayOfMonth</span>) были выделены в новый класс с именем <span class="command char-style-override-1">DateUtil</span> [G6].</p>
+
+    <p>Абстрактные методы были перемещены на более высокий уровень абстракции, где они были более уместными [G24].</p>
+
+    <p>Я переименовал <span class="command char-style-override-1">Month.make</span> в <span class="command char-style-override-1">Month.fromInt</span> [N1] и проделал то же самое для всех остальных перечислений.</p>
+
+    <p>Для всех перечислений был создан метод доступа <span class="command char-style-override-1">toInt</span><span class="command char-style-override-1">()</span>, а поле <span class="command char-style-override-1">index</span> было объявлено приватным.</p>
+
+    <p>В <span class="command char-style-override-1">plusYears</span> и <span class="command char-style-override-1">plusMonths</span> присутствовало дублирование кода [G5], которое мне удалось устранить введением нового метода <span class="command char-style-override-1">correctLastDayOfMonth</span>. При этом код всех трех методов стал более понятным.</p>
+
+    <p>«Волшебное число» 1 [G25] было заменено соответствующей конструкцией <span class="command char-style-override-1">Month.JANUARY.toInt()</span> или <span class="command char-style-override-1">Day.SUNDAY.toInt</span><span class="command char-style-override-1">()</span>. Я потратил некоторое время на доработку класса <span class="command char-style-override-1">SpreadsheetDate</span> и чистку алгоритмов. Конечный результат представлен в листингах с Б.7 (с. 442) по Б.16 (с. 451).</p>
+
+    <p>Интересно заметить, что покрытие кода в <span class="command char-style-override-1">DayDate</span> <em>уменьшилось</em> до 84,9 %! Это объясняется не снижением объема тестируемой функциональности; просто класс сократился, и несколько непокрытых строк имеют больший удельный вес. В классе <span class="command char-style-override-1">DayDate</span> тесты покрывают 45 из 53 исполняемых команд. Непокрытые строки настолько тривиальны, что не нуждаются в тестировании.</p>
+
+    <h2 id="toc_marker-18-3">Заключение</h2>
+
+    <p class="Normal0">Мы снова последовали «правилу бойскаута»: код стал немного чище, чем был до нашего прихода. На это потребовалось время, но результат того стоил. Тестовое покрытие кода увеличилось, были исправлены некоторые ошибки, код стал чище и компактнее. Хочется верить, что следующему человеку, который будет читать этот код, будет проще в нем разобраться, чем нам. И возможно, этот человек сможет сделать этот код еще чище, чем удалось нам.</p>
+
+    <h2 id="toc_marker-18-4">Литература</h2>
+
+    <p class="Normal0">[GOF]: Design Patterns: Elements of Reusable Object Oriented Software, Gamma et al., Addison-Wesley, 1996.</p>
+
+    <p>[Simmons04]: Hardcore Java, Robert Simmons, Jr., O’Reilly, 2004.</p>
+
+    <p>[Refactoring]: Refactoring: Improving the Design of Existing Code, Martin Fowler et al., Addison-Wesley, 1999.</p>
+
+    <p>[Beck97]: Smalltalk Best Practice Patterns, Kent Beck, Prentice Hall, 1997.</p>
+
+    <div class="footnotes footnote">
+      <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-71-backlink" id="footnote-319-71">71</a><span class="Superscript char-style-override-2" xml:lang="en-US">1</span> А еще правильнее было бы считать в <span xml:lang="en-US">Javadoc</span> все комментарии заранее отформатированными, чтобы они одинаково смотрелись в коде и в документации.</p>
+    </div>
+  </div>
+</body>
+</html>

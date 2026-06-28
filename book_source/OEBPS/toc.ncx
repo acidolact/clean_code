@@ -1,0 +1,933 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN"
+ "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd"><ncx version="2005-1" xmlns="http://www.daisy.org/z3986/2005/ncx/">
+  <head>
+    <meta content="urn:uuid:f27449a8-cd98-4263-836f-d80ad23f5937" name="dtb:uid"/>
+    <meta content="2" name="dtb:depth"/>
+    <meta content="0" name="dtb:totalPageCount"/>
+    <meta content="0" name="dtb:maxPageNumber"/>
+  </head>
+  <docTitle>
+    <text>Чистый код: создание, анализ и рефакторинг. Библиотека программиста</text>
+  </docTitle>
+  <navMap>
+    <navPoint id="navpoint1" playOrder="1">
+      <navLabel>
+        <text>Предисловие</text>
+      </navLabel>
+      <content src="Text/978549600487-1.xhtml#toc_marker-1"/>
+    </navPoint>
+    <navPoint id="navpoint2" playOrder="2">
+      <navLabel>
+        <text>Введение</text>
+      </navLabel>
+      <content src="Text/978549600487-2.xhtml#toc_marker-2"/>
+      <navPoint id="navpoint3" playOrder="3">
+        <navLabel>
+          <text>Благодарности</text>
+        </navLabel>
+        <content src="Text/978549600487-2.xhtml#toc_marker-2-1"/>
+      </navPoint>
+    </navPoint>
+    <navPoint id="navpoint4" playOrder="4">
+      <navLabel>
+        <text>1. Чистый код</text>
+      </navLabel>
+      <content src="Text/978549600487-3.xhtml#toc_marker-3"/>
+      <navPoint id="navpoint5" playOrder="5">
+        <navLabel>
+          <text>Да будет код</text>
+        </navLabel>
+        <content src="Text/978549600487-3.xhtml#toc_marker-3-1"/>
+      </navPoint>
+      <navPoint id="navpoint6" playOrder="6">
+        <navLabel>
+          <text>Расплата за хаос</text>
+        </navLabel>
+        <content src="Text/978549600487-3.xhtml#toc_marker-3-2"/>
+      </navPoint>
+      <navPoint id="navpoint7" playOrder="7">
+        <navLabel>
+          <text>Правило бойскаута</text>
+        </navLabel>
+        <content src="Text/978549600487-3.xhtml#toc_marker-3-3"/>
+      </navPoint>
+      <navPoint id="navpoint8" playOrder="8">
+        <navLabel>
+          <text>Предыстория и принципы</text>
+        </navLabel>
+        <content src="Text/978549600487-3.xhtml#toc_marker-3-4"/>
+      </navPoint>
+      <navPoint id="navpoint9" playOrder="9">
+        <navLabel>
+          <text>Заключение</text>
+        </navLabel>
+        <content src="Text/978549600487-3.xhtml#toc_marker-3-5"/>
+      </navPoint>
+      <navPoint id="navpoint10" playOrder="10">
+        <navLabel>
+          <text>Литература</text>
+        </navLabel>
+        <content src="Text/978549600487-3.xhtml#toc_marker-3-6"/>
+      </navPoint>
+    </navPoint>
+    <navPoint id="navpoint11" playOrder="11">
+      <navLabel>
+        <text>2. Содержательные имена</text>
+      </navLabel>
+      <content src="Text/978549600487-4.xhtml#toc_marker-4"/>
+      <navPoint id="navpoint12" playOrder="12">
+        <navLabel>
+          <text>Имена должны передавать  намерения программиста</text>
+        </navLabel>
+        <content src="Text/978549600487-4.xhtml#toc_marker-4-1"/>
+      </navPoint>
+      <navPoint id="navpoint13" playOrder="13">
+        <navLabel>
+          <text>Избегайте дезинформации</text>
+        </navLabel>
+        <content src="Text/978549600487-4.xhtml#toc_marker-4-2"/>
+      </navPoint>
+      <navPoint id="navpoint14" playOrder="14">
+        <navLabel>
+          <text>Используйте осмысленные различия</text>
+        </navLabel>
+        <content src="Text/978549600487-4.xhtml#toc_marker-4-3"/>
+      </navPoint>
+      <navPoint id="navpoint15" playOrder="15">
+        <navLabel>
+          <text>Используйте удобопроизносимые имена</text>
+        </navLabel>
+        <content src="Text/978549600487-4.xhtml#toc_marker-4-4"/>
+      </navPoint>
+      <navPoint id="navpoint16" playOrder="16">
+        <navLabel>
+          <text>Выбирайте имена, удобные для поиска</text>
+        </navLabel>
+        <content src="Text/978549600487-4.xhtml#toc_marker-4-5"/>
+      </navPoint>
+      <navPoint id="navpoint17" playOrder="17">
+        <navLabel>
+          <text>Избегайте схем кодирования имен</text>
+        </navLabel>
+        <content src="Text/978549600487-4.xhtml#toc_marker-4-6"/>
+      </navPoint>
+      <navPoint id="navpoint18" playOrder="18">
+        <navLabel>
+          <text>Избегайте мысленных преобразований</text>
+        </navLabel>
+        <content src="Text/978549600487-4.xhtml#toc_marker-4-7"/>
+      </navPoint>
+      <navPoint id="navpoint19" playOrder="19">
+        <navLabel>
+          <text>Имена классов</text>
+        </navLabel>
+        <content src="Text/978549600487-4.xhtml#toc_marker-4-8"/>
+      </navPoint>
+      <navPoint id="navpoint20" playOrder="20">
+        <navLabel>
+          <text>Имена методов</text>
+        </navLabel>
+        <content src="Text/978549600487-4.xhtml#toc_marker-4-9"/>
+      </navPoint>
+      <navPoint id="navpoint21" playOrder="21">
+        <navLabel>
+          <text>Избегайте остроумия</text>
+        </navLabel>
+        <content src="Text/978549600487-4.xhtml#toc_marker-4-10"/>
+      </navPoint>
+      <navPoint id="navpoint22" playOrder="22">
+        <navLabel>
+          <text>Выберите одно слово  для каждой концепции</text>
+        </navLabel>
+        <content src="Text/978549600487-4.xhtml#toc_marker-4-11"/>
+      </navPoint>
+      <navPoint id="navpoint23" playOrder="23">
+        <navLabel>
+          <text>Воздержитесь от каламбуров</text>
+        </navLabel>
+        <content src="Text/978549600487-4.xhtml#toc_marker-4-12"/>
+      </navPoint>
+      <navPoint id="navpoint24" playOrder="24">
+        <navLabel>
+          <text>Используйте имена  из пространства решения</text>
+        </navLabel>
+        <content src="Text/978549600487-4.xhtml#toc_marker-4-13"/>
+      </navPoint>
+      <navPoint id="navpoint25" playOrder="25">
+        <navLabel>
+          <text>Используйте имена  из пространства задачи</text>
+        </navLabel>
+        <content src="Text/978549600487-4.xhtml#toc_marker-4-14"/>
+      </navPoint>
+      <navPoint id="navpoint26" playOrder="26">
+        <navLabel>
+          <text>Добавьте содержательный контекст</text>
+        </navLabel>
+        <content src="Text/978549600487-4.xhtml#toc_marker-4-15"/>
+      </navPoint>
+      <navPoint id="navpoint27" playOrder="27">
+        <navLabel>
+          <text>Не добавляйте избыточный контекст</text>
+        </navLabel>
+        <content src="Text/978549600487-4.xhtml#toc_marker-4-16"/>
+      </navPoint>
+      <navPoint id="navpoint28" playOrder="28">
+        <navLabel>
+          <text>Несколько слов напоследок</text>
+        </navLabel>
+        <content src="Text/978549600487-4.xhtml#toc_marker-4-17"/>
+      </navPoint>
+    </navPoint>
+    <navPoint id="navpoint29" playOrder="29">
+      <navLabel>
+        <text>3. Функции</text>
+      </navLabel>
+      <content src="Text/978549600487-5.xhtml#toc_marker-5"/>
+      <navPoint id="navpoint30" playOrder="30">
+        <navLabel>
+          <text>Компактность!</text>
+        </navLabel>
+        <content src="Text/978549600487-5.xhtml#toc_marker-5-1"/>
+      </navPoint>
+      <navPoint id="navpoint31" playOrder="31">
+        <navLabel>
+          <text>Правило одной операции</text>
+        </navLabel>
+        <content src="Text/978549600487-5.xhtml#toc_marker-5-2"/>
+      </navPoint>
+      <navPoint id="navpoint32" playOrder="32">
+        <navLabel>
+          <text>Один уровень абстракции на функцию</text>
+        </navLabel>
+        <content src="Text/978549600487-5.xhtml#toc_marker-5-3"/>
+      </navPoint>
+      <navPoint id="navpoint33" playOrder="33">
+        <navLabel>
+          <text>Команды switch</text>
+        </navLabel>
+        <content src="Text/978549600487-5.xhtml#toc_marker-5-4"/>
+      </navPoint>
+      <navPoint id="navpoint34" playOrder="34">
+        <navLabel>
+          <text>Используйте содержательные имена</text>
+        </navLabel>
+        <content src="Text/978549600487-5.xhtml#toc_marker-5-5"/>
+      </navPoint>
+      <navPoint id="navpoint35" playOrder="35">
+        <navLabel>
+          <text>Аргументы функций</text>
+        </navLabel>
+        <content src="Text/978549600487-5.xhtml#toc_marker-5-6"/>
+      </navPoint>
+      <navPoint id="navpoint36" playOrder="36">
+        <navLabel>
+          <text>Избавьтесь от побочных эффектов</text>
+        </navLabel>
+        <content src="Text/978549600487-5.xhtml#toc_marker-5-7"/>
+      </navPoint>
+      <navPoint id="navpoint37" playOrder="37">
+        <navLabel>
+          <text>Разделение команд и запросов</text>
+        </navLabel>
+        <content src="Text/978549600487-5.xhtml#toc_marker-5-8"/>
+      </navPoint>
+      <navPoint id="navpoint38" playOrder="38">
+        <navLabel>
+          <text>Используйте исключения вместо возвращения кодов ошибок</text>
+        </navLabel>
+        <content src="Text/978549600487-5.xhtml#toc_marker-5-9"/>
+      </navPoint>
+      <navPoint id="navpoint39" playOrder="39">
+        <navLabel>
+          <text>Не повторяйтесь</text>
+        </navLabel>
+        <content src="Text/978549600487-5.xhtml#toc_marker-5-10"/>
+      </navPoint>
+      <navPoint id="navpoint40" playOrder="40">
+        <navLabel>
+          <text>Структурное программирование</text>
+        </navLabel>
+        <content src="Text/978549600487-5.xhtml#toc_marker-5-11"/>
+      </navPoint>
+      <navPoint id="navpoint41" playOrder="41">
+        <navLabel>
+          <text>Как научиться писать такие функции?</text>
+        </navLabel>
+        <content src="Text/978549600487-5.xhtml#toc_marker-5-12"/>
+      </navPoint>
+      <navPoint id="navpoint42" playOrder="42">
+        <navLabel>
+          <text>Завершение</text>
+        </navLabel>
+        <content src="Text/978549600487-5.xhtml#toc_marker-5-13"/>
+      </navPoint>
+      <navPoint id="navpoint43" playOrder="43">
+        <navLabel>
+          <text>Литература</text>
+        </navLabel>
+        <content src="Text/978549600487-5.xhtml#toc_marker-5-14"/>
+      </navPoint>
+    </navPoint>
+    <navPoint id="navpoint44" playOrder="44">
+      <navLabel>
+        <text>4. Комментарии</text>
+      </navLabel>
+      <content src="Text/978549600487-6.xhtml#toc_marker-6"/>
+      <navPoint id="navpoint45" playOrder="45">
+        <navLabel>
+          <text>Комментарии не компенсируют  плохого кода</text>
+        </navLabel>
+        <content src="Text/978549600487-6.xhtml#toc_marker-6-1"/>
+      </navPoint>
+      <navPoint id="navpoint46" playOrder="46">
+        <navLabel>
+          <text>Объясните свои намерения в коде</text>
+        </navLabel>
+        <content src="Text/978549600487-6.xhtml#toc_marker-6-2"/>
+      </navPoint>
+      <navPoint id="navpoint47" playOrder="47">
+        <navLabel>
+          <text>Хорошие комментарии</text>
+        </navLabel>
+        <content src="Text/978549600487-6.xhtml#toc_marker-6-3"/>
+      </navPoint>
+      <navPoint id="navpoint48" playOrder="48">
+        <navLabel>
+          <text>Плохие комментарии</text>
+        </navLabel>
+        <content src="Text/978549600487-6.xhtml#toc_marker-6-4"/>
+      </navPoint>
+      <navPoint id="navpoint49" playOrder="49">
+        <navLabel>
+          <text>Литература</text>
+        </navLabel>
+        <content src="Text/978549600487-6.xhtml#toc_marker-6-5"/>
+      </navPoint>
+    </navPoint>
+    <navPoint id="navpoint50" playOrder="50">
+      <navLabel>
+        <text>5. Форматирование</text>
+      </navLabel>
+      <content src="Text/978549600487-7.xhtml#toc_marker-7"/>
+      <navPoint id="navpoint51" playOrder="51">
+        <navLabel>
+          <text>Цель форматирования</text>
+        </navLabel>
+        <content src="Text/978549600487-7.xhtml#toc_marker-7-1"/>
+      </navPoint>
+      <navPoint id="navpoint52" playOrder="52">
+        <navLabel>
+          <text>Горизонтальное форматирование</text>
+        </navLabel>
+        <content src="Text/978549600487-7.xhtml#toc_marker-7-2"/>
+      </navPoint>
+    </navPoint>
+    <navPoint id="navpoint53" playOrder="53">
+      <navLabel>
+        <text>6. Объекты и структуры данных</text>
+      </navLabel>
+      <content src="Text/978549600487-8.xhtml#toc_marker-8"/>
+      <navPoint id="navpoint54" playOrder="54">
+        <navLabel>
+          <text>Абстракция данных</text>
+        </navLabel>
+        <content src="Text/978549600487-8.xhtml#toc_marker-8-1"/>
+      </navPoint>
+      <navPoint id="navpoint55" playOrder="55">
+        <navLabel>
+          <text>Антисимметрия данных/объектов</text>
+        </navLabel>
+        <content src="Text/978549600487-8.xhtml#toc_marker-8-2"/>
+      </navPoint>
+      <navPoint id="navpoint56" playOrder="56">
+        <navLabel>
+          <text>Закон Деметры</text>
+        </navLabel>
+        <content src="Text/978549600487-8.xhtml#toc_marker-8-3"/>
+      </navPoint>
+      <navPoint id="navpoint57" playOrder="57">
+        <navLabel>
+          <text>Заключение</text>
+        </navLabel>
+        <content src="Text/978549600487-8.xhtml#toc_marker-8-4"/>
+      </navPoint>
+      <navPoint id="navpoint58" playOrder="58">
+        <navLabel>
+          <text>Литература</text>
+        </navLabel>
+        <content src="Text/978549600487-8.xhtml#toc_marker-8-5"/>
+      </navPoint>
+    </navPoint>
+    <navPoint id="navpoint59" playOrder="59">
+      <navLabel>
+        <text>7. Обработка ошибок</text>
+      </navLabel>
+      <content src="Text/978549600487-9.xhtml#toc_marker-9"/>
+      <navPoint id="navpoint60" playOrder="60">
+        <navLabel>
+          <text>Используйте исключения  вместо кодов ошибок</text>
+        </navLabel>
+        <content src="Text/978549600487-9.xhtml#toc_marker-9-1"/>
+      </navPoint>
+      <navPoint id="navpoint61" playOrder="61">
+        <navLabel>
+          <text>Начните с написания команды  try-catch-finally</text>
+        </navLabel>
+        <content src="Text/978549600487-9.xhtml#toc_marker-9-2"/>
+      </navPoint>
+      <navPoint id="navpoint62" playOrder="62">
+        <navLabel>
+          <text>Используйте непроверяемые исключения</text>
+        </navLabel>
+        <content src="Text/978549600487-9.xhtml#toc_marker-9-3"/>
+      </navPoint>
+      <navPoint id="navpoint63" playOrder="63">
+        <navLabel>
+          <text>Передавайте контекст с исключениями</text>
+        </navLabel>
+        <content src="Text/978549600487-9.xhtml#toc_marker-9-4"/>
+      </navPoint>
+      <navPoint id="navpoint64" playOrder="64">
+        <navLabel>
+          <text>Определяйте классы исключений в контексте потребностей  вызывающей стороны</text>
+        </navLabel>
+        <content src="Text/978549600487-9.xhtml#toc_marker-9-5"/>
+      </navPoint>
+      <navPoint id="navpoint65" playOrder="65">
+        <navLabel>
+          <text>Определите нормальный путь выполнения</text>
+        </navLabel>
+        <content src="Text/978549600487-9.xhtml#toc_marker-9-6"/>
+      </navPoint>
+      <navPoint id="navpoint66" playOrder="66">
+        <navLabel>
+          <text>Не возвращайте null</text>
+        </navLabel>
+        <content src="Text/978549600487-9.xhtml#toc_marker-9-7"/>
+      </navPoint>
+      <navPoint id="navpoint67" playOrder="67">
+        <navLabel>
+          <text>Не передавайте null</text>
+        </navLabel>
+        <content src="Text/978549600487-9.xhtml#toc_marker-9-8"/>
+      </navPoint>
+      <navPoint id="navpoint68" playOrder="68">
+        <navLabel>
+          <text>Заключение</text>
+        </navLabel>
+        <content src="Text/978549600487-9.xhtml#toc_marker-9-9"/>
+      </navPoint>
+      <navPoint id="navpoint69" playOrder="69">
+        <navLabel>
+          <text>Литература</text>
+        </navLabel>
+        <content src="Text/978549600487-9.xhtml#toc_marker-9-10"/>
+      </navPoint>
+    </navPoint>
+    <navPoint id="navpoint70" playOrder="70">
+      <navLabel>
+        <text>8. Границы</text>
+      </navLabel>
+      <content src="Text/978549600487-10.xhtml#toc_marker-10"/>
+      <navPoint id="navpoint71" playOrder="71">
+        <navLabel>
+          <text>Использование стороннего кода</text>
+        </navLabel>
+        <content src="Text/978549600487-10.xhtml#toc_marker-10-1"/>
+      </navPoint>
+      <navPoint id="navpoint72" playOrder="72">
+        <navLabel>
+          <text>Исследование и анализ границ</text>
+        </navLabel>
+        <content src="Text/978549600487-10.xhtml#toc_marker-10-2"/>
+      </navPoint>
+      <navPoint id="navpoint73" playOrder="73">
+        <navLabel>
+          <text>Чистые границы</text>
+        </navLabel>
+        <content src="Text/978549600487-10.xhtml#toc_marker-10-3"/>
+      </navPoint>
+      <navPoint id="navpoint74" playOrder="74">
+        <navLabel>
+          <text>Литература</text>
+        </navLabel>
+        <content src="Text/978549600487-10.xhtml#toc_marker-10-4"/>
+      </navPoint>
+    </navPoint>
+    <navPoint id="navpoint75" playOrder="75">
+      <navLabel>
+        <text>9. Модульные тесты</text>
+      </navLabel>
+      <content src="Text/978549600487-11.xhtml#toc_marker-11"/>
+      <navPoint id="navpoint76" playOrder="76">
+        <navLabel>
+          <text>Три закона TTD</text>
+        </navLabel>
+        <content src="Text/978549600487-11.xhtml#toc_marker-11-1"/>
+      </navPoint>
+      <navPoint id="navpoint77" playOrder="77">
+        <navLabel>
+          <text>О чистоте тестов</text>
+        </navLabel>
+        <content src="Text/978549600487-11.xhtml#toc_marker-11-2"/>
+      </navPoint>
+      <navPoint id="navpoint78" playOrder="78">
+        <navLabel>
+          <text>Чистые тесты</text>
+        </navLabel>
+        <content src="Text/978549600487-11.xhtml#toc_marker-11-3"/>
+      </navPoint>
+      <navPoint id="navpoint79" playOrder="79">
+        <navLabel>
+          <text>Одна проверка на тест</text>
+        </navLabel>
+        <content src="Text/978549600487-11.xhtml#toc_marker-11-4"/>
+      </navPoint>
+      <navPoint id="navpoint80" playOrder="80">
+        <navLabel>
+          <text>F.I.R.S.T.</text>
+        </navLabel>
+        <content src="Text/978549600487-11.xhtml#toc_marker-11-5"/>
+      </navPoint>
+      <navPoint id="navpoint81" playOrder="81">
+        <navLabel>
+          <text>Заключение</text>
+        </navLabel>
+        <content src="Text/978549600487-11.xhtml#toc_marker-11-6"/>
+      </navPoint>
+      <navPoint id="navpoint82" playOrder="82">
+        <navLabel>
+          <text>Литература</text>
+        </navLabel>
+        <content src="Text/978549600487-11.xhtml#toc_marker-11-7"/>
+      </navPoint>
+    </navPoint>
+    <navPoint id="navpoint83" playOrder="83">
+      <navLabel>
+        <text>10. Классы</text>
+      </navLabel>
+      <content src="Text/978549600487-12.xhtml#toc_marker-12"/>
+      <navPoint id="navpoint84" playOrder="84">
+        <navLabel>
+          <text>Строение класса</text>
+        </navLabel>
+        <content src="Text/978549600487-12.xhtml#toc_marker-12-1"/>
+      </navPoint>
+      <navPoint id="navpoint85" playOrder="85">
+        <navLabel>
+          <text>Структурирование с учетом изменений</text>
+        </navLabel>
+        <content src="Text/978549600487-12.xhtml#toc_marker-12-2"/>
+      </navPoint>
+      <navPoint id="navpoint86" playOrder="86">
+        <navLabel>
+          <text>Литература</text>
+        </navLabel>
+        <content src="Text/978549600487-12.xhtml#toc_marker-12-3"/>
+      </navPoint>
+    </navPoint>
+    <navPoint id="navpoint87" playOrder="87">
+      <navLabel>
+        <text>11. Системы</text>
+      </navLabel>
+      <content src="Text/978549600487-13.xhtml#toc_marker-13"/>
+      <navPoint id="navpoint88" playOrder="88">
+        <navLabel>
+          <text>Как бы вы строили город?</text>
+        </navLabel>
+        <content src="Text/978549600487-13.xhtml#toc_marker-13-1"/>
+      </navPoint>
+      <navPoint id="navpoint89" playOrder="89">
+        <navLabel>
+          <text>Отделение конструирования системы  от ее использования</text>
+        </navLabel>
+        <content src="Text/978549600487-13.xhtml#toc_marker-13-2"/>
+      </navPoint>
+      <navPoint id="navpoint90" playOrder="90">
+        <navLabel>
+          <text>Отделение main</text>
+        </navLabel>
+        <content src="Text/978549600487-13.xhtml#toc_marker-13-3"/>
+      </navPoint>
+      <navPoint id="navpoint91" playOrder="91">
+        <navLabel>
+          <text>Масштабирование</text>
+        </navLabel>
+        <content src="Text/978549600487-13.xhtml#toc_marker-13-4"/>
+      </navPoint>
+      <navPoint id="navpoint92" playOrder="92">
+        <navLabel>
+          <text>Посредники</text>
+        </navLabel>
+        <content src="Text/978549600487-13.xhtml#toc_marker-13-5"/>
+      </navPoint>
+      <navPoint id="navpoint93" playOrder="93">
+        <navLabel>
+          <text>АОП-инфраструктуры на «чистом» Java</text>
+        </navLabel>
+        <content src="Text/978549600487-13.xhtml#toc_marker-13-6"/>
+      </navPoint>
+      <navPoint id="navpoint94" playOrder="94">
+        <navLabel>
+          <text>Аспекты AspectJ</text>
+        </navLabel>
+        <content src="Text/978549600487-13.xhtml#toc_marker-13-7"/>
+      </navPoint>
+      <navPoint id="navpoint95" playOrder="95">
+        <navLabel>
+          <text>Испытание системной архитектуры</text>
+        </navLabel>
+        <content src="Text/978549600487-13.xhtml#toc_marker-13-8"/>
+      </navPoint>
+      <navPoint id="navpoint96" playOrder="96">
+        <navLabel>
+          <text>Оптимизация принятия решений</text>
+        </navLabel>
+        <content src="Text/978549600487-13.xhtml#toc_marker-13-9"/>
+      </navPoint>
+      <navPoint id="navpoint97" playOrder="97">
+        <navLabel>
+          <text>Применяйте стандарты разумно,  когда они приносят очевидную пользу</text>
+        </navLabel>
+        <content src="Text/978549600487-13.xhtml#toc_marker-13-10"/>
+      </navPoint>
+      <navPoint id="navpoint98" playOrder="98">
+        <navLabel>
+          <text>Заключение</text>
+        </navLabel>
+        <content src="Text/978549600487-13.xhtml#toc_marker-13-11"/>
+      </navPoint>
+      <navPoint id="navpoint99" playOrder="99">
+        <navLabel>
+          <text>Литература</text>
+        </navLabel>
+        <content src="Text/978549600487-13.xhtml#toc_marker-13-12"/>
+      </navPoint>
+    </navPoint>
+    <navPoint id="navpoint100" playOrder="100">
+      <navLabel>
+        <text>12. Формирование архитектуры</text>
+      </navLabel>
+      <content src="Text/978549600487-14.xhtml#toc_marker-14"/>
+      <navPoint id="navpoint101" playOrder="101">
+        <navLabel>
+          <text>Четыре правила</text>
+        </navLabel>
+        <content src="Text/978549600487-14.xhtml#toc_marker-14-1"/>
+      </navPoint>
+      <navPoint id="navpoint102" playOrder="102">
+        <navLabel>
+          <text>Выразительность</text>
+        </navLabel>
+        <content src="Text/978549600487-14.xhtml#toc_marker-14-2"/>
+      </navPoint>
+      <navPoint id="navpoint103" playOrder="103">
+        <navLabel>
+          <text>Минимум классов и методов</text>
+        </navLabel>
+        <content src="Text/978549600487-14.xhtml#toc_marker-14-3"/>
+      </navPoint>
+      <navPoint id="navpoint104" playOrder="104">
+        <navLabel>
+          <text>Заключение</text>
+        </navLabel>
+        <content src="Text/978549600487-14.xhtml#toc_marker-14-4"/>
+      </navPoint>
+      <navPoint id="navpoint105" playOrder="105">
+        <navLabel>
+          <text>Литература</text>
+        </navLabel>
+        <content src="Text/978549600487-14.xhtml#toc_marker-14-5"/>
+      </navPoint>
+    </navPoint>
+    <navPoint id="navpoint106" playOrder="106">
+      <navLabel>
+        <text>13. Многопоточность</text>
+      </navLabel>
+      <content src="Text/978549600487-15.xhtml#toc_marker-15"/>
+      <navPoint id="navpoint107" playOrder="107">
+        <navLabel>
+          <text>Зачем нужна многопоточность?</text>
+        </navLabel>
+        <content src="Text/978549600487-15.xhtml#toc_marker-15-1"/>
+      </navPoint>
+      <navPoint id="navpoint108" playOrder="108">
+        <navLabel>
+          <text>Трудности</text>
+        </navLabel>
+        <content src="Text/978549600487-15.xhtml#toc_marker-15-2"/>
+      </navPoint>
+      <navPoint id="navpoint109" playOrder="109">
+        <navLabel>
+          <text>Защита от ошибок многопоточности</text>
+        </navLabel>
+        <content src="Text/978549600487-15.xhtml#toc_marker-15-3"/>
+      </navPoint>
+      <navPoint id="navpoint110" playOrder="110">
+        <navLabel>
+          <text>Знайте свою библиотеку</text>
+        </navLabel>
+        <content src="Text/978549600487-15.xhtml#toc_marker-15-4"/>
+      </navPoint>
+      <navPoint id="navpoint111" playOrder="111">
+        <navLabel>
+          <text>Знайте модели выполнения</text>
+        </navLabel>
+        <content src="Text/978549600487-15.xhtml#toc_marker-15-5"/>
+      </navPoint>
+      <navPoint id="navpoint112" playOrder="112">
+        <navLabel>
+          <text>Остерегайтесь зависимостей  между синхронизированными методами</text>
+        </navLabel>
+        <content src="Text/978549600487-15.xhtml#toc_marker-15-6"/>
+      </navPoint>
+      <navPoint id="navpoint113" playOrder="113">
+        <navLabel>
+          <text>Синхронизированные секции  должны иметь минимальный размер</text>
+        </navLabel>
+        <content src="Text/978549600487-15.xhtml#toc_marker-15-7"/>
+      </navPoint>
+      <navPoint id="navpoint114" playOrder="114">
+        <navLabel>
+          <text>О трудности корректного завершения</text>
+        </navLabel>
+        <content src="Text/978549600487-15.xhtml#toc_marker-15-8"/>
+      </navPoint>
+      <navPoint id="navpoint115" playOrder="115">
+        <navLabel>
+          <text>Тестирование многопоточного кода</text>
+        </navLabel>
+        <content src="Text/978549600487-15.xhtml#toc_marker-15-9"/>
+      </navPoint>
+      <navPoint id="navpoint116" playOrder="116">
+        <navLabel>
+          <text>Заключение</text>
+        </navLabel>
+        <content src="Text/978549600487-15.xhtml#toc_marker-15-10"/>
+      </navPoint>
+      <navPoint id="navpoint117" playOrder="117">
+        <navLabel>
+          <text>Литература</text>
+        </navLabel>
+        <content src="Text/978549600487-15.xhtml#toc_marker-15-11"/>
+      </navPoint>
+    </navPoint>
+    <navPoint id="navpoint118" playOrder="118">
+      <navLabel>
+        <text>14. Последовательное очищение</text>
+      </navLabel>
+      <content src="Text/978549600487-16.xhtml#toc_marker-16"/>
+      <navPoint id="navpoint119" playOrder="119">
+        <navLabel>
+          <text>Реализация Args</text>
+        </navLabel>
+        <content src="Text/978549600487-16.xhtml#toc_marker-16-1"/>
+      </navPoint>
+      <navPoint id="navpoint120" playOrder="120">
+        <navLabel>
+          <text>Как я это сделал?</text>
+        </navLabel>
+        <content src="Text/978549600487-16.xhtml#toc_marker-16-2"/>
+      </navPoint>
+      <navPoint id="navpoint121" playOrder="121">
+        <navLabel>
+          <text>Args: черновик</text>
+        </navLabel>
+        <content src="Text/978549600487-16.xhtml#toc_marker-16-3"/>
+      </navPoint>
+      <navPoint id="navpoint122" playOrder="122">
+        <navLabel>
+          <text>Аргументы String</text>
+        </navLabel>
+        <content src="Text/978549600487-16.xhtml#toc_marker-16-4"/>
+      </navPoint>
+      <navPoint id="navpoint123" playOrder="123">
+        <navLabel>
+          <text>Заключение</text>
+        </navLabel>
+        <content src="Text/978549600487-16.xhtml#toc_marker-16-5"/>
+      </navPoint>
+    </navPoint>
+    <navPoint id="navpoint124" playOrder="124">
+      <navLabel>
+        <text>15. Внутреннее строение JUnit</text>
+      </navLabel>
+      <content src="Text/978549600487-17.xhtml#toc_marker-17"/>
+      <navPoint id="navpoint125" playOrder="125">
+        <navLabel>
+          <text>Инфраструктура JUnit</text>
+        </navLabel>
+        <content src="Text/978549600487-17.xhtml#toc_marker-17-1"/>
+      </navPoint>
+      <navPoint id="navpoint126" playOrder="126">
+        <navLabel>
+          <text>Заключение</text>
+        </navLabel>
+        <content src="Text/978549600487-17.xhtml#toc_marker-17-2"/>
+      </navPoint>
+    </navPoint>
+    <navPoint id="navpoint127" playOrder="127">
+      <navLabel>
+        <text>16. Переработка SerialDate</text>
+      </navLabel>
+      <content src="Text/978549600487-18.xhtml#toc_marker-18"/>
+      <navPoint id="navpoint128" playOrder="128">
+        <navLabel>
+          <text>Прежде всего — заставить работать</text>
+        </navLabel>
+        <content src="Text/978549600487-18.xhtml#toc_marker-18-1"/>
+      </navPoint>
+      <navPoint id="navpoint129" playOrder="129">
+        <navLabel>
+          <text>…Потом очистить код</text>
+        </navLabel>
+        <content src="Text/978549600487-18.xhtml#toc_marker-18-2"/>
+      </navPoint>
+      <navPoint id="navpoint130" playOrder="130">
+        <navLabel>
+          <text>Заключение</text>
+        </navLabel>
+        <content src="Text/978549600487-18.xhtml#toc_marker-18-3"/>
+      </navPoint>
+      <navPoint id="navpoint131" playOrder="131">
+        <navLabel>
+          <text>Литература</text>
+        </navLabel>
+        <content src="Text/978549600487-18.xhtml#toc_marker-18-4"/>
+      </navPoint>
+    </navPoint>
+    <navPoint id="navpoint132" playOrder="132">
+      <navLabel>
+        <text>17. Запахи и эвристические правила</text>
+      </navLabel>
+      <content src="Text/978549600487-19.xhtml#toc_marker-19"/>
+      <navPoint id="navpoint133" playOrder="133">
+        <navLabel>
+          <text>Комментарии</text>
+        </navLabel>
+        <content src="Text/978549600487-19.xhtml#toc_marker-19-1"/>
+      </navPoint>
+      <navPoint id="navpoint134" playOrder="134">
+        <navLabel>
+          <text>Рабочая среда</text>
+        </navLabel>
+        <content src="Text/978549600487-19.xhtml#toc_marker-19-2"/>
+      </navPoint>
+      <navPoint id="navpoint135" playOrder="135">
+        <navLabel>
+          <text>Функции</text>
+        </navLabel>
+        <content src="Text/978549600487-19.xhtml#toc_marker-19-3"/>
+      </navPoint>
+      <navPoint id="navpoint136" playOrder="136">
+        <navLabel>
+          <text>Разное</text>
+        </navLabel>
+        <content src="Text/978549600487-19.xhtml#toc_marker-19-4"/>
+      </navPoint>
+      <navPoint id="navpoint137" playOrder="137">
+        <navLabel>
+          <text>Java</text>
+        </navLabel>
+        <content src="Text/978549600487-19.xhtml#toc_marker-19-5"/>
+      </navPoint>
+      <navPoint id="navpoint138" playOrder="138">
+        <navLabel>
+          <text>Имена</text>
+        </navLabel>
+        <content src="Text/978549600487-19.xhtml#toc_marker-19-6"/>
+      </navPoint>
+      <navPoint id="navpoint139" playOrder="139">
+        <navLabel>
+          <text>Тесты</text>
+        </navLabel>
+        <content src="Text/978549600487-19.xhtml#toc_marker-19-7"/>
+      </navPoint>
+      <navPoint id="navpoint140" playOrder="140">
+        <navLabel>
+          <text>Заключение</text>
+        </navLabel>
+        <content src="Text/978549600487-19.xhtml#toc_marker-19-8"/>
+      </navPoint>
+      <navPoint id="navpoint141" playOrder="141">
+        <navLabel>
+          <text>Литература</text>
+        </navLabel>
+        <content src="Text/978549600487-19.xhtml#toc_marker-19-9"/>
+      </navPoint>
+    </navPoint>
+    <navPoint id="navpoint142" playOrder="142">
+      <navLabel>
+        <text>А. Многопоточность II</text>
+      </navLabel>
+      <content src="Text/978549600487-20.xhtml#toc_marker-20"/>
+      <navPoint id="navpoint143" playOrder="143">
+        <navLabel>
+          <text>Пример приложения «клиент/сервер»</text>
+        </navLabel>
+        <content src="Text/978549600487-20.xhtml#toc_marker-20-1"/>
+      </navPoint>
+      <navPoint id="navpoint144" playOrder="144">
+        <navLabel>
+          <text>Знайте свои библиотеки</text>
+        </navLabel>
+        <content src="Text/978549600487-20.xhtml#toc_marker-20-2"/>
+      </navPoint>
+      <navPoint id="navpoint145" playOrder="145">
+        <navLabel>
+          <text>Зависимости между методами могут нарушить работу многопоточного кода</text>
+        </navLabel>
+        <content src="Text/978549600487-20.xhtml#toc_marker-20-3"/>
+      </navPoint>
+      <navPoint id="navpoint146" playOrder="146">
+        <navLabel>
+          <text>Повышение производительности</text>
+        </navLabel>
+        <content src="Text/978549600487-20.xhtml#toc_marker-20-4"/>
+      </navPoint>
+      <navPoint id="navpoint147" playOrder="147">
+        <navLabel>
+          <text>Взаимная блокировка</text>
+        </navLabel>
+        <content src="Text/978549600487-20.xhtml#toc_marker-20-5"/>
+      </navPoint>
+      <navPoint id="navpoint148" playOrder="148">
+        <navLabel>
+          <text>Тестирование многопоточного кода</text>
+        </navLabel>
+        <content src="Text/978549600487-20.xhtml#toc_marker-20-6"/>
+      </navPoint>
+      <navPoint id="navpoint149" playOrder="149">
+        <navLabel>
+          <text>Средства тестирования  многопоточного кода</text>
+        </navLabel>
+        <content src="Text/978549600487-20.xhtml#toc_marker-20-7"/>
+      </navPoint>
+      <navPoint id="navpoint150" playOrder="150">
+        <navLabel>
+          <text>Полные примеры кода</text>
+        </navLabel>
+        <content src="Text/978549600487-20.xhtml#toc_marker-20-8"/>
+      </navPoint>
+    </navPoint>
+    <navPoint id="navpoint151" playOrder="151">
+      <navLabel>
+        <text>Б. org.jfree.date.SerialDate</text>
+      </navLabel>
+      <content src="Text/978549600487-21.xhtml#toc_marker-21"/>
+    </navPoint>
+    <navPoint id="navpoint152" playOrder="152">
+      <navLabel>
+        <text>B. Перекрестные ссылки</text>
+      </navLabel>
+      <content src="Text/978549600487-22.xhtml#toc_marker-22"/>
+    </navPoint>
+    <navPoint id="navpoint153" playOrder="153">
+      <navLabel>
+        <text>Эпилог</text>
+      </navLabel>
+      <content src="Text/978549600487-23.xhtml#toc_marker-23"/>
+    </navPoint>
+  </navMap>
+</ncx>

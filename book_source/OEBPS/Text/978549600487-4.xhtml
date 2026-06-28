@@ -1,0 +1,560 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Чистый код: создание, анализ и рефакторинг. Библиотека программиста</title>
+  <link href="../Styles/template.css" rel="stylesheet" type="text/css"/>
+</head>
+
+<body id="x978549600487" xml:lang="ru-RU">
+  <div>
+    <h1 id="toc_marker-4">2. Содержательные имена</h1>
+
+    <p class="Epigraph-avtor">Тим Оттингер</p>
+
+    <p class="Pic-yakor"><span><img alt="02_01.tif" class="frame-1" src="../Images/02_01_fmt.png"/></span>&nbsp;</p>
+
+    <p>Имена встречаются в программировании повсеместно. Мы присваиваем имена своим переменным, функциям, аргументам, классам и пакетам. Мы присваиваем имена исходным файлам и каталогам, в которых они хранятся. Мы присваиваем имена файлам <em>jar</em>, <em>war</em> и <em>ear</em>. Имена, имена, имена… Но то, что делается так часто, должно делаться хорошо. Далее приводятся некоторые простые правила создания хороших имен.</p>
+
+    <h2 id="toc_marker-4-1">Имена должны передавать&nbsp;&nbsp;намерения программиста</h2>
+
+    <p class="Normal0">Легко сказать: имена должны передавать намерения программиста. И все же к выбору имен следует относиться серьезно. Чтобы выбрать хорошее имя, понадобится время, но экономия окупит затраты. Итак, следите за именами в своих программах и изменяйте их, если найдете более удачные варианты. Этим вы упростите жизнь каждому, кто читает ваш код (в том числе и себе самому).</p>
+
+    <p>Имя переменной, функции или класса должно отвечать на все главные вопросы. Оно должно сообщить, почему эта переменная (и т.д.) существует, что она делает и как используется. Если имя требует дополнительных комментариев, значит, оно не передает намерений программиста.</p>
+
+    <p class="listing-body">int d; // Прошедшее время</p>
+
+    <p>Имя <span class="command char-style-override-1">d</span> не передает ровным счетом ничего. Оно не ассоциируется ни с временными интервалами, ни с днями. Его следует заменить другим именем, которое указывает, что именно измеряется и в каких единицах:</p>
+
+    <p class="listing-body">int elapsedTimeInDays;</p>
+
+    <p class="listing-body">int daysSinceCreation;</p>
+
+    <p class="listing-body">int daysSinceModification;</p>
+
+    <p class="listing-body">int fileAgeInDays;</p>
+
+    <p>Содержательные имена существенно упрощают понимание и модификацию кода. Например, что делает следующий фрагмент?</p>
+
+    <p class="listing-body">public List&lt;int[]&gt; getThem() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;List&lt;int[]&gt; list1 = new ArrayList&lt;int[]&gt;();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;for (int[] x : theList)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (x[0] == 4)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;list1.add(x);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return list1;</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Почему мы не можем сразу сказать, что делает этот код? В нем нет сложных выражений. Пробелы и отступы расставлены грамотно. В коде задействованы только три переменные и две константы. В нем нет никаких хитроумных классов или полиморфных методов, только список массивов (по крайней мере на первый взгляд).</p>
+
+    <p>Проблема кроется не в сложности кода, а в его <em>неочевидности</em>, то есть степени, в которой контекст не следует явно из самого кода. Код подразумевает, что мы знаем ответы на вопросы:</p>
+
+    <p class="ListNum">1. Какие данные хранятся в <span class="command char-style-override-1">theList</span>?</p>
+
+    <p class="ListNum">2. Чем так важен элемент <span class="command char-style-override-1">theList</span> с нулевым индексом?</p>
+
+    <p class="ListNum">3. Какой особый смысл имеет значение 4?</p>
+
+    <p class="ListNumLast">4. Как будет использоваться возвращаемый список?</p>
+
+    <p>Ответы на все эти вопросы не следуют из примера, хотя и могли бы. Допустим, мы работаем над игрой «Сапер». Игровое поле представлено в виде списка ячеек с именем <span class="command char-style-override-1">theList</span>. Переименуем его в <span class="command char-style-override-1">gameBoard</span>.</p>
+
+    <p>Каждая ячейка игрового поля представлена простым массивом. Далее выясняется, что в элементе с нулевым индексом хранится код состояния, а код 4 означает «флажок установлен». Даже простое присваивание имен всем этим концепциям существенно улучшает код:</p>
+
+    <p class="listing-body">public List&lt;int[]&gt; getFlaggedCells() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;List&lt;int[]&gt; flaggedCells = new ArrayList&lt;int[]&gt;();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;for (int[] cell : gameBoard)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (cell[STATUS_VALUE] == FLAGGED)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;flaggedCells.add(cell);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return flaggedCells;</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Обратите внимание: простота кода несколько не изменилась. Новая версия содержит точно такое же количество операторов и констант, с абсолютно таким же количеством уровней вложенности. Однако код стал существенно более понятным.</p>
+
+    <p>Можно пойти еще дальше и написать простой класс для представления ячеек вместо использования массива <span class="command char-style-override-1">int</span>. В класс включается функция, передающая намерения программиста (назовем ее <span class="command char-style-override-1">isFlagged</span>); она скрывает «волшебные» числа. В результате мы получаем новую версию функции:</p>
+
+    <p class="listing-body">public List&lt;Cell&gt; getFlaggedCells() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;List&lt;Cell&gt; flaggedCells = new ArrayList&lt;Cell&gt;();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;for (Cell cell : gameBoard)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (cell.isFlagged())</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;flaggedCells.add(cell);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return flaggedCells;</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Не изменилось ничего, кроме имен — но теперь можно легко понять, что здесь происходит. Такова сила выбора хороших имен.</p>
+
+    <h2 id="toc_marker-4-2">Избегайте дезинформации</h2>
+
+    <p class="Normal0">Программисты должны избегать ложных ассоциаций, затемняющих смысл кода. Не используйте слова со скрытыми значениями, отличными от предполагаемого. Например, переменным не стоит присваивать имена <span class="command char-style-override-1">hp</span>, <span class="command char-style-override-1">aix</span>, and <span class="command char-style-override-1">sco</span>, потому что они ассоциируются с платформами и разновидностями Unix. Даже если в переменной хранится длина гипотенузы и имя <span class="command char-style-override-1">hp</span> кажется хорошим сокращением, оно может ввести в заблуждение читателя кода.</p>
+
+    <p>Не обозначайте группу учетных записей именем <span class="command char-style-override-1">accountList</span>, если только она действительно не хранится в списке (<span class="command char-style-override-1">List</span>). Слово «список» имеет для программиста вполне конкретный смысл. Если записи хранятся не в <span class="command char-style-override-1">List</span>, а в другом контейнере, это может привести к ложным выводам<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-4" id="footnote-319-4-backlink">4</a></span>. В этом примере лучше подойдет имя <span class="command char-style-override-1">accountGroup</span>, <span class="command char-style-override-1">bunchOfAccounts</span> и даже просто <span class="command char-style-override-1">accounts</span>.</p>
+
+    <p>Остерегайтесь малозаметных различий в именах. Сколько времени понадобится, чтобы заметить незначительное различие в <span class="command char-style-override-1">XYZControllerForEfficientHandlingOfStrings</span> в одном модуле и <span class="command char-style-override-1">XYZControllerForEfficientStorageOfStrings</span> где-то в другом месте? Эти имена выглядят устрашающе похожими.</p>
+
+    <p>Сходное представление сходных концепций — информация. Непоследовательное представление — дезинформация. Современные среды Java поддерживают удобный механизм автоматического завершения кода. Вы вводите несколько символов имени, нажимаете некую комбинацию клавиш (а иногда обходится и без этого) и получаете список возможных вариантов завершения имени. Очень удобно, если имена похожих объектов сортируются по алфавиту, и если различия предельно очевидны — ведь разработчик, скорее всего, выберет ваш объект по имени, не увидев ни ваших обширных комментариев, ни хотя бы списка методов класса.</p>
+
+    <p>По-настоящему устрашающие примеры дезинформирующих имен встречаются при использовании строчной «L» и прописной «O» в именах переменных, особенно в комбинациях. Естественно, проблемы возникают из-за того, что эти буквы почти не отличаются от констант «1» и «0» соответственно.</p>
+
+    <p class="listing-body">int a = l;</p>
+
+    <p class="listing-body">if ( O == l )</p>
+
+    <p class="listing-body">&nbsp;&nbsp;a = O1;</p>
+
+    <p class="listing-body">else</p>
+
+    <p class="listing-body">&nbsp;&nbsp;l = 01;</p>
+
+    <p>Возможно, некоторым читателям этот совет покажется надуманным, однако мы неоднократно видели код, в котором подобных ухищрений было предостаточно. В одном случае автор кода даже предложил использовать другой шрифт, чтобы различия стали более очевидными — в дальнейшем это решение должно было передаваться всем будущим разработчикам на словах или в письменном документе. Простое переименование решает проблему окончательно и без создания новых документов.</p>
+
+    <h2 id="toc_marker-4-3">Используйте осмысленные различия</h2>
+
+    <div class="frame-4"><img alt="02_02.tif" class="frame-6" src="../Images/02_02_fmt.png"/></div>
+
+    <p class="Normal0">Когда программист пишет код исключи-</p>
+
+    <p>тельно для того, чтобы удовлетворить запросы компилятора или интерпретатора, он сам себе создает проблемы. Например, поскольку одно имя в одной области имени не может обозначать две разные вещи, возникает соблазн произвольно изменить одно из имен. Иногда для этого имя записывается заведомо неправильно и возникает удивительная ситуация: после исправления грамматической ошибки программа перестает компилироваться<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-5" id="footnote-319-5-backlink">5</a></span>.</p>
+
+    <p>Недостаточно добавить в имя серию цифр или неинформативные слова, даже если компилятору этого будет достаточно. Если имена различаются, то они должны обозначать разные понятия.</p>
+
+    <p>«Числовые ряды» вида <span class="command char-style-override-1">(</span><span class="command char-style-override-1">a</span><span class="command char-style-override-1">1,</span> <span class="command char-style-override-1">a</span><span class="command char-style-override-1">2, ..</span> <span class="command char-style-override-1">aN</span><span class="command char-style-override-1">)</span> являются противоположностью сознательного присваивания имен. Такие имена не дезинформируют — они просто не несут информации и не дают представления о намерениях автора. Пример:</p>
+
+    <p class="listing-body">public static void copyChars(char a1[], char a2[]) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;for (int i = 0; i &lt; a1.length; i++) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;a2[i] = a1[i];</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Такая функция будет читаться намного лучше, если присвоить аргументам имена <span class="command char-style-override-1">source</span> и <span class="command char-style-override-1">destination</span>.</p>
+
+    <p>Неинформативные слова также применяются для создания бессодержательных различий. Допустим, у вас имеется класс <span class="command char-style-override-1">Product</span>. Создав другой класс с именем <span class="command char-style-override-1">ProductInfo</span> или <span class="command char-style-override-1">ProductData</span>, вы создаете разные имена, которые по сути обозначают одно и то же. <span class="command char-style-override-1">Info</span> и <span class="command char-style-override-1">Data</span> не несут полезной информации, как и артикли <em>a</em>, <em>an</em> и <em>the</em>.</p>
+
+    <p>Следует учесть, что использование префиксов <em>a</em> и <em>the</em> вовсе не является ошибкой, но только при условии, что они создают осмысленные различия. Например, префикс <em>a</em> может присваиваться всем локальным переменным, а префикс <em>the</em> — всем аргументам функций<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-6" id="footnote-319-6-backlink">6</a></span>. Проблема возникает тогда, когда вы называете переменную <span class="command char-style-override-1">theZork</span>, потому что в программе уже есть другая переменная с именем <span class="command char-style-override-1">zork</span>.</p>
+
+    <p>Неинформативные слова избыточны. Слово <em>variable</em> никогда не должно встречаться в именах переменных. Слово <em>table</em> никогда не должно встречаться в именах таблиц. Чем имя <span class="command char-style-override-1">NameString</span> лучше <span class="command char-style-override-1">Name</span>? Разве имя может быть, скажем, вещественным числом? Если может, то это нарушает предыдущее правило о дез­информации. Представьте, что в программе присутствуют два класса с именами <span class="command char-style-override-1">Customer</span> и <span class="command char-style-override-1">CustomerObject</span>. Что вы можете сказать о различиях между ними? Какой класс предоставляет лучший путь к истории платежей клиента?</p>
+
+    <p>Эта проблема встретилась нам в одном реально существующем приложении. Мы изменили имена, чтобы защитить виновных, но точная форма ошибки выглядит так:</p>
+
+    <p class="listing-body">getActiveAccount();</p>
+
+    <p class="listing-body">getActiveAccounts();</p>
+
+    <p class="listing-body">getActiveAccountInfo();</p>
+
+    <p>Как участвующему в проекте программисту понять, какую из этих функций вызывать в конкретном случае?</p>
+
+    <p>При отсутствии жестких именных схем имя <span class="command char-style-override-1">moneyAmount</span> не отличается от <span class="command char-style-override-1">money</span>, <span class="command char-style-override-1">customerInfo</span> не отличается от <span class="command char-style-override-1">customer</span>, <span class="command char-style-override-1">accountData</span> не отличается от <span class="command char-style-override-1">account</span>, а <span class="command char-style-override-1">theMessage</span> — от <span class="command char-style-override-1">message</span>. Записывайте различающиеся имена так, чтобы читатель кода понимал, какой смысл заложен в этих различиях.</p>
+
+    <h2 id="toc_marker-4-4">Используйте удобопроизносимые имена</h2>
+
+    <p class="Normal0">Людям удобно работать со словами. Значительная часть нашего мозга специализируется на концепции слов, а слова по определению удобопроизносимы. Было бы обидно не использовать ту изрядную часть мозга, которая развивалась для разговорной речи. Следовательно, имена должны нормально произноситься.</p>
+
+    <p>Если имя невозможно нормально произнести, то при любом его упоминании в обсуждении вы выглядите полным идиотом. «Итак, за этим би-си-эр-три-си-эн-тэ у нас идет пи-эс-зэт-кью, видите?» А это важно, потому что программирование является социальной деятельностью.</p>
+
+    <p>В одной известной мне компании используется переменная <span class="command char-style-override-1">genymdhms</span> (дата генерирования, год, месяц, день, час, минуты и секунды), поэтому программисты упоминали в своих разговорах «ген-уай-эм-ди-эйч-эм-эс». У меня есть противная привычка произносить все так, как написано, поэтому я начал говорить «генъя-мадда-химс». Потом переменную начали так называть многие проектировщики и аналитики, и это звучало довольно глупо. Впрочем, мы делали это в шутку. Но как бы то ни было, мы столкнулись с типичным примером неудачного выбора имен. Новым разработчикам приходилось объяснять смысл переменных, после чего они начинали изъясняться дурацкими неестественными словами вместо нормальной разговорной речи. Сравните:</p>
+
+    <p class="listing-body">class DtaRcrd102 {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private Date genymdhms;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private Date modymdhms;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private final String pszqint = "102";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;/* ... */</p>
+
+    <p class="listing-body">};</p>
+
+    <p>и</p>
+
+    <p class="listing-body">class Customer {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private Date generationTimestamp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private Date modificationTimestamp;;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private final String recordId = "102";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;/* ... */</p>
+
+    <p class="listing-body">};</p>
+
+    <p>Теперь становится возможным осмысленный разговор: «Эй, Майк, глянь-ка на эту запись! В поле временного штампа заносится завтрашняя дата! Разве такое возможно?»</p>
+
+    <h2 id="toc_marker-4-5">Выбирайте имена, удобные для поиска</h2>
+
+    <p class="Normal0">У однобуквенных имен и числовых констант имеется один специфический недостаток: их трудно искать в большом объеме текста.</p>
+
+    <p>Строка <span class="command char-style-override-1">MAX</span><span class="command char-style-override-1">_</span><span class="command char-style-override-1">CLASSES</span><span class="command char-style-override-1">_</span><span class="command char-style-override-1">PER</span><span class="command char-style-override-1">_</span><span class="command char-style-override-1">STUDENT</span> отыскивается легко, а с числом 7 могут возникнуть проблемы. Система поиска находит эту цифру в именах файлов, в определениях констант и в различных выражениях, где значение используется с совершенно другим смыслом. Еще хуже, если константа представляет собой длинное число, в котором были случайно переставлены цифры; в программе появляется ошибка, которая одновременно скрывается от поиска.</p>
+
+    <p>Также не стоит присваивать имя <span class="command char-style-override-1">e</span> переменной, которая может использоваться при поиске. Самая распространенная буква английского алфавита с большой вероятностью встречается в любом текстовом фрагменте каждой программы. В этом отношении длинные имена лучше коротких, а имена, удобные для поиска, лучше констант в коде.</p>
+
+    <p>Лично я считаю, что однобуквенные имена могут использоваться ТОЛЬКО для локальных переменных в коротких методах. <em>Длина имени должна соответствовать размеру его области видимости</em> [N5]. Если переменная или константа может встречаться или использоваться в нескольких местах кодового блока, очень важно присвоить ей имя, удобное для поиска. Снова сравните:</p>
+
+    <p class="listing-body">for (int j=0; j&lt;34; j++) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;s += (t[j]*4)/5;</p>
+
+    <p class="listing-body">}</p>
+
+    <p>и</p>
+
+    <p class="listing-body">int realDaysPerIdealDay = 4;</p>
+
+    <p class="listing-body">const int WORK_DAYS_PER_WEEK = 5;</p>
+
+    <p class="listing-body">int sum = 0;</p>
+
+    <p class="listing-body">for (int j=0; j &lt; NUMBER_OF_TASKS; j++) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int realTaskDays = taskEstimate[j] * realDaysPerIdealDay;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int realTaskWeeks = (realdays / WORK_DAYS_PER_WEEK);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;sum += realTaskWeeks;</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Имя <span class="command char-style-override-1">sum</span> в этом фрагменте не слишком содержательно, но по крайней мере его удобно искать. Сознательное присваивание имен увеличивает длину функции, но подумайте, насколько проще найти <span class="command char-style-override-1">WORK</span><span class="command char-style-override-1">_</span><span class="command char-style-override-1">DAYS</span><span class="command char-style-override-1">_</span><span class="command char-style-override-1">PER</span><span class="command char-style-override-1">_</span><span class="command char-style-override-1">WEEK</span>, чем искать все вхождения цифры 5 и фильтровать список до позиций с нужным смыслом.</p>
+
+    <h2 id="toc_marker-4-6">Избегайте схем кодирования имен</h2>
+
+    <p class="Normal0">У нас и так хватает хлопот с кодированием, чтобы искать новые сложности. Кодирование информации о типе или области видимости в именах только создает новые хлопоты по расшифровке. Вряд ли разумно заставлять каждого нового работника изучать очередной «язык» кодирования — в дополнение к изучению (обычно немалого) объема кода, с которым он будет работать. Это только усложняет его работу при попытке решения задачи. Как правило, кодированные имена плохо произносятся и в них легко сделать опечатку.</p>
+
+    <h3>Венгерская запись</h3>
+
+    <p class="Normal0">В доисторические времена, когда в языках действовали ограничения на длину имен, мы нарушали это правило по необходимости — и не без сожалений. В Fortran первая буква имени переменной обозначала код типа. В ранних версиях BASIC имена могли состоять только из одной буквы и одной цифры. Венгерская запись (HN, Hungarian Notation) подняла эту проблему на новый уровень.</p>
+
+    <p>Венгерская запись играла важную роль во времена Windows C API, когда программы работали с целочисленными дескрипторами (handle), длинными указателями, указателями на <span class="command char-style-override-1">void</span> или различными реализациями «строк» (с разным применением и атрибутами). Компиляторы в те дни не поддерживали проверку типов, поэтому программистам были нужны «подсказки» для запоминания типов.</p>
+
+    <p>В современных языках существует куда более развитая система типов, а компиляторы запоминают типы и обеспечивают их соблюдение. Более того, появилась тенденция к использованию меньших классов и более коротких функций, чтобы программисты видели точку объявления каждой используемой переменной.</p>
+
+    <p>Java-программисту кодировать типы в именах не нужно. Объекты обладают сильной типизацией, а рабочие среды развились до такой степени, что могут выявить ошибку типа еще до начала компиляции! Таким образом, в наши дни венгерская запись и другие формы кодирования типов в именах превратились в обычные пережитки прошлого. Они усложняют изменение имени или типа переменных, функций и классов. Они затрудняют чтение кода. Наконец, они повышают риск того, что система кодирования собьет с толку читателя кода.</p>
+
+    <p class="listing-body">PhoneNumber phoneString;</p>
+
+    <p class="listing-body">// Имя не изменяется при изменении типа!</p>
+
+    <h3>Префиксы членов классов</h3>
+
+    <p class="Normal0">Префиксы <span class="command char-style-override-1">m_</span>, которыми когда-то снабжались переменные классов, тоже стали ненужными. Классы и функции должны быть достаточно компактными, чтобы вы могли обходиться без префиксов. Также следует использовать рабочую среду с цветовым выделением членов классов, обеспечивающим их наглядную идентификацию:</p>
+
+    <p class="listing-body">public class Part {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String m_dsc; // Текстовое описание</p>
+
+    <p class="listing-body">&nbsp;&nbsp;void setName(String name) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;m_dsc = name;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _</p>
+
+    <p class="listing-body">public class Part {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;String description;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;void setDescription(String description) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;this.description = description;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Кроме того, люди быстро учатся игнорировать префиксы (и суффиксы), чтобы видеть содержательную часть имени. Чем больше мы читаем код, тем реже замечаем префиксы. В конечном итоге префикс превращается в невидимый балласт, характерный для старого кода.</p>
+
+    <h3>Интерфейсы и реализации</h3>
+
+    <p class="Normal0">Иногда в программах встречается особый случай кодирования. Допустим, вы строите АБСТРАКТНУЮ ФАБРИКУ для создания геометрических фигур. Фабрика представляет собой интерфейс, который реализуется конкретным классом. Как их назвать? <span class="command char-style-override-1">IShapeFactory</span> и <span class="command char-style-override-1">ShapeFactory</span>? Я предпочитаю оставлять имена интерфейсов без префиксов. Префикс <span class="command char-style-override-1">I</span>, столь распространенный в старом коде, в лучшем случае отвлекает, а в худшем — передает лишнюю информацию. Я не собираюсь сообщать своим пользователям, что они имеют дело с интерфейсом. Им достаточно знать, что это <span class="command char-style-override-1">ShapeFactory</span>, то есть фабрика фигур. Следовательно, при необходимости закодировать в имени либо интерфейс, либо реализацию, я выбираю реализацию. Имя <span class="command char-style-override-1">ShapeFactoryImp</span>, или даже уродливое <span class="command char-style-override-1">CShapeFactory</span>, все равно лучше кодирования информации об интерфейсе.</p>
+
+    <h2 id="toc_marker-4-7">Избегайте мысленных преобразований</h2>
+
+    <p class="Normal0">Не заставляйте читателя мысленно преобразовывать ваши имена в другие, уже известные ему. Обычно эта проблема возникает из-за нежелания использовать понятия как из пространства задачи, так и из пространства решения.</p>
+
+    <p>Такая проблема часто возникает при использовании однобуквенных имен переменных. Конечно, счетчик цикла можно назвать <span class="command char-style-override-1">i</span>, <span class="command char-style-override-1">j</span> или <span class="command char-style-override-1">k</span> (но только не <span class="command char-style-override-1">l</span>!), если его область видимости очень мала, и он не конфликтует с другими именами. Это связано с тем, что однобуквенные имена счетчиков циклов традиционны. Однако в большинстве других контекстов однобуквенные имена нежелательны; в сущности, вы создаете временный заменитель, который должен быть мысленно преобразован пользователем в реальную концепцию. Нет худшей причины для выбора имени <span class="command char-style-override-1">c</span>, чем та, что имена <span class="command char-style-override-1">a</span> и <span class="command char-style-override-1">b</span> уже заняты.</p>
+
+    <p>Как правило, программисты весьма умны. А умные люди иногда любят показывать мощь интеллекта, демонстрируя свои способности к мысленному жонглированию. В конце концов, если вы помните, что переменная <span class="command char-style-override-1">r</span> содержит URL-адрес с удаленным хостом и схемой, преобразованный к нижнему регистру, это совершенно очевидно свидетельствует о вашем уме.</p>
+
+    <p>Одно из различий между умным и профессиональным программистом заключается в том, что профессионал понимает: ясность превыше всего. Профессионалы используют свою силу во благо и пишут код, понятный для других людей.</p>
+
+    <h2 id="toc_marker-4-8">Имена классов</h2>
+
+    <p class="Normal0">Имена классов и объектов должны представлять собой существительные и их комбинации: <span class="command char-style-override-1">Customer</span>, <span class="command char-style-override-1">WikiPage</span>, <span class="command char-style-override-1">Account</span> и <span class="command char-style-override-1">AddressParser</span>. Старайтесь не использовать в именах классов такие слова, как <span class="command char-style-override-1">Manager</span>, <span class="command char-style-override-1">Processor</span>, <span class="command char-style-override-1">Data</span> или <span class="command char-style-override-1">Info</span>. Имя класса не должно быть глаголом.</p>
+
+    <h2 id="toc_marker-4-9">Имена методов</h2>
+
+    <p class="Normal0">Имена методов представляют собой глаголы или глагольные словосочетания: <span class="command char-style-override-1">postPayment</span>, <span class="command char-style-override-1">deletePage</span>, <span class="command char-style-override-1">save</span> и т.д. Методы чтения/записи и предикаты образуются из значения и префикса <span class="command char-style-override-1">get</span>, <span class="command char-style-override-1">set</span> и <span class="command char-style-override-1">is</span> согласно стандарту javabean<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-7" id="footnote-319-7-backlink">7</a></span>.</p>
+
+    <p class="listing-body">string name = employee.getName();</p>
+
+    <p class="listing-body">customer.setName("mike");</p>
+
+    <p class="listing-body">if (paycheck.isPosted())...</p>
+
+    <p>При перегрузке конструкторов используйте статические методы-фабрики с именами, описывающими аргументы. Например, запись</p>
+
+    <p class="listing-body">Complex fulcrumPoint = Complex.FromRealNumber(23.0);</p>
+
+    <p>обычно лучше записи</p>
+
+    <p class="listing-body">Complex fulcrumPoint = new Complex(23.0);</p>
+
+    <p>Рассмотрите возможность принудительного использования таких методов; для этого соответствующие конструкторы объявляются приватными.</p>
+
+    <h2 id="toc_marker-4-10">Избегайте остроумия</h2>
+
+    <div class="frame-4"><img alt="02_03.tif" class="frame-6" src="../Images/02_03_fmt.png"/></div>
+
+    <p class="Normal0">Если ваши имена будут излишне остроум-</p>
+
+    <p>ными, то их смысл будет понятен только людям, разделяющим чувство юмора автора — и только если они помнят шутку. Все ли догадаются, что делает функция с именем <span class="command char-style-override-1">HolyHandGrenade</span>?<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-8" id="footnote-319-8-backlink">8</a></span> Конечно, это очень мило, но, возможно, в данном случае лучше подойдет имя <span class="command char-style-override-1">DeleteItems</span>. Отдавайте предпочтение ясности перед развлекательной ценностью.</p>
+
+    <p>Остроумие часто воплощается в форме просторечий или сленга. Например, не используйте имя <span class="command char-style-override-1">whack()</span> вместо <span class="command char-style-override-1">kill()</span>. Не используйте шуточки, привязанные к конкретной культуре, — например, <span class="command char-style-override-1">eatMyShorts</span><span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-9" id="footnote-319-9-backlink">9</a></span><span class="command char-style-override-1">()</span> вместо <span class="command char-style-override-1">abort</span><span class="command char-style-override-1">()</span>.</p>
+
+    <h2 id="toc_marker-4-11">Выберите одно слово&nbsp;&nbsp;для каждой концепции</h2>
+
+    <p class="Normal0">Выберите одно слово для представления одной абстрактной концепции и придерживайтесь его. Например, существование в разных классах эквивалентных методов с именами <span class="command char-style-override-1">fetch</span>, <span class="command char-style-override-1">retrieve</span> и <span class="command char-style-override-1">get</span> неизбежно создаст путаницу. Как запомнить, к какому классу относится то или иное имя метода? К сожалению, чтобы запомнить, какой термин использовался в той или иной библиотеке или классе, нередко приходится помнить, какой компанией, группой или программистом эта библиотека была создана. В противном случае вы потратите массу времени на просмотр заголовков и предыдущих примеров кода.</p>
+
+    <p>Современные рабочие среды (такие, как Eclipse и IntelliJ) предоставляют контекстно-зависимые подсказки — скажем, список методов, которые могут вызываться для конкретного объекта. Однако следует учитывать, что в этом списке обычно не приводятся комментарии, которые вы записываете рядом с именами функций и списками параметров. И вам еще повезло, если в нем будут указаны имена параметров из объявлений функций. Имена функций должны быть законченными и логичными, чтобы программист мог сразу выбрать правильный метод без сбора дополнительной информации.</p>
+
+    <p>Аналогичным образом, использование терминов <span class="command char-style-override-1">controller</span>, <span class="command char-style-override-1">manager</span> и <span class="command char-style-override-1">driver</span> в одной кодовой базе тоже вызывает путаницу. Чем <span class="command char-style-override-1">DeviceManager</span> принципи­ально отличается от <span class="command char-style-override-1">ProtocolController</span>? Почему в двух случаях не используются одинаковые термины? Такие имена создают ложное впечатление, что два объ­екта обладают совершенно разными типами, а также относятся к разным классам.</p>
+
+    <p>Единый, согласованный лексикон окажет неоценимую помощь программистам, которые будут пользоваться вашим кодом.</p>
+
+    <h2 id="toc_marker-4-12">Воздержитесь от каламбуров</h2>
+
+    <p class="Normal0">Старайтесь не использовать одно слово в двух смыслах. В сущности, обозначение двух разных идей одним термином — это каламбур.</p>
+
+    <p>Если следовать принципу «одно слово для каждой концепции», в программе может появиться много классов, содержащих, например, метод <span class="command char-style-override-1">add</span>. Пока списки параметров и возвращаемые значения разных методов <span class="command char-style-override-1">add</span> остаются семантически эквивалентными, все хорошо.</p>
+
+    <p>Однако программист может решить использовать имя <span class="command char-style-override-1">add</span> «ради единообразия» независимо от того, выполняет ли этот метод добавление в прежнем смысле или нет. Допустим, программа содержит много классов с методами <span class="command char-style-override-1">add</span>, которые со­здают новое значение сложением или конкатенацией двух существующих значений. Вы пишете новый класс с методом, помещающим свой единственный параметр в коллекцию. Стоит ли присвоить этому методу имя <span class="command char-style-override-1">add</span>? На первый взгляд это выглядит последовательно, потому что в программе уже используется множество других методов <span class="command char-style-override-1">add</span>, но новый метод имеет другую семантику, поэтому ему лучше присвоить имя <span class="command char-style-override-1">insert</span> или <span class="command char-style-override-1">append</span>. Присваивая новому методу имя <span class="command char-style-override-1">add</span>, вы создаете нежелательный каламбур.</p>
+
+    <p>Задача автора — сделать свой код как можно более понятным. Код должен восприниматься с первого взгляда, не требуя тщательного изучения. Ориентируйтесь на модель популярной литературы, в которой сам автор должен доступно выразить свои мысли, а не на академическую модель, в которой ученик усердным трудом постигает скрытый смысл публикации.</p>
+
+    <h2 id="toc_marker-4-13">Используйте имена&nbsp;&nbsp;из пространства решения</h2>
+
+    <p class="Normal0">Не забывайте: ваш код будут читать программисты. А раз так, не стесняйтесь использовать термины из области информатики, названия алгоритмов и паттернов, математические термины и т.д. Не ограничивайтесь именами исключительно из пространства задачи; не заставляйте своих коллег постоянно бегать к клиенту и спрашивать, что означает каждое имя, когда соответствующая концепция уже знакома им под другим названием.</p>
+
+    <p>Имя <span class="command char-style-override-1">AccountVisitor</span> сообщит много полезной информации программисту, знакомому с паттерном «Посетитель» (Visitor). И какой программист не знает, что такое «очередь заданий» (<span class="command char-style-override-1">JobQueue</span>)? Существует множество сугубо технических понятий, с которыми имеют дело программисты. Как правило, таким понятиям разумнее всего присваивать технические имена.</p>
+
+    <h2 id="toc_marker-4-14">Используйте имена&nbsp;&nbsp;из пространства задачи</h2>
+
+    <p class="Normal0">Если для того, что вы делаете, не существует подходящего «программизма», используйте имя из пространства задачи. По крайней мере программист, занимающийся сопровождением кода, сможет узнать у специалиста в предметной области, что означает это имя.</p>
+
+    <p>Разделение концепций из пространств задачи и решения — часть работы хорошего программиста и проектировщика. В коде, главным образом ориентированном на концепции из пространства задачи, следует использовать имена из пространства задачи.</p>
+
+    <h2 id="toc_marker-4-15">Добавьте содержательный контекст</h2>
+
+    <p class="Normal0">Лишь немногие имена содержательны сами по себе. Все остальные имена следует помещать в определенный контекст для читателя кода, заключая их в классы, функции и пространства имен с правильно выбранными названиями. В крайнем случае контекст имени можно уточнить при помощи префикса.</p>
+
+    <p>Допустим, в программе используются переменные с именами <span class="command char-style-override-1">firstName</span>, <span class="command char-style-override-1">lastName</span>, <span class="command char-style-override-1">street</span>, <span class="command char-style-override-1">houseNumber</span>, <span class="command char-style-override-1">city</span>, <span class="command char-style-override-1">state</span> и <span class="command char-style-override-1">zipcode</span>. Вполне очевидно, что в совокупности они образуют адрес. Но что, если переменная <span class="command char-style-override-1">state</span> встретилась вам отдельно от других переменных внутри метода? Сразу ли вы поймете, что она является частью адреса?</p>
+
+    <p>Контекст можно добавить при помощи префиксов: <span class="command char-style-override-1">addrFirstName</span>, <span class="command char-style-override-1">addrLastName</span>, <span class="command char-style-override-1">addrState</span> и т.д. По крайней мере читатель кода поймет, что переменные являются частью более крупной структуры. Конечно, правильнее было бы создать класс с именем <span class="command char-style-override-1">Address</span>, чтобы даже компилятор знал, что переменные являются частью чего-то большего.</p>
+
+    <p>Возьмем метод из листинга 2.1. Нужен ли переменным более содержательный контекст? Имя функции определяет только часть контекста; алгоритм предоставляет все остальное. При чтении функции становится видно, что три переменные <span class="command char-style-override-1">number</span>, <span class="command char-style-override-1">verb</span> и <span class="command char-style-override-1">pluralModifier</span> являются компонентами сообщения <span class="command char-style-override-1">guessМessage</span>. К сожалению, контекст приходится вычислять. При первом взгляде на метод смысл переменных остается неясным.</p>
+
+    <p class="Vrezka-head"><strong>Листинг 2.1.</strong> Переменные с неясным контекстом</p>
+
+    <p class="listing-body">private void printGuessStatistics(char candidate, int count) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String number;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String verb;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String pluralModifier;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (count == 0) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;number = "no";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;verb = "are";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pluralModifier = "s";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;} else if (count == 1) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;number = "1";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;verb = "is";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pluralModifier = "";</p>
+
+    <p class="Vrezka-head"><strong>Листинг 2.1</strong> (продолжение)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;} else {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;number = Integer.toString(count);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;verb = "are";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pluralModifier = "s";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String guessMessage = String.format(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"There %s %s %s%s", verb, number, candidate, pluralModifier</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;print(guessMessage);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p>Функция длинновата, а переменные используются на всем ее протяжении. Чтобы разделить функцию на меньшие смысловые фрагменты, следует создать класс <span class="command char-style-override-1">GuessStatisticsMessage</span> и сделать три переменные полями этого класса. Тем самым мы предоставим очевидный контекст для трех переменных — теперь абсолютно очевидно, что эти переменные являются частью <span class="command char-style-override-1">GuessStatisticsMessage</span>. Уточнение контекста также позволяет заметно улучшить четкость алгоритма за счет его деления на меньшие функции (листинг 2.2).</p>
+
+    <p class="Vrezka-head"><strong>Листинг 2.2.</strong> Переменные с контекстом</p>
+
+    <p class="listing-body">public class GuessStatisticsMessage {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String number;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String verb;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String pluralModifier;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public String make(char candidate, int count) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;createPluralDependentMessageParts(count);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return String.format(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"There %s %s %s%s",</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;verb, number, candidate, pluralModifier );</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void createPluralDependentMessageParts(int count) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (count == 0) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;thereAreNoLetters();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;} else if (count == 1) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;thereIsOneLetter();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;} else {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;thereAreManyLetters(count);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void thereAreManyLetters(int count) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;number = Integer.toString(count);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;verb = "are";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;pluralModifier = "s";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void thereIsOneLetter() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;number = "1";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;verb = "is";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;pluralModifier = "";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void thereAreNoLetters() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;number = "no";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;verb = "are";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;pluralModifier = "s";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <h2 id="toc_marker-4-16">Не добавляйте избыточный контекст</h2>
+
+    <p class="Normal0">Если вы работаете над вымышленным приложением «Gas Station Deluxe», не стоит снабжать имя каждого класса префиксом <span class="command char-style-override-1">GSD</span>. В сущности, вы работаете против собственного инструментария. Введите букву «G», нажмите клавишу завершения — и вы получите длинный-предлинный список всех классов в системе. Разумно ли это? IDE пытается помочь вам, так стоит ли ей мешать?</p>
+
+    <p>Допустим, вы изобрели класс <span class="command char-style-override-1">MailingAddress</span> в учетном модуле GSD и присвоили ему имя <span class="command char-style-override-1">GSDAccountAddress</span>. Позднее адрес используется в приложении, обеспечивающем связь с клиентами. Будете ли вы использовать <span class="command char-style-override-1">GSDAccountAddress</span>? Насколько подходящим выглядит это имя? Десять из 17 символов либо избыточны, либо не относятся к делу.</p>
+
+    <p>Короткие имена обычно лучше длинных, если только их смысл понятен читателю кода. Не включайте в имя больше контекста, чем необходимо.</p>
+
+    <p>Имена <span class="command char-style-override-1">accountAddress</span> и <span class="command char-style-override-1">customerAddress</span> хорошо подходят для экземпляров класса <span class="command char-style-override-1">Address</span>, но для классов такой выбор неудачен. <span class="command char-style-override-1">Address</span> — вот хорошее имя класса. Если потребуется подчеркнуть различия между MAC-адресами, адресами портов и веб-адресами, я подумаю об использовании имен <span class="command char-style-override-1">PostalAddress</span>, <span class="command char-style-override-1">MAC</span> и <span class="command char-style-override-1">URI</span>. Полученные имена становятся более точными, а это, собственно, и является главной целью всего присваивания имен.</p>
+
+    <h2 id="toc_marker-4-17">Несколько слов напоследок</h2>
+
+    <p class="Normal0">Основные трудности с выбором хороших имен обусловлены необходимостью хороших описательных навыков и единого культурного фона. Это вопрос преподавания, а не вопрос техники, экономики или управления. В результате многие специалисты, работающие в этой области, так и не научились хорошо справляться с этой задачей.</p>
+
+    <p>Люди также опасаются переименований из страха возражений со стороны других разработчиков. Мы не разделяем эти опасения, а изменение имен (в лучшую сторону) вызывает у нас только благодарность. Большей частью мы не запоминаем имена классов и методов. Современные инструменты берут на себя подобные мелочи, а мы следим за тем, чтобы программный код читался как абзацы и предложения или хотя бы как таблицы и структуры данных (предложение не всегда является лучшим способом отображения данных). Возможно, своими переименованиями — как и любыми другими усовершенствованиями кода — вы кого-то удивите. Пусть это вас не останавливает.</p>
+
+    <p>Последуйте этим правилам и посмотрите, не станет ли ваш код более удобочитаемым. Если вы занимаетесь сопровождением чужого кода, попробуйте решить проблемы средствами рефакторинга. Это даст немедленный результат и продолжит приносить плоды в долгосрочной перспективе.</p>
+
+    <div class="footnotes">
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-4-backlink" id="footnote-319-4">4</a><span class="Superscript char-style-override-2" xml:lang="en-US">1</span> Как будет показано ниже, даже если контейнер <em>действительно</em> представляет собой <span class="command char-style-override-3">List</span>, лучше обойтись без кодирования типа контейнера в имени.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-5-backlink" id="footnote-319-5">5</a> Для примера можно привести совершенно отвратительную привычку создавать переменную <span class="command char-style-override-3">klass</span> только из-за того, что имя <span class="command char-style-override-3">class</span> было использовано для других целей.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-6-backlink" id="footnote-319-6">6</a> Дядюшка Боб действовал так при программировании на <span xml:lang="en-US">C</span>++, но потом бросил эту привычку, потому что благодаря современным <span xml:lang="en-US">IDE</span> она стала излишней.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-7-backlink" id="footnote-319-7">7</a> <a href="http://java.sun.com/products/javabeans/docs/spec.html">http://java.sun.com/products/javabeans/docs/spec.html</a>.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-8-backlink" id="footnote-319-8">8</a> «Святая ручная граната» — оружие огромной разрушительной силы из фильма «Монти Пайтон и Священный Грааль». — <span class="char-style-override-4">Примеч. перев.</span></p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-9-backlink" id="footnote-319-9">9</a> Из мультипликационного сериала «Симпсоны». — <span class="char-style-override-4">Примеч. перев.</span></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

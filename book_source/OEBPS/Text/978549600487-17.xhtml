@@ -1,0 +1,1192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Чистый код: создание, анализ и рефакторинг. Библиотека программиста</title>
+  <link href="../Styles/template.css" rel="stylesheet" type="text/css"/>
+</head>
+
+<body id="x978549600487" xml:lang="ru-RU">
+  <div>
+    <h1 id="toc_marker-17">15. Внутреннее строение JUnit</h1>
+
+    <p class="Pic-yakor"><span><img alt="15_01.tif" class="frame-22" src="../Images/15_01_fmt.png"/></span>&nbsp;</p>
+
+    <p>JUnit — одна из самых известных инфраструктур для языка Java. Как и положено нормальной инфраструктуре, она концептуально проста, точна в определениях и элегантна в реализации. Но как выглядит ее код? В этой главе мы покритикуем пример, взятый из инфраструктуры JUnit.</p>
+
+    <h2 id="toc_marker-17-1">Инфраструктура JUnit</h2>
+
+    <p class="Normal0">У JUnit много авторов, но все началось с совместного перелета Кента Бека и Эрика Гамма в Атланту. Кент хотел освоить Java, а Эрик собирался заняться изучением тестовой инфраструктуры Кента для языка Smalltalk. «А что может быть более естественным для двух „технарей“, запертых в тесном пространстве, чем достать портативные компьютеры и взяться за программирование?<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-69" id="footnote-319-69-backlink">69</a></span>» За три часа «высотной работы» были написаны основы JUnit.</p>
+
+    <p>Модуль, который мы рассмотрим в этой главе, предназначен для выявления ошибок сравнения строк. Он называется <span class="command char-style-override-1">ComparisonCompactor</span>. Получив две различающиеся строки (например, <span class="command char-style-override-1">ABCDE</span> и <span class="command char-style-override-1">ABXDE</span>), он выдает сводку различий между ними, генерируя строку вида <span class="command char-style-override-1">&lt;...B[X]D...&gt;</span>.</p>
+
+    <p>Я мог бы объяснить и подробнее, но тестовые сценарии сделают это лучше. Просмотрите листинг 15.1 и вы отлично поймете требования этого модуля. А заодно критически проанализируйте структуру тестов. Нельзя ли упростить их, сделать более наглядными?</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/15 Внутреннее строение JUnit/15.1.java">📄 Открыть исходный код в IDE</a></p>Листинг 15.1.</strong> ComparisonCompactorTest.java</p>
+
+    <p class="listing-body">package junit.tests.framework;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">import junit.framework.ComparisonCompactor;</p>
+
+    <p class="listing-body">import junit.framework.TestCase;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class ComparisonCompactorTest extends TestCase {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void testMessage() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(0, "b", "c").compact("a");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertTrue("a expected:&lt;[b]&gt; but was:&lt;[c]&gt;".equals(failure));</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void testStartSame() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(1, "ba", "bc").compact(null);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(«expected:&lt;b[a]&gt; but was:&lt;b[c]&gt;», failure);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void testEndSame() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String&nbsp;&nbsp;failure= new ComparisonCompactor(1, "ab", "cb").compact(null);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertEquals("expected:&lt;[a]b&gt; but was:&lt;[c]b&gt;", failure);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void testSame() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(1, "ab", "ab").compact(null);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertEquals("expected:&lt;ab&gt; but was:&lt;ab&gt;", failure);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void testNoContextStartAndEndSame() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(0, "abc", "adc").compact(null);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertEquals("expected:&lt;...[b]...&gt; but was:&lt;...[d]...&gt;", failure);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void testStartAndEndContext() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(1, "abc", "adc").compact(null);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertEquals("expected:&lt;a[b]c&gt; but was:&lt;a[d]c&gt;", failure);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void testStartAndEndContextWithEllipses() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String failure=</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;new ComparisonCompactor(1, "abcde", "abfde").compact(null);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertEquals("expected:&lt;...b[c]d...&gt; but was:&lt;...b[f]d...&gt;", failure);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void testComparisonErrorStartSameComplete() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(2, "ab", "abc").compact(null);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertEquals("expected:&lt;ab[]&gt; but was:&lt;ab[c]&gt;", failure);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void testComparisonErrorEndSameComplete() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(0, "bc", "abc").compact(null);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertEquals("expected:&lt;[]...&gt; but was:&lt;[a]...&gt;", failure);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void testComparisonErrorEndSameCompleteContext() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(2, "bc", "abc").compact(null);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertEquals("expected:&lt;[]bc&gt; but was:&lt;[a]bc&gt;", failure);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void testComparisonErrorOverlapingMatches() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(0, "abc", "abbc").compact(null);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertEquals("expected:&lt;...[]...&gt; but was:&lt;...[b]...&gt;", failure);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void testComparisonErrorOverlapingMatchesContext() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(2, "abc", "abbc").compact(null);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertEquals("expected:&lt;ab[]c&gt; but was:&lt;ab[b]c&gt;", failure);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void testComparisonErrorOverlapingMatches2() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(0, "abcdde",</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;"abcde").compact(null);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertEquals("expected:&lt;...[d]...&gt; but was:&lt;...[]...&gt;", failure);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void testComparisonErrorOverlapingMatches2Context() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String failure=</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;new ComparisonCompactor(2, "abcdde", "abcde").compact(null);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertEquals("expected:&lt;...cd[d]e&gt; but was:&lt;...cd[]e&gt;", failure);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/15 Внутреннее строение JUnit/15.1.java">📄 Открыть исходный код в IDE</a></p>Листинг 15.1</strong> (продолжение)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void testComparisonErrorWithActualNull() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(0, "a", null).compact(null);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertEquals("expected:&lt;a&gt; but was:&lt;null&gt;", failure);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void testComparisonErrorWithActualNullContext() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(2, "a", null).compact(null);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertEquals("expected:&lt;a&gt; but was:&lt;null&gt;", failure);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void testComparisonErrorWithExpectedNull() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(0, null, "a").compact(null);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertEquals("expected:&lt;null&gt; but was:&lt;a&gt;", failure);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void testComparisonErrorWithExpectedNullContext() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(2, null, "a").compact(null);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertEquals("expected:&lt;null&gt; but was:&lt;a&gt;", failure);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void testBug609972() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(10, "S&amp;P500", "0").compact(null);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertEquals("expected:&lt;[S&amp;P50]0&gt; but was:&lt;[]0&gt;", failure);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Я провел для <span class="command char-style-override-1">ComparisonCompactor</span> анализ покрытия кода на основе этих тестов. В ходе тестирования обеспечивалось 100%-ное покрытие: была выполнена каждая строка кода, каждая команда <span class="command char-style-override-1">if</span> и цикл <span class="command char-style-override-1">for</span>. Я удостоверился в том, что код работает правильно, а также преисполнился уважения к мастерству его авторов.</p>
+
+    <p>Код <span class="command char-style-override-1">ComparisonCompactor</span> приведен в листинге 15.2. Не жалейте времени и как следует разберитесь в нем. Вероятно, вы согласитесь с тем, что код достаточно выразителен, обладает логичным разбиением и простой структурой. А когда вы закончите, мы вместе начнем придираться к мелочам.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/15 Внутреннее строение JUnit/15.2.java">📄 Открыть исходный код в IDE</a></p>Листинг 15.2.</strong> ComparisonCompactor.java (исходный код)</p>
+
+    <p class="listing-body">package junit.framework;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class ComparisonCompactor {</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static final String ELLIPSIS = "...";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static final String DELTA_END = "]";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static final String DELTA_START = "[";</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private int fContextLength;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String fExpected;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String fActual;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private int fPrefix;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private int fSuffix;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public ComparisonCompactor(int contextLength,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String expected,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String actual) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;fContextLength = contextLength;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;fExpected = expected;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;fActual = actual;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public String compact(String message) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (fExpected == null || fActual == null || areStringsEqual())</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return Assert.format(message, fExpected, fActual);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;findCommonPrefix();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;findCommonSuffix();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String expected = compactString(fExpected);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String actual = compactString(fActual);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return Assert.format(message, expected, actual);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String compactString(String source) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String result = DELTA_START +</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;source.substring(fPrefix, source.length() -</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fSuffix + 1) + DELTA_END;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (fPrefix &gt; 0)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result = computeCommonPrefix() + result;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (fSuffix &gt; 0)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result = result + computeCommonSuffix();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return result;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void findCommonPrefix() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;fPrefix = 0;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int end = Math.min(fExpected.length(), fActual.length());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;for (; fPrefix &lt; end; fPrefix++) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (fExpected.charAt(fPrefix) != fActual.charAt(fPrefix))</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void findCommonSuffix() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int expectedSuffix = fExpected.length() - 1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int actualSuffix = fActual.length() - 1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;for (;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;actualSuffix &gt;= fPrefix &amp;&amp; expectedSuffix &gt;= fPrefix;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;actualSuffix--, expectedSuffix--) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (fExpected.charAt(expectedSuffix) != fActual.charAt(actualSuffix))</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;fSuffix = fExpected.length() - expectedSuffix;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String computeCommonPrefix() {</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/15 Внутреннее строение JUnit/15.2.java">📄 Открыть исходный код в IDE</a></p>Листинг 15.2</strong> (продолжение)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return (fPrefix &gt; fContextLength ? ELLIPSIS : "") +</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fExpected.substring(Math.max(0, fPrefix - fContextLength),</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fPrefix);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String computeCommonSuffix() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int end = Math.min(fExpected.length() - fSuffix + 1 + fContextLength,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fExpected.length());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return fExpected.substring(fExpected.length() - fSuffix + 1, end) +</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fExpected.length() - fSuffix + 1 &lt; fExpected.length() -</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fContextLength ? ELLIPSIS : "");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private boolean areStringsEqual() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return fExpected.equals(fActual);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Вероятно, вы найдете в этом модуле некоторые недочеты. В нем встречаются длинные выражения, какие-то малопонятные <span class="command char-style-override-1">+1</span> и т.д. Но в целом модуль весьма хорош. В конце концов, он мог бы выглядеть и так, как показано в листинге 15.3.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/15 Внутреннее строение JUnit/15.3.java">📄 Открыть исходный код в IDE</a></p>Листинг 15.3.</strong> ComparisonCompator.java (переработанная версия)</p>
+
+    <p class="listing-body">package junit.framework;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class ComparisonCompactor {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private int ctxt;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String s1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String s2;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private int pfx;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private int sfx;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public ComparisonCompactor(int ctxt, String s1, String s2) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;this.ctxt = ctxt;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;this.s1 = s1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;this.s2 = s2;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public String compact(String msg) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (s1 == null || s2 == null || s1.equals(s2))</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return Assert.format(msg, s1, s2);</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;pfx = 0;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;for (; pfx &lt; Math.min(s1.length(), s2.length()); pfx++) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (s1.charAt(pfx) != s2.charAt(pfx))</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int sfx1 = s1.length() - 1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int sfx2 = s2.length() - 1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;for (; sfx2 &gt;= pfx &amp;&amp; sfx1 &gt;= pfx; sfx2--, sfx1--) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (s1.charAt(sfx1) != s2.charAt(sfx2))</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;sfx = s1.length() - sfx1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String cmp1 = compactString(s1);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String cmp2 = compactString(s2);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return Assert.format(msg, cmp1, cmp2);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String compactString(String s) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String result =</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"[" + s.substring(pfx, s.length() - sfx + 1) + "]";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (pfx &gt; 0)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result = (pfx &gt; ctxt ? "..." : "") +</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;s1.substring(Math.max(0, pfx - ctxt), pfx) + result;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (sfx &gt; 0) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int end = Math.min(s1.length() - sfx + 1 + ctxt, s1.length());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result = result + (s1.substring(s1.length() - sfx + 1, end) +</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(s1.length() - sfx + 1 &lt; s1.length() - ctxt ? "..." : ""));</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return result;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Авторы оставили эту модуль в очень хорошей форме. И все же «правило бойскаута<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-70" id="footnote-319-70-backlink">70</a></span>» гласит: все нужно оставлять чище, чем было до вашего прихода. Итак, как же улучшить исходный код в листинге 15.2?</p>
+
+    <p>Первое, что мне решительно не понравилось, — префикс <span class="command char-style-override-1">f</span> у имен переменных классов [N6]. В современных средах разработки подобное кодирование области видимости излишне. Давайте уберем все префиксы:</p>
+
+    <p class="listing-body">private int contextLength;</p>
+
+    <p class="listing-body">private String expected;</p>
+
+    <p class="listing-body">private String actual;</p>
+
+    <p class="listing-body">private int prefix;</p>
+
+    <p class="listing-body">private int suffix;</p>
+
+    <p>Также бросается в глаза неинкапсулированная условная команда в начале функции <span class="command char-style-override-1">compact</span> [G28].</p>
+
+    <p class="listing-body">public String compact(String message) {</p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;</strong><strong>if (expected == null || actual == null || areStringsEqual())</strong></p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return Assert.format(message, expected, actual);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;findCommonPrefix();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;findCommonSuffix();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;String expected = compactString(this.expected);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;String actual = compactString(this.actual);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return Assert.format(message, expected, actual);</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Инкапсуляция поможет лучше выразить намерения разработчика. Поэтому я создал метод с именем, поясняющим его смысл:</p>
+
+    <p class="listing-body">public String compact(String message) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;if (<strong>shouldNotCompact()</strong>)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return Assert.format(message, expected, actual);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;findCommonPrefix();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;findCommonSuffix();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;String expected = compactString(this.expected);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;String actual = compactString(this.actual);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return Assert.format(message, expected, actual);</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body"><strong>private boolean shouldNotCompact() {</strong></p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;return expected == null || actual == null || areStringsEqual();</strong></p>
+
+    <p class="listing-body"><strong>}</strong></p>
+
+    <p>Запись <span class="command char-style-override-1">this</span><span class="command char-style-override-1">.</span><span class="command char-style-override-1">expected</span> и <span class="command char-style-override-1">this</span><span class="command char-style-override-1">.</span><span class="command char-style-override-1">actual</span> в функции <span class="command char-style-override-1">compact</span> тоже оставляет желать лучшего. Это произошло, когда мы переименовали <span class="command char-style-override-1">fExpected</span> в <span class="command char-style-override-1">expected</span>. Зачем в функции используются переменные с именами, совпадающими с именами переменных класса? Ведь они имеют разный смысл [N4]? Неоднозначность в именах следует исключить.</p>
+
+    <p class="listing-body">String compactExpected = compactString(expected);</p>
+
+    <p class="listing-body">String compactActual = compactString(actual);</p>
+
+    <p>Отрицательные условия чуть сложнее для понимания, чем положительные [G29]. Чтобы проверяемое условие стало более понятным, мы инвертируем его:</p>
+
+    <p class="listing-body">public String compact(String message) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;if (<strong>canBeCompacted()</strong>) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;findCommonPrefix();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;findCommonSuffix();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String compactExpected = compactString(expected);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String compactActual = compactString(actual);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return Assert.format(message, compactExpected, compactActual);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;} else {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return Assert.format(message, expected, actual);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">private boolean <strong>canBeCompacted</strong>() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return expected <strong>!=</strong> null <strong>&amp;&amp;</strong> actual <strong>!=</strong> null <strong>&amp;&amp;</strong> <strong>!</strong>areStringsEqual();</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Имя функции <span class="command char-style-override-1">compact</span> выглядит немного странно [N7]. Хотя она выполняет сжатие строк, этого не произойдет, если <span class="command char-style-override-1">canBeCompacted</span> вернет <span class="command char-style-override-1">false</span>. Таким образом, выбор имени <span class="command char-style-override-1">compact</span> скрывает побочный эффект проверки. Также обратите ­внимание на то, что функция возвращает отформатированное сообщение, а не просто сжатые строки. Следовательно, функцию было бы правильнее назвать <span class="command char-style-override-1">formatCompactedComparison</span>. В этом случае она гораздо лучше читается вместе с аргументом:</p>
+
+    <p class="listing-body">public String formatCompactedComparison(String message) {</p>
+
+    <p>Тело команды <span class="command char-style-override-1">if</span> — то место, где выполняется фактическое сжатие строк <span class="command char-style-override-1">expected</span> и <span class="command char-style-override-1">actual</span>. Мы извлечем этот код в метод <span class="command char-style-override-1">compactExpectedAndActual</span>. Тем не менее все форматирование должно происходить в функции <span class="command char-style-override-1">formatCompactedComparison</span>. Функция <span class="command char-style-override-1">compact</span>... не должна делать ничего, кроме сжатия [G30]. Разобьем ее следующим образом:</p>
+
+    <p class="listing-body">...</p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;private String compactExpected;</strong></p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;private String compactActual;</strong></p>
+
+    <p class="listing-body">...</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public String formatCompactedComparison(String message) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (canBeCompacted()) {</p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;compactExpectedAndActual();</strong></p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return Assert.format(message, compactExpected, compactActual);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;} else {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return Assert.format(message, expected, actual);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void <strong>compactExpectedAndActual</strong>() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;findCommonPrefix();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;findCommonSuffix();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;compactExpected = compactString(expected);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;compactActual = compactString(actual);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p>Обратите внимание: это преобразование заставило нас повысить <span class="command char-style-override-1">compactExpected</span> и <span class="command char-style-override-1">compactActual</span> до переменных класса. Еще мне не нравится то, что в двух последних строках новой функции возвращаются переменные, а в первых двух — нет. Это противоречит рекомендациям по использованию единых конвенций [G11]. Значит, функции <span class="command char-style-override-1">findCommonPrefix</span> и <span class="command char-style-override-1">findCommon­Suffix</span> следует изменить так, чтобы они возвращали значения префикса и суффикса.</p>
+
+    <p class="listing-body">private void compactExpectedAndActual() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;<strong>prefixIndex</strong> = findCommonPrefix();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;<strong>suffixIndex</strong> = findCommonSuffix();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;compactExpected = compactString(expected);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;compactActual = compactString(actual);</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">private <strong>int</strong> findCommonPrefix() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;<strong>int</strong> prefix<strong>Index</strong> = 0;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int end = Math.min(expected.length(), actual.length());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;for (; prefix<strong>Index</strong> &lt; end; prefix<strong>Index</strong>++) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (expected.charAt(prefix<strong>Index</strong>) != actual.charAt(prefix<strong>Index</strong>))</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return prefixIndex;</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">private <strong>int</strong> findCommonSuffix() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int expectedSuffix = expected.length() - 1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int actualSuffix = actual.length() - 1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;for (; actualSuffix &gt;= prefix<strong>Index</strong> &amp;&amp; expectedSuffix &gt;= prefixIndex;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;actualSuffix--, expectedSuffix--) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (expected.charAt(expectedSuffix) != actual.charAt(actualSuffix))</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;<strong>return</strong> expected.length() - expectedSuffix;</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Также следует изменить имена переменных класса так, чтобы они стали чуть ­более точными [N1]; в конце концов, обе переменные представляют собой индексы.</p>
+
+    <p>Тщательное изучение <span class="command char-style-override-1">findCommonSuffix</span> выявляет скрытую временную привязку [G31]; работа функции зависит от того, что значение <span class="command char-style-override-1">prefixIndex</span> вычисляется функцией <span class="command char-style-override-1">findCommonPrefix</span>. Если вызвать эти две функции в неверном порядке, вам предстоит непростой сеанс отладки. Чтобы эта временная привязка стала очевидной, значение <span class="command char-style-override-1">prefixIndex</span> будет передаваться при вызове <span class="command char-style-override-1">findCommonSuffix</span> в аргументе.</p>
+
+    <p class="listing-body">private void compactExpectedAndActual() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;prefixIndex = findCommonPrefix();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;suffixIndex = findCommonSuffix(<strong>prefixIndex</strong>);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;compactExpected = compactString(expected);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;compactActual = compactString(actual);</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">private int findCommonSuffix(<strong>int prefixIndex</strong>) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int expectedSuffix = expected.length() - 1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int actualSuffix = actual.length() - 1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;for (; actualSuffix &gt;= prefixIndex &amp;&amp; expectedSuffix &gt;= prefixIndex;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;actualSuffix--, expectedSuffix--) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (expected.charAt(expectedSuffix) != actual.charAt(actualSuffix))</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return expected.length() - expectedSuffix;</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Но и такое решение оставляет желать лучшего. Передача аргумента <span class="command char-style-override-1">prefixIndex</span> выглядит нелогично [G32]. Она устанавливает порядок вызова, но никоим образом не объясняет необходимость именно такого порядка. Другой программист может отменить внесенное изменение, так как ничто не указывает на то, что этот параметр действительно необходим.</p>
+
+    <p class="listing-body">private void compactExpectedAndActual() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;<strong>findCommonPrefixAndSuffix</strong>();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;compactExpected = compactString(expected);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;compactActual = compactString(actual);</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">private <strong>void findCommonPrefixAndSuffix</strong>() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;<strong>findCommonPrefix</strong>();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int expectedSuffix = expected.length() - 1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int actualSuffix = actual.length() - 1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;for (;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;actualSuffix &gt;= prefixIndex &amp;&amp; expectedSuffix &gt;= prefixIndex;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;actualSuffix--, expectedSuffix--</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (expected.charAt(expectedSuffix) != actual.charAt(actualSuffix))</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;suffixIndex = expected.length() - expectedSuffix;</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">private <strong>void</strong> findCommonPrefix() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;prefixIndex = 0;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int end = Math.min(expected.length(), actual.length());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;for (; prefixIndex &lt; end; prefixIndex++)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (expected.charAt(prefixIndex) != actual.charAt(prefixIndex))</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Функции <span class="command char-style-override-1">findCommonPrefix</span> и <span class="command char-style-override-1">findCommonSuffix</span> возвращаются к прежнему виду, функция <span class="command char-style-override-1">findCommonSuffix</span> переименовывается в <span class="command char-style-override-1">findCommonPrefixAndSuffix</span>, и в нее включается вызов <span class="command char-style-override-1">findCommonPrefix</span> до выполнения каких-либо других действий. Тем самым временная связь двух функций устанавливается гораздо более радикально, чем в предыдущем решении. Кроме того, новое решение со всей очевидностью демонстрирует, насколько уродлива функция <span class="command char-style-override-1">findCommonPrefixAndSuffix</span>. Давайте немного почистим ее.</p>
+
+    <p class="listing-body">private void findCommonPrefixAndSuffix() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;findCommonPrefix();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int suffixLength = 1;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;for (; !suffixOverlapsPrefix(suffixLength); suffixLength++) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (charFromEnd(expected, suffixLength) !=</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;charFromEnd(actual, suffixLength))</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;suffixIndex = suffixLength;</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">private char charFromEnd(String s, int i) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return s.charAt(s.length()-i);}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">private boolean suffixOverlapsPrefix(int suffixLength) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return actual.length() - suffixLength &lt; prefixLength ||</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;expected.length() - suffixLength &lt; prefixLength;</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Так гораздо лучше. Новая версия кода очевидно показывает, что <span class="command char-style-override-1">suffixIndex</span> в действительности определяет <em>длину</em> суффикса, а прежнее имя было выбрано неудачно. Это относится и к <span class="command char-style-override-1">prefixIndex</span>, хотя в данном случае «индекс» и «длина» являются синонимами. Несмотря на это, использование термина «длина» выглядит более последовательно. Проблема в том, что значение переменной <span class="command char-style-override-1">suffixIndex</span> отсчитывается не от 0, а от 1, так что называть его «длиной» не совсем коррект­но­ (кстати, этим же обстоятельством объясняются загадочные прибавления <span class="command char-style-override-1">+1</span> в <span class="command char-style-override-1">computeCommonSuffix</span> [G33]). Давайте исправим этот недостаток. Результат показан в листинге 15.4.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/15 Внутреннее строение JUnit/15.4.java">📄 Открыть исходный код в IDE</a></p>Листинг 15.4.</strong> ComparisonCompactor.java (промежуточная версия)</p>
+
+    <p class="listing-body">public class ComparisonCompactor {</p>
+
+    <p class="listing-body">...</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private int <strong>suffixLength</strong>;</p>
+
+    <p class="listing-body">...</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void findCommonPrefixAndSuffix() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;findCommonPrefix();</p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;&nbsp;&nbsp;suffixLength = 0;</strong></p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;for (; !suffixOverlapsPrefix(suffixLength); suffixLength++) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (charFromEnd(expected, suffixLength) !=</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;charFromEnd(actual, suffixLength))</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private char charFromEnd(String s, int i) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return s.charAt(s.length() - i <strong>- 1</strong>);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private boolean suffixOverlapsPrefix(int suffixLength) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return actual.length() - suffixLength <strong>&lt;=</strong> prefixLength ||</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;expected.length() - suffixLength <strong>&lt;=</strong> prefixLength;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">...</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String compactString(String source) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String result =</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DELTA_START +</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;source.substring(prefixLength, source.length() - <strong>suffixLength</strong>) +</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DELTA_END;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (prefixLength &gt; 0)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result = computeCommonPrefix() + result;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (<strong>suffixLength</strong> &gt; 0)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result = result + computeCommonSuffix();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return result;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">...</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String computeCommonSuffix() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int end = Math.min(expected.length() - <strong>suffixLength</strong> +</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;contextLength, expected.length()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;expected.substring(expected.length() - <strong>suffixLength</strong>, end) +</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(expected.length() - <strong>suffixLength</strong> &lt;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;expected.length() - contextLength ?</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ELLIPSIS : "");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p>Все <span class="command char-style-override-1">+1</span> в <span class="command char-style-override-1">computeCommonSuffix</span> были заменены на <span class="command char-style-override-1">-1</span> в <span class="command char-style-override-1">charFromEnd</span>, где это смотрится абсолютно логично; также были изменены два оператора <span class="command char-style-override-1">&lt;=</span> в <span class="command char-style-override-1">suffixOverlapsPrefix</span>,&nbsp;&nbsp;где это тоже абсолютно логично. Это позволило переименовать <span class="command char-style-override-1">suffixIndex</span> в <span class="command char-style-override-1">suffixLength</span>, с заметным улучшением удобочитаемости кода.</p>
+
+    <p>Однако здесь возникла одна проблема. В ходе устранения <span class="command char-style-override-1">+1</span> я заметил в <span class="command char-style-override-1">compactString</span> следующую строку:</p>
+
+    <p class="listing-body">if (suffixLength &gt; 0)</p>
+
+    <p>Найдите ее в листинге 15.4. Так как <span class="command char-style-override-1">suffixLength</span> стало на 1 меньше, чем было прежде, мне следовало бы заменить оператор <span class="command char-style-override-1">&gt;</span> оператором <span class="command char-style-override-1">&gt;=</span>, но это выглядит нелогично. При более внимательном анализе мы видим, что команда <span class="command char-style-override-1">if</span> предотвращает присоединение суффикса с нулевой длиной. Но до внесения изменений команда <span class="command char-style-override-1">if</span> была бесполезной, потому что значение <span class="command char-style-override-1">suffixIndex</span> не могло быть меньше 1!</p>
+
+    <p>Это ставит под сомнение полезность обеих команд <span class="command char-style-override-1">if</span> в <span class="command char-style-override-1">compactString</span>! Похоже, обе команды можно исключить. Закомментируем их и проведем тестирование. Тесты прошли! Давайте изменим структуру <span class="command char-style-override-1">compactString</span>, чтобы удалить лишние команды <span class="command char-style-override-1">if</span> и значительно упростить самую функцию [G9].</p>
+
+    <p class="listing-body">private String compactString(String source) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;return</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;computeCommonPrefix() +</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;DELTA_START +</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;source.substring(prefixLength, source.length() - suffixLength) +</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;DELTA_END +</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;computeCommonSuffix();</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Стало гораздо лучше! Теперь мы видим, что функция <span class="command char-style-override-1">compactString</span> просто соединяет фрагменты строки. Вероятно, этот факт можно сделать еще более очевидным. Осталось еще много мелких улучшений, которые можно было бы внести в код. Но я не стану мучить вас подробными описаниями остальных изменений и просто приведу окончательный результат в листинге 15.5.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/15 Внутреннее строение JUnit/15.5.java">📄 Открыть исходный код в IDE</a></p>Листинг 15.5.</strong> ComparisonCompactor.java (окончательная версия)</p>
+
+    <p class="listing-body">package junit.framework;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class ComparisonCompactor {</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static final String ELLIPSIS = "...";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static final String DELTA_END = "]";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private static final String DELTA_START = "[";</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private int contextLength;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String expected;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String actual;</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/15 Внутреннее строение JUnit/15.5.java">📄 Открыть исходный код в IDE</a></p>Листинг 15.5</strong> (продолжение)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private int prefixLength;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private int suffixLength;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public ComparisonCompactor(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int contextLength, String expected, String actual</p>
+
+    <p class="listing-body">&nbsp;&nbsp;) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;this.contextLength = contextLength;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;this.expected = expected;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;this.actual = actual;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public String formatCompactedComparison(String message) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String compactExpected = expected;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String compactActual = actual;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (shouldBeCompacted()) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;findCommonPrefixAndSuffix();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;compactExpected = compact(expected);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;compactActual = compact(actual);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return Assert.format(message, compactExpected, compactActual);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private boolean shouldBeCompacted() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return !shouldNotBeCompacted();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private boolean shouldNotBeCompacted() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return expected == null ||</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;actual == null ||</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;expected.equals(actual);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void findCommonPrefixAndSuffix() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;findCommonPrefix();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;suffixLength = 0;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;for (; !suffixOverlapsPrefix(); suffixLength++) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (charFromEnd(expected, suffixLength) !=</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;charFromEnd(actual, suffixLength)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private char charFromEnd(String s, int i) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return s.charAt(s.length() - i - 1);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private boolean suffixOverlapsPrefix() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return actual.length() - suffixLength &lt;= prefixLength ||</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;expected.length() - suffixLength &lt;= prefixLength;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private void findCommonPrefix() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;prefixLength = 0;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int end = Math.min(expected.length(), actual.length());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;for (; prefixLength &lt; end; prefixLength++)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (expected.charAt(prefixLength) != actual.charAt(prefixLength))</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String compact(String s) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return new StringBuilder()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append(startingEllipsis())</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append(startingContext())</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append(DELTA_START)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append(delta(s))</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append(DELTA_END)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append(endingContext())</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append(endingEllipsis())</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.toString();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String startingEllipsis() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return prefixLength &gt; contextLength ? ELLIPSIS : "";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String startingContext() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int contextStart = Math.max(0, prefixLength - contextLength);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int contextEnd = prefixLength;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return expected.substring(contextStart, contextEnd);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String delta(String s) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int deltaStart = prefixLength;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int deltaEnd = s.length() - suffixLength;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return s.substring(deltaStart, deltaEnd);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String endingContext() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int contextStart = expected.length() - suffixLength;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int contextEnd =</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Math.min(contextStart + contextLength, expected.length());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return expected.substring(contextStart, contextEnd);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String endingEllipsis() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return (suffixLength &gt; contextLength ? ELLIPSIS : "");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Результат выглядит вполне симпатично. Модуль делится на группы: первую группу составляют функции анализа, а вторую — функции синтеза. Функции топологически отсортированы таким образом, что определение каждой функции размещается перед ее первым использованием. Сначала определяются все функции анализа, а за ними следуют функции синтеза.</p>
+
+    <p>Внимательно присмотревшись, можно заметить, что я отменил некоторые решения, принятые ранее в этой главе. Например, некоторые извлеченные методы были снова встроены в <span class="command char-style-override-1">formatCompactedComparison</span>, а смысл выражения <span class="command char-style-override-1">shouldNotBeCompacted</span> снова изменился. Это типичная ситуация. Одна переработка часто приводит к другой, отменяющей первую. Переработка представляет собой итеративный процесс, полный проб и ошибок, но этот процесс неизбежно приводит к формированию кода, достойного настоящего профессионала.</p>
+
+    <h2 id="toc_marker-17-2">Заключение</h2>
+
+    <p class="Normal0">Итак, «правило бойскаута» выполнено: модуль стал чище, чем был до нашего прихода. И дело не в том, что он был недостаточно чист, — авторы отлично потрудились над ним. Однако не существует модуля, который нельзя было бы улучшить, и каждый из нас обязан оставить чужой код хотя бы немного лучше, чем он был.</p>
+
+    <div class="footnotes">
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-69-backlink" id="footnote-319-69">69</a><span class="Superscript char-style-override-2" xml:lang="en-US">1</span> <span xml:lang="en-US">JUnit Pocket Guide, Kent Beck, O’Reilly, 2004, c. 43.</span></p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-70-backlink" id="footnote-319-70">70</a> См. раздел «Правило бойскаута» на с. 37.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,590 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Чистый код: создание, анализ и рефакторинг. Библиотека программиста</title>
+  <link href="../Styles/template.css" rel="stylesheet" type="text/css"/>
+</head>
+
+<body id="x978549600487" xml:lang="ru-RU">
+  <div>
+    <h1 id="toc_marker-11">9. Модульные тесты</h1>
+
+    <p class="Pic-yakor"><span><img alt="09_01.tif" class="frame-15" src="../Images/09_01_fmt.png"/></span>&nbsp;</p>
+
+    <p>За последние десять лет наша профессия прошла долгий путь. В 1997 году никто не слыхал о методологии TDD (Test Driven Development, то есть «разработка через тестирование»). Для подавляющего большинства разработчиков модульные тесты представляли собой короткие фрагменты временного кода, при помощи которого мы убеждались в том, что наши программы «работают». Мы тщательно выписывали свои классы и методы, а потом подмешивали специализированный код для их тестирования. Как правило, при этом использовалась какая-нибудь несложная управляющая программа, которая позволяла вручную взаимодействовать с тестируемым кодом.</p>
+
+    <p>Помню, в середине 90-х я написал программу на C++ для встроенной системы реального времени. Программа представляла собой простой таймер со следующей сигнатурой:</p>
+
+    <p class="listing-body">void Timer::ScheduleCommand(Command* theCommand, int milliseconds)</p>
+
+    <p>Идея была проста; метод <span class="command char-style-override-1">Execute</span> класса <span class="command char-style-override-1">Command</span> выполнялся в новом программном потоке с заданной задержкой в миллисекундах. Оставалось понять, как его тестировать.</p>
+
+    <p>Я соорудил простую управляющую программу, которая прослушивала события клавиатуры. Каждый раз, когда на клавиатуре вводился символ, программа планировала выполнение команды, повторяющей этот же символ пять секунд спустя. Затем я настучал на клавиатуре ритмичную мелодию и подождал, пока эта мелодия «появится» на экране спустя пять секунд.</p>
+
+    <p>«Мне… нужна такая девушка… как та… которую нашел мой старый добрый папа…»</p>
+
+    <p>Я напевал эту мелодию, нажимая клавишу «.», а потом пропел ее снова, когда точки начали появляться на экране.</p>
+
+    <p>И это был весь тест! Я убедился в том, что программа работает, показал ее своим коллегам и выкинул тестовый код.</p>
+
+    <p>Как я уже говорил, наша профессия прошла долгий путь. Сейчас я бы написал комплексный тест, проверяющий, что все углы и закоулки моего кода работают именно так, как положено. Я бы изолировал свой код от операционной системы, не полагаясь на стандартное выполнение по таймеру. Я бы самостоятельно реализовал хронометраж, чтобы тестирование проходило под моим полным контролем. Запланированные команды устанавливали бы логические флаги, а потом тестовый код выполнял бы мою программу в пошаговом режиме, наблюдая за состоянием флагов и их переходами из ложного состояния в истинное по прохождении нужного времени.</p>
+
+    <p>Когда у меня накопился бы пакет тестов, я бы позаботился о том, чтобы эти тесты были удобными для любого другого программиста, которому потребуется работать с моим кодом. Я бы проследил за тем, чтобы тесты и код поставлялись вместе, в одном исходном пакете.</p>
+
+    <p>Да, мы прошли долгий путь; но дорога еще не пройдена до конца. Движения гибких методологий и TDD поощряют многих программистов писать автоматизированные модульные тесты, а их ряды ежедневно пополняются новыми сторонниками. Однако в лихорадочном стремлении интегрировать тестирование в свою работу многие программисты упускают более тонкие и важные аспекты написания хороших тестов.</p>
+
+    <h2 id="toc_marker-11-1">Три закона TTD</h2>
+
+    <p class="Normal0">В наши дни каждому известно, что по требованиям методологии TDD модульные тесты должны писаться заранее, еще до написания кода продукта. Но это правило — всего лишь верхушка айсберга. Рассмотрим следующие три закона<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-28" id="footnote-319-28-backlink">28</a></span>:</p>
+
+    <p><strong>Первый</strong> <strong>закон.</strong> Не пишите код продукта, пока не напишете отказной модульный тест.</p>
+
+    <p><strong>Второй закон.</strong> Не пишите модульный тест в объеме большем, чем необходимо для отказа. Невозможность компиляции является отказом.</p>
+
+    <p><strong>Третий</strong> <strong>закон.</strong> Не пишите код продукта в объем большем, чем необходимо для прохождения текущего отказного теста.</p>
+
+    <p>Эти три закона устанавливают рамки рабочего цикла, длительность которого составляет, вероятно, около 30 секунд. Тесты и код продукта пишутся вместе, а тесты на несколько секунд опережают код продукта.</p>
+
+    <p>При такой организации работы мы пишем десятки тестов ежедневно, сотни тестов ежемесячно, тысячи тестов ежегодно. При такой организации работы тесты охватывают практически все аспекты кода продукта. Громадный объем тестов, сравнимый с объемом самого кода продукта, может создать немало организационных проблем.</p>
+
+    <h2 id="toc_marker-11-2">О чистоте тестов</h2>
+
+    <p class="Normal0">Несколько лет назад мне предложили заняться обучением группы, которая решила, что тестовый код не должен соответствовать тем же стандартам качества, что и код продукта. Участники группы сознательно разрешили друг другу нарушать правила в модульных тестах. «На скорую руку» — вот каким девизом они руководствовались. Разумно выбирать имена переменных не обязательно, короткие и содержательные тестовые функции не обязательны. Качественно проектировать тестовый код, организовать его продуманное логическое деление не обязательно. Тестовый код работает, охватывает код продукта — и этого вполне достаточно.</p>
+
+    <p>Пожалуй, некоторые читатели сочувственно отнесутся к этому решению. Возможно, кто-то в прошлом писал тесты наподобие тех, которые я написал для своего класса <span class="command char-style-override-1">Timer</span>. Примитивные «временные» тесты отделены огромным расстоянием от пакетов автоматизированного модульного тестирования. Многие программисты (как и та группа, в которой я преподавал) полагают, что тесты «на скорую руку» — лучше, чем полное отсутствие тестов.</p>
+
+    <p>Но на самом деле тесты «на скорую руку» равносильны полному отсутствию тестов, если не хуже. Дело в том, что тесты должны изменяться по мере развития кода продукта. Чем примитивнее тесты, тем труднее их изменять. Если тестовый код сильно запутан, то может оказаться, что написание нового кода продукта займет меньше времени, чем попытки втиснуть новые тесты в обновленный пакет. При изменении кода продукта старые тесты перестают проходить, а неразбериха в тестовом коде не позволяет быстро разобраться с возникшими проблемами. Таким образом, тесты начинают рассматриваться как постоянно растущий балласт.</p>
+
+    <p>От версии к версии затраты на сопровождение тестового пакета непрерывно росли. В конечном итоге тесты стали главной причиной для жалоб разработчиков. Когда руководство спрашивало, почему работа занимает столько времени, разработчики винили во всем тесты. Кончилось все тем, что они полностью отказались от тестового пакета.</p>
+
+    <p>Однако без тестов программисты лишились возможности убедиться в том, что изменения в кодовой базе работают так, как ожидалось. Без тестов они уже не могли удостовериться в том, что изменения в одной части системы не нарушают работу других частей. Количество ошибок стало возрастать. А с ростом количества непредвиденных дефектов программисты начали опасаться изменений. Они перестали чистить код продукта, потому что боялись: не будет ли от изменений больше вреда, чем пользы? Код продукта стал загнивать. В итоге группа осталась без тестов, с запутанной и кишащей ошибками кодовой базой, с недовольными клиентами и с чувством, что все усилия по тестированию не принесли никакой пользы.</p>
+
+    <p>И в определенном смысле они были правы. Их усилия по тестированию <em>действительно</em> оказались бесполезными. Но виной всему было их решение — небрежно написанные тесты привели к катастрофе. Если бы группа ответственно подошла к написанию тестов, то затраченное время не пропало бы даром. Я говорю об этом вполне уверенно, потому что работал (и преподавал) во многих группах, добившихся успеха с аккуратно написанными модульными тестами.</p>
+
+    <p>Мораль проста: <em>тестовый код не менее важен, чем код продукта</em>. Не считайте его «кодом второго сорта». К написанию тестового кода следует относиться вдумчиво, внимательно и ответственно. Тестовый код должен быть таким же чистым, как и код продукта.</p>
+
+    <h3>Тесты как средство обеспечения изменений</h3>
+
+    <p class="Normal0">Если не поддерживать чистоту своих тестов, то вы их лишитесь. А без тестов утрачивается все то, что обеспечивает гибкость кода продукта. Да, вы не ошиб­лись. Именно модульные тесты обеспечивают гибкость, удобство сопровождения и возможность повторного использования нашего кода. Это объясняется просто: если у вас есть тесты, вы не боитесь вносить изменения в код! Без тестов любое изменение становится потенциальной ошибкой. Какой бы гибкой ни была ваша архитектура, каким бы качественным ни было логическое деление вашей архитектуры, без тестов вы будете сопротивляться изменениям из опасений, что они приведут к появлению скрытых ошибок.</p>
+
+    <p>С тестами эти опасения практически полностью исчезают. Чем шире охват тестирования, тем меньше вам приходится опасаться. Вы можете практически свободно вносить изменения даже в имеющий далеко не идеальную архитектуру, запутанный и малопонятный код. Таким образом, вы можете спокойно улучшать архитектуру и строение кода!</p>
+
+    <p>Итак, наличие автоматизированного пакета модульных тестов, охватывающих код продукта, имеет важнейшее значение для чистоты и ясности архитектуры. А причина заключается в том, что тесты обеспечивают возможность внесения изменения.</p>
+
+    <p>Таким образом, если ваши тесты недостаточно чисты и проработаны, ваши возможности по изменению кода сокращаются и вы лишаетесь возможности улучшения структуры кода. Некачественные тесты приводит к некачественному коду продукта. В конечном итоге тестирование вообще становятся невозможным, и код продукта начинает загнивать.</p>
+
+    <h2 id="toc_marker-11-3">Чистые тесты</h2>
+
+    <p class="Normal0">Какими отличительными признаками характеризуется чистый тест? Тремя: удобочитаемостью, удобочитаемостью и удобочитаемостью. Вероятно, удобочитаемость в модульных тестах играет еще более важную роль, чем в коде продукта. Что делает тестовый код удобочитаемым? То же, что делает удобочитаемым любой другой код: ясность, простота и выразительность. В тестовом коде необходимо передать максимум информации минимумом выразительных средств.</p>
+
+    <p>В листинге 9.1 приведен фрагмент кода из проекта FitNesse. Эти три теста трудны для понимания; несомненно, их можно усовершенствовать. Прежде всего, повторные вызовы <span class="command char-style-override-1">addPage</span> и <span class="command char-style-override-1">assertSubString</span> содержат огромное количество повторяющегося кода [G5]. Что еще важнее, код просто забит второстепенными подробностями, снижающими выразительность теста.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/9 Модульные тесты/9.1.SerializedPageResponderTest.java">📄 Открыть исходный код в IDE</a></p>Листинг 9.1.</strong> SerializedPageResponderTest.java</p>
+
+    <p class="listing-body">public void testGetPageHieratchyAsXml() throws Exception</p>
+
+    <p class="listing-body">{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;crawler.addPage(root, PathParser.parse("PageOne"));</p>
+
+    <p class="listing-body">&nbsp;&nbsp;crawler.addPage(root, PathParser.parse("PageOne.ChildOne"));</p>
+
+    <p class="listing-body">&nbsp;&nbsp;crawler.addPage(root, PathParser.parse("PageTwo"));</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;request.setResource("root");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;request.addInput("type", "pages");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;Responder responder = new SerializedPageResponder();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;SimpleResponse response =</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(SimpleResponse) responder.makeResponse(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;new FitNesseContext(root), request);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;String xml = response.getContent();</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertEquals("text/xml", response.getContentType());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertSubString("&lt;name&gt;PageOne&lt;/name&gt;", xml);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertSubString("&lt;name&gt;PageTwo&lt;/name&gt;", xml);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertSubString("&lt;name&gt;ChildOne&lt;/name&gt;", xml);</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public void testGetPageHieratchyAsXmlDoesntContainSymbolicLinks()</p>
+
+    <p class="listing-body">&nbsp;&nbsp;throws Exception</p>
+
+    <p class="listing-body">{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;WikiPage pageOne = crawler.addPage(root, PathParser.parse("PageOne"));</p>
+
+    <p class="listing-body">&nbsp;&nbsp;crawler.addPage(root, PathParser.parse("PageOne.ChildOne"));</p>
+
+    <p class="listing-body">&nbsp;&nbsp;crawler.addPage(root, PathParser.parse("PageTwo"));</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;PageData data = pageOne.getData();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;WikiPageProperties properties = data.getProperties();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;WikiPageProperty symLinks = properties.set(SymbolicPage.PROPERTY_NAME);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;symLinks.set("SymPage", "PageTwo");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;pageOne.commit(data);</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;request.setResource("root");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;request.addInput("type", "pages");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;Responder responder = new SerializedPageResponder();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;SimpleResponse response =</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(SimpleResponse) responder.makeResponse(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;new FitNesseContext(root), request);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;String xml = response.getContent();</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertEquals("text/xml", response.getContentType());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertSubString("&lt;name&gt;PageOne&lt;/name&gt;", xml);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertSubString("&lt;name&gt;PageTwo&lt;/name&gt;", xml);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertSubString("&lt;name&gt;ChildOne&lt;/name&gt;", xml);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertNotSubString("SymPage", xml);</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public void testGetDataAsHtml() throws Exception</p>
+
+    <p class="listing-body">{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;crawler.addPage(root, PathParser.parse("TestPageOne"), "test page");</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;request.setResource("TestPageOne");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;request.addInput("type", "data");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;Responder responder = new SerializedPageResponder();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;SimpleResponse response =</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(SimpleResponse) responder.makeResponse(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;new FitNesseContext(root), request);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;String xml = response.getContent();</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertEquals("text/xml", response.getContentType());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertSubString("test page", xml);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertSubString("&lt;Test", xml);</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Например, присмотритесь к вызовам <span class="command char-style-override-1">PathParser</span>, преобразующим строки в экземпляры <span class="command char-style-override-1">PagePath</span>, используемые обходчиками (crawlers). Это преобразование абсолютно несущественно для целей тестирования и только затемняет намерения автора. Второстепенные подробности, окружающие создание ответчика, а также сбор и преобразование ответа тоже представляют собой обычный шум. Также обратите внимание на неуклюжий способ построения URL-адреса запроса из ресурса и аргумента. (Я участвовал в написании этого кода, поэтому считаю, что вправе критиковать его.)</p>
+
+    <p>В общем, этот код не предназначался для чтения. На несчастного читателя обрушивается целый водопад мелочей, в которых необходимо разобраться, чтобы уловить в тестах хоть какой-то смысл.</p>
+
+    <p>Теперь рассмотрим усовершенствованные тесты в листинге 9.2. Они делают абсолютно то же самое, но код был переработан в более ясную и выразительную форму.</p>
+
+    <p class="Vrezka-head"><strong>Листинг 9.2.</strong> SerializedPageResponderTest.java (переработанная версия)</p>
+
+    <p class="listing-body">public void testGetPageHierarchyAsXml() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;makePages("PageOne", "PageOne.ChildOne", "PageTwo");</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;submitRequest("root", "type:pages");</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertResponseIsXML();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertResponseContains(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;"&lt;name&gt;PageOne&lt;/name&gt;", "&lt;name&gt;PageTwo&lt;/name&gt;", "&lt;name&gt;ChildOne&lt;/name&gt;"</p>
+
+    <p class="listing-body">&nbsp;&nbsp;);</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public void testSymbolicLinksAreNotInXmlPageHierarchy() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;WikiPage page = makePage("PageOne");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;makePages("PageOne.ChildOne", "PageTwo");</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;addLinkTo(page, "PageTwo", "SymPage");</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;submitRequest("root", "type:pages");</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertResponseIsXML();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertResponseContains(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;"&lt;name&gt;PageOne&lt;/name&gt;", "&lt;name&gt;PageTwo&lt;/name&gt;", "&lt;name&gt;ChildOne&lt;/name&gt;"</p>
+
+    <p class="listing-body">&nbsp;&nbsp;);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertResponseDoesNotContain("SymPage");</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public void testGetDataAsXml() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;makePageWithContent("TestPageOne", "test page");</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;submitRequest("TestPageOne", "type:data");</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertResponseIsXML();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;assertResponseContains("test page", "&lt;Test");</p>
+
+    <p class="listing-body">}</p>
+
+    <p>В структуре тестов очевидно воплощен паттерн ПОСТРОЕНИЕ-ОПЕРАЦИИ-ПРОВЕРКА<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-29" id="footnote-319-29-backlink">29</a></span>. Каждый тест четко делится на три части. Первая часть строит тестовые данные, вторая часть выполняет операции с тестовыми данными, а третья часть проверяет, что операция привела к ожидаемым результатам.</p>
+
+    <p>Обратите внимание: большая часть раздражающих мелочей исчезла. Тесты не делают ничего лишнего, и в них используются только действительно необходимые типы данных и функции.</p>
+
+    <p>Любой программист, читающий эти тесты, очень быстро разберется в том, что они делают, не сбиваясь с пути и не увязнув в лишних подробностях.</p>
+
+    <h3>Предметно-ориентированный&nbsp;&nbsp;язык тестирования</h3>
+
+    <p class="Normal0">Тесты в листинге 9.2 демонстрируют методику построения предметно-ориен­тированного языка для программирования тестов. Вместо вызова функций API, используемых программистами для манипуляций с системой, мы строим набор функций и служебных программ, использующих API; это упрощает написание и чтение тестов. Наши функции и служебные программы образуют специализированный API, то есть по сути — язык тестирования, который программисты используют для упрощения работы над тестами, а также чтобы помочь другим программистам, которые будут читать эти тесты позднее.</p>
+
+    <p>Тестовый API не проектируется заранее; он развивается на базе многократной переработки тестового кода, перегруженного ненужными подробностями. По аналогии с тем, как я переработал листинг 9.1 в листинг 9.2, дисциплинированные разработчики перерабатывают свой тестовый код в более лаконичные и выразительные формы.</p>
+
+    <h3>Двойной стандарт</h3>
+
+    <p class="Normal0">Группа, о которой я упоминал в начале этой главы, в определенном смысле была права. Код тестового API подчиняется несколько иным техническим стандартам, чем код продукта. Он также должен быть простым, лаконичным и выразительным, но от него не требуется такая эффективность. В конце концов, тестовый код работает в тестовой среде, а не в среде реальной эксплуатации продукта, а эти среды весьма заметно различаются по своим потребностям.</p>
+
+    <p>Рассмотрим тест из листинга 9.3. Я написал его в ходе работы над прототипом системы контроля окружающей среды. Не вдаваясь в подробности, скажу, что тест этот проверяет, что при слишком низкой температуре включается механизм оповещения о низкой температуре, обогреватель и система подачи нагретого воздуха.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/9 Модульные тесты/9.3.EnvironmentControllerTest.java">📄 Открыть исходный код в IDE</a></p>Листинг 9.3.</strong> EnvironmentControllerTest.java</p>
+
+    <p class="listing-body">@Test</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void turnOnLoTempAlarmAtThreashold() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;hw.setTemp(WAY_TOO_COLD);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;controller.tic();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertTrue(hw.heaterState());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertTrue(hw.blowerState());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertFalse(hw.coolerState());</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/9 Модульные тесты/9.3.EnvironmentControllerTest.java">📄 Открыть исходный код в IDE</a></p>Листинг 9.3</strong> (продолжение)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertFalse(hw.hiTempAlarm());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertTrue(hw.loTempAlarm());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p>Конечно, этот листинг содержит множество ненужных подробностей. Например, что делает функция <span class="command char-style-override-1">tic</span>? Я бы предпочел, чтобы читатель не задумывался об этом в ходе чтения теста. Читатель должен думать о другом: соответствует ли конечное состояние системы его представлениям о «слишком низкой» температуре.</p>
+
+    <p>Обратите внимание: в ходе чтения теста вам постоянно приходится переключаться между названием проверяемого состояния и условием проверки. Вы смотрите на <span class="command char-style-override-1">heaterState</span> (состояние обогревателя), а затем ваш взгляд скользит налево к <span class="command char-style-override-1">assertTrue</span>. Вы смотрите на <span class="command char-style-override-1">coolerState</span> (состояние охладителя), а ваш взгляд отступает к <span class="command char-style-override-1">assertFalse</span>. Все эти перемещения утомительны и ненадежны. Они усложняют чтение теста.</p>
+
+    <p>В листинге 9.4 представлена новая форма теста, которая читается гораздо проще.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/9 Модульные тесты/9.4.EnvironmentControllerTest.java">📄 Открыть исходный код в IDE</a></p>Листинг 9.4.</strong> EnvironmentControllerTest.java (переработанная версия)</p>
+
+    <p class="listing-body">@Test</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void turnOnLoTempAlarmAtThreshold() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;wayTooCold();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertEquals("HBchL", hw.getState());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p>Конечно, я скрыл функцию <span class="command char-style-override-1">tic</span>, создав более понятную функцию <span class="command char-style-override-1">wayTooCold</span>. Но особого внимания заслуживает странная строка в вызове <span class="command char-style-override-1">assertEquals</span>. Верхний регистр означает включенное состояние, нижний регистр — выключенное состояние, а буквы всегда следуют в определенном порядке: <em>{обогреватель, подача воздуха, охладитель, сигнал о высокой температуре, сигнал о низкой температуре}</em>.</p>
+
+    <p>Хотя такая форма близка к нарушению правила о мысленных преобразованиях<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-30" id="footnote-319-30-backlink">30</a></span>, в данном случае она выглядит уместной. Если вам известен смысл этих обозначений, ваш взгляд скользит по строке в одном направлении и вы можете быстро интерпретировать результаты. Чтение таких тестов почти что доставляет удовольствие. Взгляните на листинг 9.5 и убедитесь, как легко понять их смысл.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/9 Модульные тесты/9.5.EnvironmentControllerTest.java">📄 Открыть исходный код в IDE</a></p>Листинг 9.5.</strong> EnvironmentControllerTest.java (расширенный набор)</p>
+
+    <p class="listing-body">@Test</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void turnOnCoolerAndBlowerIfTooHot() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;tooHot();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertEquals("hBChl", hw.getState());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;@Test</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void turnOnHeaterAndBlowerIfTooCold() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;tooCold();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertEquals("HBchl", hw.getState());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;@Test</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void turnOnHiTempAlarmAtThreshold() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;wayTooHot();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertEquals("hBCHl", hw.getState());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;@Test</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void turnOnLoTempAlarmAtThreshold() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;wayTooCold();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;assertEquals("HBchL", hw.getState());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p>Функция <span class="command char-style-override-1">getState</span> приведена в листинге 9.6. Обратите внимание: эффективность этого кода оставляет желать лучшего. Чтобы сделать его более эффективным, вероятно, мне стоило использовать класс <span class="command char-style-override-1">StringBuffer</span>.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/9 Модульные тесты/9.6.MockControlHardware.java">📄 Открыть исходный код в IDE</a></p>Листинг 9.6.</strong> MockControlHardware.java</p>
+
+    <p class="listing-body">public String getState() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String state = "";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;state += heater ? "H" : "h";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;state += blower ? "B" : "b";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;state += cooler ? "C" : "c";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;state += hiTempAlarm ? "H" : "h";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;state += loTempAlarm ? "L" : "l";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return state;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p>Класс <span class="command char-style-override-1">StringBuffer</span> некрасив и неудобен. Даже в коде продукта я стараюсь избегать его, если это не приводит к большим потерям; конечно, в коде из листинга 9.6 потери невелики. Однако следует учитывать, что приложение пишется для встроенной системы реального времени, в которой вычислительные ресурсы и память сильно ограничены. С другой стороны, в среде тестирования такие ограничения отсутствуют.</p>
+
+    <p>В этом проявляется природа двойного стандарта. Многое из того, что вы никогда не станете делать в среде эксплуатации продукта, абсолютно нормально выглядит в среде тестирования. Обычно речь идет о затратах памяти или эффективности работы процессора — но <em>никогда</em> о проблемах чистоты кода.</p>
+
+    <h2 id="toc_marker-11-4">Одна проверка на тест</h2>
+
+    <p class="Normal0">Существует точка зрения<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-31" id="footnote-319-31-backlink">31</a></span>, согласно которой каждая тестовая функция в тесте JUnit должна содержать одну — и только одну — директиву <span class="command char-style-override-1">assert</span>. Такое ­правило может показаться излишне жестким, но его преимущества наглядно видны в листинге 9.5. Тесты приводят к одному выводу, который можно быстро и легко понять при чтении.</p>
+
+    <p>Но что вы скажете о листинге 9.2? В нем объединена проверка двух условий: что выходные данные представлены в формате XML и они содержат некоторые подстроки. На первый взгляд такое решение выглядит сомнительно. Впрочем, тест можно разбить на два отдельных теста, каждый из которых имеет собственную директиву <span class="command char-style-override-1">assert</span>, как показано в листинге 9.7.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/9 Модульные тесты/9.7.SerializedPageResponderTest.java">📄 Открыть исходный код в IDE</a></p>Листинг 9.7.</strong> SerializedPageResponderTest.java (одна директива assert)</p>
+
+    <p class="listing-body">public void testGetPageHierarchyAsXml() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;givenPages("PageOne", "PageOne.ChildOne", "PageTwo");</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;whenRequestIsIssued("root", "type:pages");</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;thenResponseShouldBeXML();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public void testGetPageHierarchyHasRightTags() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;givenPages("PageOne", "PageOne.ChildOne", "PageTwo");</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;whenRequestIsIssued("root", "type:pages");</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;thenResponseShouldContain(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"&lt;name&gt;PageOne&lt;/name&gt;", "&lt;name&gt;PageTwo&lt;/name&gt;", "&lt;name&gt;ChildOne&lt;/name&gt;"</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p>Обратите внимание: я переименовал функции в соответствии со стандартной схемой <span class="command char-style-override-1">given</span>-<span class="command char-style-override-1">when</span>-<span class="command char-style-override-1">then</span> [RSpec]. Это еще сильнее упрощает чтение тестов. К сожалению, такое разбиение приводит к появлению большого количества дублирующегося кода.</p>
+
+    <p>Чтобы избежать дублирования, можно воспользоваться паттерном ШАБЛОННЫЙ МЕТОД [GOF], включить части <span class="command char-style-override-1">given</span>/<span class="command char-style-override-1">when</span> в базовый класс, а части <span class="command char-style-override-1">then</span> — в различные производные классы. А можно создать отдельный тестовый класс, поместить части <span class="command char-style-override-1">given</span> и <span class="command char-style-override-1">when</span> в функцию <span class="command char-style-override-1">@Before</span>, а части <span class="command char-style-override-1">then</span> — в каждую функцию <span class="command char-style-override-1">@Test</span>. Но похоже, такой механизм слишком сложен для столь незначительной проблемы. В конечном итоге я предпочел решение с множественными директивами <span class="command char-style-override-1">assert</span> из листинга 9.2.</p>
+
+    <p>Я думаю, что правило «одного <span class="command char-style-override-1">assert</span>» является хорошей рекомендацией. Обычно я стараюсь создать предметно-ориентированный язык тестирования, который это правило поддерживает, как в листинге 9.5. Но при этом я не боюсь включать в свои тесты более одной директивы <span class="command char-style-override-1">assert</span>. Вероятно, лучше всего сказать, что количество директив <span class="command char-style-override-1">assert</span> в тесте должно быть сведено к минимуму.</p>
+
+    <h3>Одна концепция на тест</h3>
+
+    <p class="Normal0">Пожалуй, более полезное правило гласит, что в каждой тестовой функции должна тестироваться одна концепция. Мы не хотим, чтобы длинные тестовые функции выполняли несколько разнородных проверок одну за другой. <p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/9 Модульные тесты/9.8.SerialDateTest.java">📄 Открыть исходный код в IDE</a></p>Листинг 9.8 содержит типичный пример такого рода. Этот тест следовало бы разбить на три независимых теста, потому что в нем выполняются три независимых проверки. Объединение их в одной функции заставляет читателя гадать, почему в функцию включается каждая секция, и какое условие проверяется в этой секции.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/9 Модульные тесты/9.8.SerialDateTest.java">📄 Открыть исходный код в IDE</a></p>Листинг 9.8</strong></p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;/**</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* Тесты для метода addMonths().</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*/</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public void testAddMonths() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SerialDate d1 = SerialDate.createInstance(31, 5, 2004);</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SerialDate d2 = SerialDate.addMonths(1, d1);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(30, d2.getDayOfMonth());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(6, d2.getMonth());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(2004, d2.getYYYY());</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SerialDate d3 = SerialDate.addMonths(2, d1);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(31, d3.getDayOfMonth());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(7, d3.getMonth());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(2004, d3.getYYYY());</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SerialDate d4 = SerialDate.addMonths(1, SerialDate.addMonths(1, d1));</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(30, d4.getDayOfMonth());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(7, d4.getMonth());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(2004, d4.getYYYY());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p>Вероятно, три тестовые функции должны выглядеть так:</p>
+
+    <p class="ListBulLast"><span class="command char-style-override-1">• Given</span>: последний день месяца, состоящего из 31 дня (например, май).</p>
+
+    <p class="ListCont"><span class="command char-style-override-1">1) When</span>: при добавлении одного месяца, последним днем которого является 30-е число (например, июнь), датой должно быть 30-е число этого месяца, а не 31-е.</p>
+
+    <p class="ListCont"><span class="command char-style-override-1">2) When</span>: при добавлении двух месяцев, когда последним днем второго месяца является 31-е число, датой должно быть 31-е число.</p>
+
+    <p class="ListBulLast"><span class="command char-style-override-1">• Given</span>:&nbsp;&nbsp;последний день месяца, состоящего из 30 дней (например, июнь).</p>
+
+    <p class="ListCont"><span class="command char-style-override-1">1) When</span>: при добавлении одного месяца, последним днем которого является 31-е число, датой должно быть 30-е число этого месяца, а не 31-е.</p>
+
+    <p>В такой формулировке видно, что среди разнородных тестов скрывается одно общее правило. При увеличении месяца дата не может превысить последнее число нового месяца. Следовательно, в результате увеличение месяца для 28 февраля должна быть получена дата 28 марта. В текущей версии это условие не проверяется, хотя такой тест был бы полезен.</p>
+
+    <p>Таким образом, проблема не в множественных директивах <span class="command char-style-override-1">assert</span> в разных секциях листинга 9.8. Проблема в том, что тест проверяет более одной концепции. Так что, вероятно, лучше всего сформулировать это правило так: количество директив <span class="command char-style-override-1">assert</span> на концепцию должно быть минимальным, и в тестовой функции должна проверяться только одна концепция.</p>
+
+    <h2 id="toc_marker-11-5">F.I.R.S.T.<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-32" id="footnote-319-32-backlink">32</a></span></h2>
+
+    <p class="Normal0">Чистые тесты должны обладать еще пятью характеристиками, названия которых образуют приведенное сокращение.</p>
+
+    <p><strong>Быстрота</strong> (Fast). Тесты должны выполняться быстро. Если тесты выполняются медленно, вам не захочется часто запускать их. Без частого запуска тестов проблемы не будут выявляться на достаточно ранней стадии, когда они особенно легко исправляются. В итоге вы уже не так спокойно относитесь к чистке своего кода, и со временем код начинает загнивать.</p>
+
+    <p><strong>Независимость</strong> (Independent). Тесты не должны зависеть друг от друга. Один тест не должен создавать условия для выполнения следующего теста. Все тесты должны выполняться независимо и в любом порядке на ваше усмотрение. Если тесты зависят друг от друга, то при первом отказе возникает целый каскад сбоев, который усложняет диагностику и скрывает дефекты в зависимых тестах.</p>
+
+    <p><strong>Повторяемость</strong> (Repeatable). Тесты должны давать повторяемые результаты в любой среде. Вы должны иметь возможность выполнить тесты в среде реальной эксплуатации, в среде тестирования или на вашем ноутбуке во время возвращения домой с работы. Если ваши тесты не будут давать однозначных результатов в любых условиях, вы всегда сможете найти отговорку для объяснения неудач. Также вы лишитесь возможности проводить тестирование, если нужная среда недоступна.</p>
+
+    <p><strong>Очевидность</strong> (Self-Validating). Результатом выполнения теста должен быть логический признак. Тест либо прошел, либо не прошел. Чтобы узнать результат, пользователь не должен читать журнальный файл. Не заставляйте его вручную сравнивать два разных текстовых файла. Если результат теста не очевиден, то отказы приобретают субъективный характер, а выполнение тестов может потребовать долгой ручной обработки данных.</p>
+
+    <p><strong>Своевременность</strong> (Timely). Тесты должны создаваться своевременно. Модульные тесты пишутся <em>непосредственно перед</em> кодом продукта, обеспечивающим их прохождение. Если вы пишете тесты после кода продукта, вы можете решить, что тестирование кода продукта создает слишком много трудностей, а все из-за того, что удобство тестирования не учитывалось при проектировании кода продукта.</p>
+
+    <h2 id="toc_marker-11-6">Заключение</h2>
+
+    <p class="Normal0">В этой главе мы едва затронули тему тестирования. Я думаю, что на тему <em>чистых тестов</em> можно было бы написать целую книгу. Для «здоровья» проекта тесты не менее важны, чем код продукта. А может быть, они еще важнее, потому что тесты сохраняют и улучшают гибкость, удобство сопровождения и возможности повторного использования кода продукта. Постоянно следите за чистотой своих тестов. Постарайтесь сделать их выразительными и лаконичными. Изобретайте тестовые API, которым отводится роль предметно-ориентированного языка тестирования, упрощающего написание тестов.</p>
+
+    <p>Если вы будете пренебрежительно относиться к тестам, то и ваш код начнет загнивать. Поддерживайте чистоту в своих тестах.</p>
+
+    <h2 id="toc_marker-11-7">Литература</h2>
+
+    <p class="Normal0">[RSpec]: RSpec: Behavior Driven Development for Ruby Programmers, Aslak Hellesy, David Chelimsky, Pragmatic Bookshelf, 2008.</p>
+
+    <p>[GOF]: Design Patterns: Elements of Reusable Object Oriented Software, Gamma et al., Addison-Wesley, 1996.</p>
+
+    <div class="footnotes">
+      <div class="footnote">
+        <p class="Snoska para-style-override-1"><a class="footnote-anchor" href="#footnote-319-28-backlink" id="footnote-319-28">28</a><span class="Superscript char-style-override-2" xml:lang="en-US">1</span> <span xml:lang="en-US">Professionalism and Test-Driven Development, Robert C. Martin, Object Mentor, IEEE Software, May/June 2007 (Vol. 24, No. 3), pp. 32–36;</span> <a href="http://doi.ieeecomputersociety.org/10.1109/MS.2007.85"><span xml:lang="en-US">http://doi.ieeecomputersociety.org/10.1109/MS.2007.85</span></a></p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-29-backlink" id="footnote-319-29">29</a> <a href="http://tnesse.org/FitNesse.AcceptanceTestPatterns"><span xml:lang="en-US">http://tnesse.org/FitNesse.AcceptanceTestPatterns</span></a><span xml:lang="en-US">.</span></p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-30-backlink" id="footnote-319-30">30</a> См. «Избегайте мысленных преобразований», с. 47.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-31-backlink" id="footnote-319-31">31</a> См. запись в блоге Дейва Астела (Dave Astel): <a href="http://www.artima.com/weblogs/viewpost.jsp?thread=35578">http://www.artima.com/weblogs/viewpost.jsp?thread=35578</a>.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-32-backlink" id="footnote-319-32">32</a> Учебные материалы <span xml:lang="en-US">Object</span> <span xml:lang="en-US">Mentor</span>.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

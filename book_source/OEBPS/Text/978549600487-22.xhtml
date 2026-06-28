@@ -1,0 +1,689 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Чистый код: создание, анализ и рефакторинг. Библиотека программиста</title>
+  <link href="../Styles/template.css" rel="stylesheet" type="text/css"/>
+</head>
+
+<body id="x978549600487" xml:lang="ru-RU">
+  <div>
+    <h1 id="toc_marker-22">B. Перекрестные ссылки</h1>
+
+    <p class="Normal0">Перекрестные ссылки для «запахов кода» и эвристических правил из приложения А организованы по принципу Номер_главы-Номер_страницы.</p>
+
+    <table class="No-Table-Style table-style-override-1" id="table-6">
+      <colgroup>
+        <col/>
+        <col/>
+      </colgroup>
+
+      <tbody>
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">C1</p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-306, 16-309, 17-323</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">C2</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-309, 16-312, 16-320, 17-323</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">C3</p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-&lt;$R[P#,R16-10]&gt;, 16-312, 16-314, 17-323</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">C4</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">17-323</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">C5</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">17-324</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">E1</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">17-324</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">E2</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">17-324</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">F1</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">14-266, 17-325</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">F2</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">17-325</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">F3</p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">17-325</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">F4</p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-304, 16-314&gt;, 17-325</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G1</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-307, 17-325</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G2</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">16-305, 17-326</span></p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G3</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-305, 17-326</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G4</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-308, 17-326</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G5</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-308, 16-313, 16-317, 16-320, 17-327</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G6</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">6-128, 16-309, 16-311, 16-315, 16-318, 16-319, 17-328</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G7</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-309, 17-329</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G8</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-311, 17-329</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">G9</p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-311, 16-312, 16-314, 17-330</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G10</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">5-107, 16-311, 17-330</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G11</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">15-295, 16-311, 16-314, 16-317, 17-330</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G12</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-312, 16-313, 16-314, 16-315, 16-320, 17-331</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G13</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">16-313</span><span xml:lang="en-US">, 16-314, 17-331</span></p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G14</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-314, 17-331</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G15</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">16-315, 17-333</span></p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G16</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-315, 17-333</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G17</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-315, 17-334, 17-337</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G18</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-315, 16-316, 16-317, 17-334</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">G19</p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-316, 16-317, 17-335</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">G20</p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-316, 17-335</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G21</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-317, 17-336</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G22</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-318, 17-336</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G23</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">3-63, 14-265, 16-319, 17-338</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">G24</p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-320, 17-338</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G25</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-320, 17-339</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G26</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">17-340</span></p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G27</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">17-340</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G28</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">15-293, 17-341</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">G29</p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">15-394, 17-341</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">G30</p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">15-295, 17-341</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G31</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">15-296, 17-342</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G32</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">15-296, 17-343</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">G33</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">15-298, 17-343</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">G34</p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">3<span xml:lang="en-US">-60, 6-128, 17-344</span></p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">G35</p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">5-111, 17-345</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">G36</p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">6-126, 17-346</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">J1</p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-306, 17-347</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">J2</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">16-308, 17-347</span></p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">J3</p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-311, 16-312, 17-348</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">N1</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">15-296, 16-307, 16-309, 16-310, 16-314, 16-315, 16-316, 16-319, 17-349</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">N2</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-307, 17-351</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">N3</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">16-312, 16-314, 17-352</span></p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">N4</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">15-294, 16-316, 17-352</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">N5</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">2-45</span><span xml:lang="en-US">, 14-248, 17-353</span></p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">N6</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">15-293, 17-353</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">N7</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">15-294, 17-354</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">T1</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">16-304, 16-305, 17-354</span></p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">T2</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-304, 17-354</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">T3</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-305, 17-354</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">T4</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">17-355</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">T5</p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-305, 16-306, 17-355</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">T6</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-305, 17-355</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">T7</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-306, 17-355</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body"><span xml:lang="en-US">T8</span></p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">16-306, 17-355</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">T9</p>
+          </td>
+
+          <td class="cell-style-override-3">
+            <p class="Tabl-body">17-356</p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="No-Paragraph-Style"></p>
+  </div>
+</body>
+</html>

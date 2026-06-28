@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Чистый код: создание, анализ и рефакторинг. Библиотека программиста</title>
+  <link href="../Styles/template.css" rel="stylesheet" type="text/css"/>
+</head>
+
+<body id="x978549600487" xml:lang="ru-RU">
+  <div>
+    <h1 id="toc_marker-10">8. Границы</h1>
+
+    <p class="Epigraph-avtor">Джеймс Гренинг</p>
+
+    <p class="Pic-yakor"><span><img alt="08_01.tif" class="frame-14" src="../Images/08_01_fmt.png"/></span>&nbsp;</p>
+
+    <p>Редко когда весь программный код наших систем находится под нашим полным контролем. Иногда нам приходится покупать пакеты сторонних разработчиков или использовать открытый код. В других случаях мы зависим от других групп нашей компании, производящих компоненты или подсистемы для нашего проекта. И этот внешний код мы должны каким-то образом четко интегрировать со своим кодом. В этой главе рассматриваются приемы и методы «сохранения чистоты» границ нашего программного кода.</p>
+
+    <h2 id="toc_marker-10-1">Использование стороннего кода</h2>
+
+    <p class="Normal0">Между поставщиком и пользователем интерфейса существует естественная напряженность. Поставщики сторонних пакетов и инфраструктур стремятся к универсальности, чтобы их продукты работали в разных средах и были обращены к широкой аудитории. С другой стороны, пользователи желают получить интерфейс, специализирующийся на их конкретных потребностях. Эта напряженность приводит к появлению проблем на границах наших систем.</p>
+
+    <p>Для примера возьмем класс <span class="command char-style-override-1">java</span><span class="command char-style-override-1">.</span><span class="command char-style-override-1">util</span><span class="command char-style-override-1">.</span><span class="command char-style-override-1">Map</span>. Как видно из рис. 8.1, <span class="command char-style-override-1">Map</span> имеет очень широкий интерфейс с многочисленными возможностями. Конечно, мощь и гибкость контейнера полезны, но они также создают некоторые неудобства. Допустим, наше приложение строит объект <span class="command char-style-override-1">Map</span> и передает его другим сторонам. При этом мы не хотим, чтобы получатели <span class="command char-style-override-1">Map</span> удаляли данные из полученного контейнера. Но в самом начале списка стоит метод <span class="command char-style-override-1">clear()</span>, и любой пользователь <span class="command char-style-override-1">Map</span> может стереть текущее содержимое контейнера. А может быть, наша архитектура подразумевает, что в контейнере должны храниться объекты только определенного типа, но <span class="command char-style-override-1">Map</span> не обладает надежными средствами ограничения типов сохраняемых объектов. Любой настойчивый пользователь сможет разместить в <span class="command char-style-override-1">Map</span> элементы любого типа.</p>
+
+    <p class="listing-body"><span>•</span> clear() void – Map</p>
+
+    <p class="listing-body"><span>•</span> containsKey(Object key) boolean – Map</p>
+
+    <p class="listing-body"><span>•</span> containsValue(Object value) boolean – Map</p>
+
+    <p class="listing-body"><span>•</span> entrySet() Set – Map</p>
+
+    <p class="listing-body"><span>•</span> equals(Object o) boolean – Map</p>
+
+    <p class="listing-body"><span>•</span> get(Object key) Object – Map</p>
+
+    <p class="listing-body"><span>•</span> getClass() Class&lt;? extends Object&gt; – Object</p>
+
+    <p class="listing-body"><span>•</span> hashCode() int – Map</p>
+
+    <p class="listing-body"><span>•</span> isEmpty() boolean – Map</p>
+
+    <p class="listing-body"><span>•</span> keySet() Set – Map</p>
+
+    <p class="listing-body"><span>•</span> notify() void – Object</p>
+
+    <p class="listing-body"><span>•</span> notifyAll() void – Object</p>
+
+    <p class="listing-body"><span>•</span> put(Object key, Object value) Object – Map</p>
+
+    <p class="listing-body"><span>•</span> putAll(Map t) void – Map</p>
+
+    <p class="listing-body"><span>•</span> remove(Object key) Object – Map</p>
+
+    <p class="listing-body"><span>•</span> size() int – Map</p>
+
+    <p class="listing-body"><span>•</span> toString() String – Object</p>
+
+    <p class="listing-body"><span>•</span> values() Collection – Map</p>
+
+    <p class="listing-body"><span>•</span> wait() void – Object</p>
+
+    <p class="listing-body"><span>•</span> wait(long timeout) void – Object</p>
+
+    <p class="listing-body"><span>•</span> wait(long timeout, int nanos) void – Object</p>
+
+    <p class="Pic-nazv"><strong>Рис. 8.1.</strong> Методы Map</p>
+
+    <p>Если в приложении требуется контейнер <span class="command char-style-override-1">Map</span> с элементами <span class="command char-style-override-1">Sensor</span>, его можно со­здать следующим образом:</p>
+
+    <p class="listing-body">Map sensors = new HashMap();</p>
+
+    <p>Когда другой части кода понадобится обратиться к элементу, мы видим код следующего вида:</p>
+
+    <p class="listing-body">Sensor s = (Sensor)sensors.get(sensorId );</p>
+
+    <p>Причем видим его не только в этом месте, но снова и снова по всему коду. Клиент кода несет ответственность за получение <span class="command char-style-override-1">Object</span> из <span class="command char-style-override-1">Map</span> и его приведение к правильному типу. Такое решение работает, но «чистым» его не назовешь. Кроме того, этот код не излагает свою историю, как ему положено. Удобочитаемость кода можно было бы заметно улучшить при помощи шаблонов (параметризованных контейнеров):</p>
+
+    <p class="listing-body">Map&lt;Sensor&gt; sensors = new HashMap&lt;Sensor&gt;();</p>
+
+    <p class="listing-body">...</p>
+
+    <p class="listing-body">Sensor s = sensors.get(sensorId );</p>
+
+    <p>Но и такая реализация не решает проблемы: <span class="command char-style-override-1">Map</span><span class="command char-style-override-1">&lt;</span><span class="command char-style-override-1">Sensor</span><span class="command char-style-override-1">&gt;</span> предоставляет намного больше возможностей, чем нам хотелось бы.</p>
+
+    <p>Свободная передача <span class="command char-style-override-1">Map&lt;Sensor&gt;</span> по системе означает, что в случае изменения интерфейса <span class="command char-style-override-1">Map</span> исправления придется вносить во множестве мест. Казалось бы, ­такие изменения маловероятны, но вспомните, что интерфейс изменился при добавлении поддержки шаблонов в Java 5. В самом деле, мы видели системы, ­разработчики которых воздерживались от использования шаблонов из-за большого количества потенциальных изменений, связанных с частым использованием <span class="command char-style-override-1">Map</span>.</p>
+
+    <p>Ниже представлен другой, более чистый вариант использования <span class="command char-style-override-1">Map</span>. С точки зрения пользователя <span class="command char-style-override-1">Sensors</span> совершенно не важно, используются шаблоны или нет. Это решение стало (и всегда должно быть) подробностью реализации.</p>
+
+    <p class="listing-body">public class Sensors {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private Map sensors = new HashMap();</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public Sensor getById(String id) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return (Sensor) sensors.get(id);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;//...</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Граничный интерфейс (<span class="command char-style-override-1">Map</span>) скрыт от пользователя. Он может развиваться независимо, практически не оказывая никакого влияния на остальные части приложения. Применение шаблонов уже не создает проблем, потому что все преобразования типов выполняются в классе <span class="command char-style-override-1">Sensors</span>.</p>
+
+    <p>Этот интерфейс также приспособлен и ограничен в соответствии с потребностями приложения. Код становится более понятным, а возможности злоупотреблений со стороны пользователя сокращаются. Класс <span class="command char-style-override-1">Sensors</span> может обеспечивать выполнение архитектурных требований и требований бизнес-логики.</p>
+
+    <p>Поймите правильно: мы не предлагаем инкапсулировать каждое применение <span class="command char-style-override-1">Map</span> в этой форме. Скорее, мы рекомендуем ограничить передачу <span class="command char-style-override-1">Map</span> (или любого другого граничного интерфейса) по системе. Если вы используете граничный интерфейс вроде <span class="command char-style-override-1">Map</span>, держите его внутри класса (или тесно связанного семейства классов), в которых он используется. Избегайте его возвращения или передачи в аргументах при вызовах методов общедоступных API.</p>
+
+    <h2 id="toc_marker-10-2">Исследование и анализ границ</h2>
+
+    <p class="Normal0">Сторонний код помогает нам реализовать больше функциональности за меньшее время. С чего начинать, если мы хотим использовать сторонний пакет? Тести­рование чужого кода не входит в наши обязанности, но, возможно, написание тестов для стороннего кода, используемого в наших продуктах, в наших же интересах.</p>
+
+    <p>Допустим, вам не ясно, как использовать стороннюю библиотеку. Можно потратить день-два (или более) на чтение документации и принятие решений о том, как работать с библиотекой. Затем вы пишете код, использующий стороннюю библиотеку, и смотрите, делает ли он то, что ожидалось. Далее вы, скорее всего, погрязнете в долгих сеансах отладки, пытаясь разобраться, в чьем коде возникают ошибки – в стороннем или в вашем собственном.</p>
+
+    <p>Изучение чужого кода – непростая задача. Интеграция чужого кода тоже сложна. Одновременное решение обоих задач создает двойные сложности. А что, если пойти по другому пути? Вместо того чтобы экспериментировать и опробовать новую библиотеку в коде продукта, можно написать тесты, проверяющие наше понимание стороннего кода. Джим Ньюкирк ( Jim Newkirk) называет такие тесты «учебными тестами» [BeckTDD, pp. 136–137].</p>
+
+    <p>В учебных тестах мы вызываем методы стороннего API в том виде, в котором намереваемся использовать их в своем приложении. Фактически выполняется контролируемый эксперимент, проверяющий наше понимание стороннего API. Основное внимание в тестах направлено на то, чего мы хотим добиться при помощи API.</p>
+
+    <h3>Изучение log4j</h3>
+
+    <p class="Normal0">Допустим, вместо того чтобы писать специализированный журнальный модуль, мы хотим использовать пакет apache <span class="command char-style-override-1">log4j</span>. Мы загружаем пакет и открываем страницу вводной документации. Не особенно вчитываясь в нее, мы пишем свой первый тестовый сценарий, который, как предполагается, будет выводить на консоль строку «hello».</p>
+
+    <p class="listing-body">@Test</p>
+
+    <p class="listing-body">public void testLogCreate() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;Logger logger = Logger.getLogger("MyLogger");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;logger.info("hello");</p>
+
+    <p class="listing-body">}</p>
+
+    <p>При запуске журнальный модуль выдает ошибку. В описании ошибки говорится, что нам понадобится нечто под названием <span class="command char-style-override-1">Appender</span>. После непродолжительных поисков в документации обнаруживается класс <span class="command char-style-override-1">ConsoleAppender</span>. Соответственно, мы создаем объект <span class="command char-style-override-1">ConsoleAppender</span> и проверяем, удалось ли нам раскрыть секреты вывода журнала на консоль:</p>
+
+    <p class="listing-body">@Test</p>
+
+    <p class="listing-body">public void testLogAddAppender() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;Logger logger = Logger.getLogger("MyLogger");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;ConsoleAppender appender = new ConsoleAppender();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;logger.addAppender(appender);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;logger.info("hello");</p>
+
+    <p class="listing-body">}</p>
+
+    <p>На этот раз выясняется, что у объекта <span class="command char-style-override-1">Appender</span> нет выходного потока. Странно – логика подсказывает, что он должен быть. После небольшой помощи от Google опробуется следующее решение:</p>
+
+    <p class="listing-body">@Test</p>
+
+    <p class="listing-body">public void testLogAddAppender() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;Logger logger = Logger.getLogger("MyLogger");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;logger.removeAllAppenders();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;logger.addAppender(new ConsoleAppender(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;new PatternLayout("%p %t %m%n"),</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;ConsoleAppender.SYSTEM_OUT));</p>
+
+    <p class="listing-body">&nbsp;&nbsp;logger.info("hello");</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Заработало; на консоли выводится сообщение со словом «hello»! На первый взгляд происходящее выглядит немного странно: мы должны указывать <span class="command char-style-override-1">ConsoleAppender</span>, что данные выводятся на консоль.</p>
+
+    <p>Еще интереснее, что при удалении аргумента <span class="command char-style-override-1">ConsoleAppender</span><span class="command char-style-override-1">.</span><span class="command char-style-override-1">SystemOut</span> сообщение «hello» все равно выводится. Но если убрать аргумент <span class="command char-style-override-1">PatternLayout</span>, снова начинаются жалобы на отсутствие выходного потока. Все это выглядит очень странно.</p>
+
+    <p>После более внимательного чтения документации мы видим, что конструктор <span class="command char-style-override-1">ConsoleAppender</span> по умолчанию «не имеет конфигурации» – весьма неочевидное и бесполезное решение. Похоже, это ошибка (или по крайней мере нелогичность) в <span class="command char-style-override-1">log</span><span class="command char-style-override-1">4</span><span class="command char-style-override-1">j</span>.</p>
+
+    <p>После некоторых поисков, чтения документации и тестирования мы приходим к листингу 8.1. Попутно мы получили много полезной информации о том, как работает <span class="command char-style-override-1">log</span><span class="command char-style-override-1">4</span><span class="command char-style-override-1">j</span>, и закодировали ее в наборе простых модульных тестов.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/8 Границы/8.1.LogTest.java">📄 Открыть исходный код в IDE</a></p>Листинг 8.1.</strong> LogTest.java</p>
+
+    <p class="listing-body">public class LogTest {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;private Logger logger;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;@Before</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public void initialize() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;logger = Logger.getLogger("logger");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;logger.removeAllAppenders();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Logger.getRootLogger().removeAllAppenders();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;@Test</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public void basicLogger() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;BasicConfigurator.configure();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;logger.info("basicLogger");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;@Test</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public void addAppenderWithStream() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;logger.addAppender(new ConsoleAppender(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;new PatternLayout("%p %t %m%n"),</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ConsoleAppender.SYSTEM_OUT));</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;logger.info(“addAppenderWithStream”);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;@Test</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public void addAppenderWithoutStream() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;logger.addAppender(new ConsoleAppender(</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;new PatternLayout("%p %t %m%n")));</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;logger.info("addAppenderWithoutStream");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Теперь мы знаем, как инициализировать простейший консольный вывод и можем воплотить эти знания в специализированном журнальном классе, чтобы изолировать остальной код приложения от граничного интерфейса <span class="command char-style-override-1">log4j</span>.</p>
+
+    <h3>Учебные тесты: выгоднее, чем бесплатно</h3>
+
+    <p class="Normal0">Учебные тесты не стоят ничего. API все равно приходится изучать, а написание тестов является простым способом получения необходимой информации, в изоляции от рабочего кода. Учебные тесты были точно поставленными экспериментами, которые помогли нам расширить границы своего понимания.</p>
+
+    <p>Учебные тесты не просто бесплатны – они приносят дополнительную прибыль. При выходе новых версий сторонних пакетов вы сможете провести учебные тесты и выяснить, не изменилось ли поведение пакета.</p>
+
+    <p>Учебные тесты позволяют убедиться в том, что сторонние пакеты, используемые в коде, работают именно так, как мы ожидаем. Нет никаких гарантий, что сторонний код, интегрированный в наши приложения, всегда будет сохранять совместимость. Например, авторы могут изменить код в соответствии с какими-то новыми потребностями. Изменения также могут происходить из-за исправления ошибок и добавления новых возможностей. Выход каждой новой версии сопряжен с новым риском. Если в стороннем пакете появятся изменения, несовместимые с нашими тестами, мы сразу узнаем об этом.</p>
+
+    <p>Впрочем, независимо от того, нужна ли вам учебная информация, получаемая в ходе тестирования, в системе должна существовать четкая граница, которая поддерживается группой исходящих тестов, использующих интерфейс по ­аналогии с кодом продукта. Без <em>граничных тестов</em>, упрощающих процесс миграции, у нас появляются причины задержаться на старой версии дольше необходимого.</p>
+
+    <h3>Использование несуществующего кода</h3>
+
+    <p class="Normal0">Также существует еще одна разновидность границ, отделяющая известное от неизвестного. В коде часто встречаются места, в которых мы не располагаем полной информацией. Иногда то, что находится на другой стороне границы, остается неизвестным (по крайней мере в данный момент). Иногда мы намеренно не желаем заглядывать дальше границы.</p>
+
+    <p>Несколько лет назад я работал в группе, занимавшейся разработкой программного обеспечения для системы радиосвязи. В нашем продукте была подсистема «Передатчик», о которой мы почти ничего не знали, а люди, ответственные за разработку этой подсистемы, еще не дошли до определения своего интерфейса. Мы не хотели простаивать и поэтому начали работать подальше от неизвестной части кода.</p>
+
+    <p>Мы неплохо представляли себе, где заканчивалась наша зона ответственности и начиналась чужая территория. В ходе работы мы иногда наталкивались на границу. Хотя туманы и облака незнания скрывали пейзаж за границей, в ходе работы мы начали понимать, каким должен быть граничный интерфейс. Передатчику должны были отдаваться распоряжения следующего вида:</p>
+
+    <p><em>Настроить передатчик на заданную частоту и отправить аналоговое представление данных, поступающих из следующего потока.</em></p>
+
+    <p>Мы тогда понятия не имели, как это будет делаться, потому что API еще не был спроектирован. Поэтому подробности было решено отложить на будущее.</p>
+
+    <p>Чтобы не останавливать работу, мы определили собственный интерфейс с броским именем <span class="command char-style-override-1">Transmitter</span>. Интерфейс содержал метод <span class="command char-style-override-1">transmit</span>, которому при вызове передавались частота и поток данных. Это был тот интерфейс, который нам хотелось бы иметь.</p>
+
+    <p>У этого интерфейса было одно важное достоинство: он находился под нашим контролем. В результате клиентский код лучше читался, а мы в своей работе могли сосредоточиться на том, чего стремились добиться.</p>
+
+    <p>На рис. 8.2 мы видим, что классы <span class="command char-style-override-1">CommunicationsController</span> отделены от API передатчика (который находился вне нашего контроля и оставался неопределенным). Использование конкретного интерфейса нашего приложения позволило сохранить чистоту и выразительность кода <span class="command char-style-override-1">CommunicationsController</span>. После того как другая группа определила API передатчика, мы написали класс <span class="command char-style-override-1">TransmitterAdapter</span> для «наведения мостов». АДАПТЕР<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-27" id="footnote-319-27-backlink">27</a></span> инкапсулировал взаимодействие с API и создавал единое место для внесения изменений в случае развития API.</p>
+
+    <p>Такая архитектура также создает в коде очень удобный «стык» для тестирования. Используя подходящий <span class="command char-style-override-1">FakeTransmitter</span>, мы можем тестировать классы <span class="command char-style-override-1">CommunicationsController</span>. Кроме того, сразу же после появления <span class="command char-style-override-1">TransmitterAPI</span> можно создать граничные тесты для проверки правильности использования API.</p>
+
+    <p class="Pic-yakor"><span><img alt="20416.png" class="frame-1" src="../Images/20416.png"/></span>&nbsp;</p>
+
+    <p class="Pic-nazv"><strong>Рис</strong><strong>. 8.</strong><strong>2</strong><strong>.</strong> Прогнозирование интерфейса передатчика</p>
+
+    <h2 id="toc_marker-10-3">Чистые границы</h2>
+
+    <p class="Normal0">На границах происходит много интересного. В частности, стоит уделить особое внимание изменениям. В хорошей программной архитектуре внесение изменений обходится без значительных затрат и усилий по переработке. Если в продукте используется код, находящийся вне нашего контроля, примите особые меры по защите капиталовложений и позаботьтесь о том, чтобы будущие изменения обходились не слишком дорого.</p>
+
+    <p>Для граничного кода необходимо четкое разделение сторон и тесты, определяющие ожидания пользователя. Постарайтесь, чтобы ваш код поменьше знал о специфических подробностях реализации стороннего кода. Лучше зависеть от того, что находится под вашим контролем, чем от тех факторов, которые вы не контролируете (а то, чего доброго, они начнут контролировать вас).</p>
+
+    <p>Чтобы границы со сторонним кодом не создавали проблем в наших проектах, мы сводим к минимуму количество обращений к ним. Для этого можно воспользоваться обертками, как в примере с <span class="command char-style-override-1">Map</span>, или реализовать паттерн АДАПТЕР для согласования нашего идеального интерфейса с реальным, полученным от разработчиков. В обоих вариантах код становится более выразительным, обеспечивается внутренняя согласованность обращений через границы, а изменение стороннего кода требует меньших затрат на сопровождение.</p>
+
+    <h2 id="toc_marker-10-4">Литература</h2>
+
+    <p class="Normal0">[BeckTDD]: Test Driven Development, Kent Beck, Addison-Wesley, 2003.</p>
+
+    <p>[GOF]: Design Patterns: Elements of Reusable Object Oriented Software, Gamma et al., Addison-Wesley, 1996.</p>
+
+    <p>[WELC]: Working Effectively with Legacy Code, Addison-Wesley, 2004.</p>
+
+    <div class="footnotes footnote">
+      <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-27-backlink" id="footnote-319-27">27</a><span class="Superscript char-style-override-2" xml:lang="en-US">1</span> См. описание паттерна АДАПТЕР в [<span xml:lang="en-US">GOF</span>].</p>
+    </div>
+  </div>
+</body>
+</html>

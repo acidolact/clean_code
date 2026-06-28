@@ -1,0 +1,428 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Чистый код: создание, анализ и рефакторинг. Библиотека программиста</title>
+  <link href="../Styles/template.css" rel="stylesheet" type="text/css"/>
+</head>
+
+<body id="x978549600487" xml:lang="ru-RU">
+  <div>
+    <h1 id="toc_marker-8">6. Объекты и структуры данных</h1>
+
+    <p class="Pic-yakor"><span><img alt="06_01.tif" class="frame-12" src="../Images/06_01_fmt.png"/></span>&nbsp;</p>
+
+    <p>Существует веская причина для ограничения доступа к переменным в программах: мы не хотим, чтобы другие программисты зависели от них. Мы хотим иметь возможность свободно менять тип или реализацию этих переменных так, как считаем нужным. Тогда почему же многие программисты автоматически включают в свои объекты методы чтения/записи, предоставляя доступ к приватным переменным так, словно они являются открытыми?</p>
+
+    <h2 id="toc_marker-8-1">Абстракция данных</h2>
+
+    <p class="Normal0">Давайте сравним между собой листинги 6.1 и 6.2. В обоих случаях код представляет точку на декартовой плоскости. Однако в одном случае реализация открыта, а в другом она полностью скрыта от внешнего пользователя.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/6 Объекты и структуры данных/6.1.Point.java">📄 Открыть исходный код в IDE</a></p>Листинг 6.1.</strong> Конкретная реализация Point</p>
+
+    <p class="listing-body">public class Point {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public double x;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public double y;</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="Vrezka-head"><strong>Листинг</strong> <strong>6.2.</strong> Абстрактная реализация Point</p>
+
+    <p class="listing-body">public interface Point {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;double getX();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;double getY();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;void setCartesian(double x, double y);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;double getR();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;double getTheta();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;void setPolar(double r, double theta);</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Элегантность решения из листинга 6.2 заключается в том, что внешний пользователь не знает, какие координаты использованы в реализации — прямоугольные или полярные. А может, еще какие-нибудь! Тем не менее интерфейс безусловно напоминает структуру данных.</p>
+
+    <p>Однако он представляет нечто большее, чем обычную структуру данных. Его методы устанавливают политику доступа к данным. Пользователь может читать значения координат независимо друг от друга, но присваивание координат должно выполняться одновременно, в режиме атомарной операции.</p>
+
+    <p>С другой стороны, листинг 6.1 явно реализован в прямоугольных координатах, а пользователь вынужден работать с этими координатами независимо. Более того, такое решение раскрывает реализацию даже в том случае, если бы переменные были объявлены приватными, и мы использовали одиночные методы чтения/записи.</p>
+
+    <p>Скрытие реализации не сводится к созданию прослойки функций между переменными. Скрытие реализации направлено на формирование абстракций! Класс не просто ограничивает доступ к переменным через методы чтения/записи. Вместо этого он предоставляет абстрактные интерфейсы, посредством которых пользователь оперирует с <em>сущностью</em> данных. Знать, как эти данные реализованы, ему при этом не обязательно.</p>
+
+    <p>Возьмем листинги 6.3 и 6.4. В первом случае для получения информации о запасе топлива используются конкретные физические показатели, а во втором — абстрактные проценты. В первом, конкретном случае можно быть уверенным в том, что методы представляют собой обычные методы доступа к переменным. Во втором, абстрактном случае пользователь не имеет ни малейшего представления о фактическом формате данных.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/6 Объекты и структуры данных/6.3.Vehicle.java">📄 Открыть исходный код в IDE</a></p>Листинг 6.3.</strong> Конкретная реализация Vehicle</p>
+
+    <p class="listing-body">public interface Vehicle {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;double getFuelTankCapacityInGallons();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;double getGallonsOfGasoline();</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="Vrezka-head"><strong>Листинг</strong> <strong>6.4.</strong> Абстрактная реализация Vehicle</p>
+
+    <p class="listing-body">Abstract Vehicle</p>
+
+    <p class="listing-body">public interface Vehicle {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;double getPercentFuelRemaining();</p>
+
+    <p class="listing-body">}</p>
+
+    <p>В обоих примерах вторая реализация является предпочтительной. Мы не хотим раскрывать подробности строения данных. Вместо этого желательно использовать представление данных на абстрактном уровне. Задача не решается простым использованием интерфейсов и/или методов чтения/записи. Чтобы найти лучший способ представления данных, содержащихся в объекте, необходимо серьезно поразмыслить. Бездумное добавление методов чтения и записи — худший из всех возможных вариантов.</p>
+
+    <h2 id="toc_marker-8-2">Антисимметрия данных/объектов</h2>
+
+    <p class="Normal0">Два предыдущих примера показывают, чем объекты отличаются от структур данных. Объекты скрывают свои данные за абстракциями и предоставляют функции, работающие с этими данными. Структуры данных раскрывают свои данные и не имеют осмысленных функций. А теперь еще раз перечитайте эти определения. Обратите внимание на то, как они дополняют друг друга, фактически являясь противоположностями. Различия могут показаться тривиальными, но они приводят к далеко идущим последствиям.</p>
+
+    <p>Возьмем процедурный пример из листинга 6.5. Класс <span class="command char-style-override-1">Geometry</span> работает с тремя классами геометрических фигур. Классы фигур представляют собой простые структуры данных, лишенные какого-либо поведения. Все поведение сосредоточено в классе <span class="command char-style-override-1">Geometry</span>.</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/6 Объекты и структуры данных/6.5.Geometry.java">📄 Открыть исходный код в IDE</a></p>Листинг 6.5.</strong> Процедурные фигуры</p>
+
+    <p class="listing-body">public class Square {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public Point topLeft;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public double side;</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class Rectangle {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public Point topLeft;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public double height;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public double width;</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class Circle {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public Point center;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public double radius;</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="Vrezka-head"><strong><p style="text-align:center; color:#0000EE; font-weight:bold; margin:10px 0;"><a href="../code/6 Объекты и структуры данных/6.5.Geometry.java">📄 Открыть исходный код в IDE</a></p>Листинг 6.5</strong> (продолжение)</p>
+
+    <p class="listing-body">public class Geometry {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public final double PI = 3.141592653589793;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public double area(Object shape) throws NoSuchShapeException</p>
+
+    <p class="listing-body">&nbsp;&nbsp;{</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (shape instanceof Square) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Square s = (Square)shape;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return s.side * s.side;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;else if (shape instanceof Rectangle) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Rectangle r = (Rectangle)shape;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return r.height * r.width;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;else if (shape instanceof Circle) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Circle c = (Circle)shape;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return PI * c.radius * c.radius;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;throw new NoSuchShapeException();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Объектно-ориентированный программист недовольно поморщится и пожалуется на процедурную природу реализации — и будет прав. Но возможно, его презрительная усмешка не обоснована. Подумайте, что произойдет при включении в <span class="command char-style-override-1">Geometry</span> функции <span class="command char-style-override-1">perimeter()</span>. Классы фигур остаются неизменными! И все остальные классы, зависящие от них, тоже остаются неизменными! С другой стороны, при добавлении новой разновидности фигур мне придется изменять все функции <span class="command char-style-override-1">Geometry</span>, чтобы они могли работать с ней. Перечитайте еще раз. Обратите внимание на то, что эти два условия диаметрально противоположны.</p>
+
+    <p>Теперь рассмотрим объектно-ориентированное решение из листинга 6.6. Метод <span class="command char-style-override-1">area()</span> является полиморфным, класс <span class="command char-style-override-1">Geometry</span> становится лишним. Добавление новой фигуры не затрагивает ни одну из существующих <em>функций</em>, но при добавлении новой функции приходится изменять все <em>фигуры</em>!<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-24" id="footnote-319-24-backlink">24</a></span></p>
+
+    <p class="Vrezka-head"><strong>Листинг</strong> <strong>6.6.</strong> Полиморфные фигуры</p>
+
+    <p class="listing-body">Polymorphic Shapes</p>
+
+    <p class="listing-body">public class Square implements Shape {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private Point topLeft;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private double side;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public double area() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return side*side;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">public class Rectangle implements Shape {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private Point topLeft;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private double height;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private double width;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public double area() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return height * width;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class Circle implements Shape {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private Point center;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private double radius;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public final double PI = 3.141592653589793;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public double area() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return PI * radius * radius;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>И снова мы наблюдаем взаимодополняющую природу этих двух определений. В этом проявляется основополагающая дихотомия между объектами и структурами данных.</p>
+
+    <p><em>Процедурный код (код, использующий структуры данных) позволяет легко добавлять новые функции без изменения существующих структур данных. Объектно-ориентированный код, напротив, упрощает добавление новых классов без изменения существующих функций.</em></p>
+
+    <p>Обратные утверждения также истинны.</p>
+
+    <p><em>Процедурный код усложняет добавление новых структур данных, потому что оно требует изменения всех функций. Объектно-ориентированный код усложняет добавление новых функций, потому что для этого должны измениться все классы.</em></p>
+
+    <p>Таким образом, то, что сложно в ОО, просто в процедурном программировании, а то, что сложно в процедурном программировании, просто в ОО!</p>
+
+    <p>В любой сложной системе возникают ситуации, когда вместо новых функций в систему требуется включить новые типы данных. Для таких ситуаций объекты и объектно-ориентированное программирование особенно уместны. Впрочем, бывает и обратное — вместо новых типов данных требуется добавить новые функции. Тогда лучше подходит процедурный код и структуры данных.</p>
+
+    <p>Опытные программисты хорошо знают: представление о том, что все данные должны представляться в виде объектов — <em>миф</em>. Иногда предпочтительны простые структуры данных и процедуры, работающие с ними.</p>
+
+    <h2 id="toc_marker-8-3">Закон Деметры</h2>
+
+    <p class="Normal0">Хорошо известное эвристическое правило, называемое <em>законом Деметры</em><span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-25" id="footnote-319-25-backlink">25</a></span>, гласит, что модуль не должен знать внутреннее устройство тех объектов, с которыми он работает. Как мы видели в предыдущем разделе, объекты скрывают свои данные и предоставляют операции для работы с ними. Это означает, что объект не должен раскрывать свою внутреннюю структуру через методы доступа, потому что внутреннюю структуру следует скрывать.</p>
+
+    <p>В более точной формулировке закон Деметры гласит, что метод <em>f</em> класса <em>C</em> должен ограничиваться вызовом методов следующих объектов:</p>
+
+    <p class="ListBul"><em>• C</em>;</p>
+
+    <p class="ListBul">• объекты, созданные <em>f</em>;</p>
+
+    <p class="ListBul">• объекты, переданные <em>f</em> в качестве аргумента;</p>
+
+    <p class="ListBulLast">• объекты, хранящиеся в переменной экземпляра <em>C</em>.</p>
+
+    <p>Метод <em>не должен</em> вызывать методы объектов, возвращаемых любыми из разрешенных функций. Другими словами, разговаривать можно с друзьями, но не с чужаками.</p>
+
+    <p>Следующий код нарушает закон Деметры (среди прочего), потому что он вызывает функцию <span class="command char-style-override-1">getScratchDir</span><span class="command char-style-override-1">()</span> для возвращаемого значения <span class="command char-style-override-1">getOptions</span><span class="command char-style-override-1">()</span>, а затем вызывает <span class="command char-style-override-1">getAbsolutePath</span><span class="command char-style-override-1">()</span> для возвращаемого значения <span class="command char-style-override-1">getScratchDir</span><span class="command char-style-override-1">()</span>.</p>
+
+    <p class="listing-body">final String outputDir = ctxt.getOptions().getScratchDir().getAbsolutePath();</p>
+
+    <h3>Крушение поезда</h3>
+
+    <p class="Normal0">Подобная структура кода часто называется «крушением поезда», потому что цепочки вызовов напоминают сцепленные вагоны поезда. Такие конструкции считаются проявлением небрежного стиля программирования и их следует избегать [G36]. Обычно цепочки лучше разделить в следующем виде:</p>
+
+    <p class="listing-body">Options opts = ctxt.getOptions();</p>
+
+    <p class="listing-body">File scratchDir = opts.getScratchDir();</p>
+
+    <p class="listing-body">final String outputDir = scratchDir.getAbsolutePath();</p>
+
+    <div class="frame-4"><img alt="06_02.tif" class="frame-13" src="../Images/06_02_fmt.png"/></div>
+
+    <p>Нарушают ли эти два фрагмента закон</p>
+
+    <p>Деметры? Несомненно, вмещающий модуль знает, что объект контекста <span class="command char-style-override-1">ctxt</span> содержит значения параметров, в число которых входит и временный каталог, обладающий абсолютным путем. Это довольно большой объем информации для одной функции. Вызывающая функция должна знать, как перемещаться между множеством разных объектов.</p>
+
+    <p>Нарушает ли этот код закон Деметры или нет? Все зависит от того, чем являются <span class="command char-style-override-1">ctxt</span>, <span class="command char-style-override-1">Options</span> и <span class="command char-style-override-1">ScratchDir</span> — объектами или структурами данных. Если это объекты, то их внутренняя структура должна скрываться, поэтому необходимость ин­формации об их строении является явным нарушением закона Деметры. С другой стороны, если <span class="command char-style-override-1">ctxt</span>, <span class="command char-style-override-1">Options</span> и <span class="command char-style-override-1">ScratchDir</span> представляют собой обычные структуры данных, не обладающие поведением, то они естественным образом раскрывают свою внутреннюю структуру, а закон Деметры на них не распространяется.</p>
+
+    <p>Применение функций доступа затрудняет ситуацию. Если бы код был записан следующим образом, вероятно, у нас не возникало бы вопросов по поводу нарушения закона Деметры:</p>
+
+    <p class="listing-body">final String outputDir = ctxt.options.scratchDir.absolutePath;</p>
+
+    <p>Ситуация существенно упростилась бы, если бы структуры данных просто содержали открытые переменные без функций, а объекты — приватные переменные с открытыми функциями. Однако некоторые существующие инфраструктуры и стандарты (например, Beans) требуют, чтобы даже простые структуры данных имели методы чтения и записи.</p>
+
+    <h3>Гибриды</h3>
+
+    <p class="Normal0">Вся эта неразбериха иногда приводит к появлению гибридных структур — наполовину объектов, наполовину структур данных. Гибриды содержат как функции для выполнения важных операций, так и открытые переменные или открытые методы чтения/записи, которые во всех отношениях делают приватные переменные открытыми. Другим внешним функциям предлагается использовать эти переменные так, как в процедурных программах используются структуры данных<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-26" id="footnote-319-26-backlink">26</a></span>.</p>
+
+    <p>Подобные гибриды усложняют как добавление новых функций, так и новых структур данных. Они объединяют все худшее из обеих категорий. Не используйте гибриды. Они являются признаком сумбурного проектирования, авторы которого не уверены (или еще хуже, не знают), что они собираются защищать: функции или типы.</p>
+
+    <h3>Скрытие структуры</h3>
+
+    <p class="Normal0">А если <span class="command char-style-override-1">ctxt</span>, <span class="command char-style-override-1">options</span> и <span class="command char-style-override-1">scratchDir</span> представляют собой объекты с реальным поведением? Поскольку объекты должны скрывать свою внутреннюю структуру, мы не сможем перемещаться между ними. Как же в этом случае узнать абсолютный путь временного каталога?</p>
+
+    <p class="listing-body">ctxt.getAbsolutePathOfScratchDirectoryOption();</p>
+
+    <p>или</p>
+
+    <p class="listing-body">ctx.getScratchDirectoryOption().getAbsolutePath()</p>
+
+    <p>Первый вариант приведет к разрастанию набора методов объекта <span class="command char-style-override-1">ctxt</span>. Второй вариант предполагает, что <span class="command char-style-override-1">getScratchDirectoryOption</span><span class="command char-style-override-1">()</span> возвращает структуру данных, а не объект. Ни один из вариантов не вызывает энтузиазма.</p>
+
+    <p>Если <span class="command char-style-override-1">ctxt</span> является объектом, то мы должны приказать ему выполнить некую операцию, а не запрашивать у него информацию о его внутреннем устройстве. Зачем нам понадобился абсолютный путь к временному каталогу? Что мы собираемся с ним делать? Рассмотрим следующий фрагмент того же модуля (расположенный на много строк ниже):</p>
+
+    <p class="listing-body">String outFile = outputDir + "/" + className.replace('.', '/') + ".class";</p>
+
+    <p class="listing-body">FileOutputStream fout = new FileOutputStream(outFile);</p>
+
+    <p class="listing-body">BufferedOutputStream bos = new BufferedOutputStream(fout);</p>
+
+    <p>Смешение разных уровней детализации [G34][G6] выглядит немного пугающе. Точки, косые черты, расширения файлов и объекты <span class="command char-style-override-1">File</span> не должны так беспечно перемешиваться между собой и с окружающим кодом. Но если не обращать на это внимания, мы видим, что абсолютный путь временного каталога определялся для создания временного файла с заданным именем.</p>
+
+    <p>Так почему бы не приказать объекту <span class="command char-style-override-1">ctxt</span> выполнить эту операцию?</p>
+
+    <p class="listing-body">BufferedOutputStream bos = ctxt.createScratchFileStream(classFileName);</p>
+
+    <p>Выглядит вполне разумно! Такое решение позволяет объекту <span class="command char-style-override-1">ctxt</span> скрыть свое внутреннее строение, а текущей функции не приходится нарушать закон Деметры, перемещаясь между объектами, о которых ей знать не положено.</p>
+
+    <h3>Объекты передачи данных</h3>
+
+    <p class="Normal0">Квинтэссенцией структуры данных является класс с открытыми переменными и без функций. Иногда такие структуры называются <em>объектами передачи данных</em>, или DTO (Data Transfer Object). Структуры DTO чрезвычайно полезны, особенно при работе с базами данных, разборе сообщений из сокетов и т.д. С них часто начинается серия фаз преобразования низкоуровневых данных, полученных из базы, в объекты кода приложения.</p>
+
+    <p>Несколько большее распространение получила форма bean-компонентов, представленная в листинге 6.7. Bean-компоненты состоят из приватных переменных, операции с которыми осуществляются при помощи методов чтения/записи. Подобная форма псевдоинкапсуляции поднимает настроение некоторым блюстителям чистоты ОО, но обычно не имеет других преимуществ.</p>
+
+    <p class="Vrezka-head"><strong>Листинг</strong> <strong>6.7.</strong> address.java</p>
+
+    <p class="listing-body">public class Address {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String street;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String streetExtra;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String city;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String state;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private String zip;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public Address(String street, String streetExtra,</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String city, String state, String zip) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;this.street = street;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;this.streetExtra = streetExtra;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;this.city = city;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;this.state = state;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;this.zip = zip;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public String getStreet() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return street;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public String getStreetExtra() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return streetExtra;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public String getCity() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return city;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public String getState() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return state;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public String getZip() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return zip;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <h3>Активные записи</h3>
+
+    <p class="Normal0">Активные записи (Active Records) составляют особую разновидность DTO. Они тоже представляют собой структуры данных с открытыми переменными (или переменными с bean-доступом), но обычно в них присутствуют навигационные методы — такие, как <span class="command char-style-override-1">save</span> или <span class="command char-style-override-1">find</span>. Активные записи чаще всего являются результатами прямого преобразования таблиц баз данных или других источников данных.</p>
+
+    <p>К сожалению, разработчики часто пытаются интерпретировать такие структуры данных, как объекты, и включают в них методы, реализующие бизнес-логику. Однако такой подход нежелателен, так как он создает гибрид между структурой данных и объектом.</p>
+
+    <p>Конечно, проблема решается иначе: активные записи интерпретируются как структуры данных, а в программе создаются отдельные объекты, которые содержат бизнес-логику и скрывают свои внутренние данные (которые, возможно, представляют собой обычные экземпляры класса активной записи).</p>
+
+    <h2 id="toc_marker-8-4">Заключение</h2>
+
+    <p class="Normal0">Объекты предоставляют поведение и скрывают данные. Это позволяет программисту легко добавлять новые виды объектов, не изменяя существующего поведения. С другой стороны, объекты усложняют добавление нового поведения к существующим объектам. Структуры данных предоставляют данные, но не обладают сколько-нибудь значительным поведением. Они упрощают добавление нового поведения в существующие структуры данных, но затрудняют добавление новых структур данных в существующие функции.</p>
+
+    <p>Если в некоторой системе нас прежде всего интересует гибкость в добавлении новых типов данных, то в этой части системы предпочтение отдается объектной реализации. В других случаях нам нужна гибкость расширения поведения, и тогда в этой части используются типы данных и процедуры. Хороший программист относится к этой проблеме без предубеждения и выбирает то решение, которое лучше всего подходит для конкретной ситуации.</p>
+
+    <h2 id="toc_marker-8-5">Литература</h2>
+
+    <p class="Normal0">[Refactoring]: Refactoring: Improving the Design of Existing Code, Martin Fowler et al., Addison-Wesley, 1999.</p>
+
+    <div class="footnotes">
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-24-backlink" id="footnote-319-24">24</a> У проблемы существуют обходные решения, хорошо известные опытным объектно-ориентированным программистам: например, паттерн ПОСЕТИТЕЛЬ или двойная диспетчеризация. Но у этих приемов имеются собственные издержки, к тому же они обычно возвращают структуру к состоянию процедурной программы.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-25-backlink" id="footnote-319-25">25</a> <a href="http://en.wikipedia.org/wiki/Law_of_Demeter"><em class="char-style-override-6">http://en.wikipedia.org/wiki/Law_of</em><em class="char-style-override-6">_Demeter</em></a></p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-26-backlink" id="footnote-319-26">26</a> Иногда это называется «функциональной завистью» (<span xml:lang="en-US">Feature Envy</span>) — из <span xml:lang="en-US">[Refactoring].</span></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

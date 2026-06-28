@@ -1,0 +1,1937 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Чистый код: создание, анализ и рефакторинг. Библиотека программиста</title>
+  <link href="../Styles/template.css" rel="stylesheet" type="text/css"/>
+</head>
+
+<body id="x978549600487" xml:lang="ru-RU">
+  <div>
+    <h1 id="toc_marker-20">А. Многопоточность II</h1>
+
+    <p class="Epigraph-avtor">Бретт Л. Шухерт</p>
+
+    <p>Данное приложение дополняет и углубляет материал главы «Многопоточность», с. 207. Оно написано в виде набора независимых разделов, которые можно читать в произвольном порядке. Чтобы такое чтение было возможно, материал разделов частично перекрывается.</p>
+
+    <h2 id="toc_marker-20-1">Пример приложения «клиент/сервер»</h2>
+
+    <p class="Normal0">Представьте простое приложение «клиент/сервер». Сервер работает в режиме ожидания, прослушивая сокет на предмет клиентских подключений. Клиент подключается и отправляет запросы.</p>
+
+    <h3>Сервер</h3>
+
+    <p class="Normal0">Ниже приведена упрощенная версия серверного приложения. Полный исходный код примера приводится, начиная со с. 385.</p>
+
+    <p class="listing-body">ServerSocket serverSocket = new ServerSocket(8009);</p>
+
+    <p class="listing-body">while (keepProcessing) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Socket socket = serverSocket.accept();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;process(socket);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;} catch (Exception e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;handle(e);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Приложение ожидает подключения, обрабатывает входящее сообщение, а затем снова ожидает следующего клиентского запроса. Код клиента для подключения к серверу выглядит так:</p>
+
+    <p class="listing-body">private void connectSendReceive(int i) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Socket socket = new Socket("localhost", PORT);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;MessageUtils.sendMessage(socket, Integer.toString(i));</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;MessageUtils.getMessage(socket);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;socket.close();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;} catch (Exception e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;e.printStackTrace();</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Как работает пара «клиент/сервер»? Как формально описать ее производительность? Следующий тест проверяет, что производительность является «приемлемой»:</p>
+
+    <p class="listing-body">@Test(timeout = 10000)</p>
+
+    <p class="listing-body">public void shouldRunInUnder10Seconds() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;Thread[] threads = createThreads();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;startAllThreadsw(threads);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;waitForAllThreadsToFinish(threads);</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Чтобы по возможности упростить пример, я исключил из него подготовительный код (см. «ClientTest.java», с. 387). Тест предполагает, что обработка должна быть завершена за 10 000 миллисекунд.</p>
+
+    <p>Перед нами классический пример оценки производительности системы. Система должна завершить обработку серии клиентских запросов за 10 секунд. Если сервер сможет обработать все клиентские запросы за положенное время, то тест пройдет.</p>
+
+    <p>А что делать, если тест завершится неудачей? В однопоточной модели практически невозможно как-то ускорить обработку запросов (если не считать реализации цикла опроса событий). Сможет ли многопоточная модель решить проблему? Может, но нам необходимо знать, в какой области расходуется основное время выполнения. Возможны два варианта:</p>
+
+    <p class="ListBul">• Ввод/вывод – использование сокета, подключение к базе данных, ожидание подгрузки из виртуальной памяти и т.д.</p>
+
+    <p class="ListBulLast">• Процессор – числовые вычисления, обработка регулярных выражений, уборка мусора и т.д.</p>
+
+    <p>В системах время обычно расходуется в обеих областях, но для конкретной операции одна из областей является доминирующей. Если код в основном ориентирован на обработку процессором, то повышение вычислительной мощности способно улучшить производительность и обеспечить прохождение теста. Однако количество процессорных тактов все же ограничено, так что реализация многопоточной модели в процессорно-ориентированных задачах не ускорит их выполнения.</p>
+
+    <p>С другой стороны, если значительное время в выполняемом процессе расходуется на операции ввода/вывода, то многопоточная модель способна повысить эффективность работы. Пока одна часть системы ожидает ввода/вывода, другая часть использует время ожидания для выполнения других действий, обеспечивая более эффективное использование процессорного времени.</p>
+
+    <h3>Реализация многопоточности</h3>
+
+    <p class="Normal0">Допустим, тест производительности не прошел. Как повысить производительность и обеспечить прохождение теста? Если серверный метод <span class="command char-style-override-1">process</span> ориентирован на ввод/вывод, одна из возможных реализаций многопоточной модели выглядит так:</p>
+
+    <p class="listing-body">void process(final Socket socket) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (socket == null)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;Runnable clientHandler = new Runnable() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void run() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String message = MessageUtils.getMessage(socket);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;MessageUtils.sendMessage(socket, "Processed: " + message);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;closeIgnoringException(socket);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} catch (Exception e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;e.printStackTrace();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;};</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;Thread clientConnection = new Thread(clientHandler);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;clientConnection.start();</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Допустим, в результате внесенных изменений тест проходит<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-77" id="footnote-319-77-backlink">77</a></span>; задача решена, верно?</p>
+
+    <h3>Анализ серверного кода</h3>
+
+    <p class="Normal0">На обновленном сервере тест успешно завершается всего за одну с небольшим секунду. К сожалению, приведенное решение наивно, и оно создает ряд новых проблем.</p>
+
+    <p>Сколько потоков может создать наш сервер? Код не устанавливает ограничений, поэтому сервер вполне может столкнуться с ограничениями, установленными виртуальной машиной Java ( JVM). Для многих простых систем этого достаточно. А если система обслуживает огромное количество пользователей в общедоступной сети? При одновременном подключении слишком многих пользователей система «заглохнет».</p>
+
+    <p>Но давайте ненадолго отложим проблемы с поведением. Чистота и структура представленного кода тоже оставляют желать лучшего. Какие ответственности возложены на серверный код?</p>
+
+    <p class="ListBul">• Управление подключением к сокетам.</p>
+
+    <p class="ListBul">• Обработка клиентских запросов.</p>
+
+    <p class="ListBul">• Политика многопоточности.</p>
+
+    <p class="ListBulLast">• Политика завершения работы сервера.</p>
+
+    <p>К сожалению, все эти ответственности реализуются кодом функции <span class="command char-style-override-1">process</span>. Кроме того, код распространяется на несколько разных уровней абстракции. Следовательно, какой бы компактной ни была функция <span class="command char-style-override-1">process</span>, ее все равно необходимо разбить на несколько меньших функций.</p>
+
+    <p>У серверного кода несколько причин для изменения; следовательно, он нарушает принцип единой ответственности. Чтобы код многопоточной системы оставался чистым, управление потоками должно быть сосредоточено в нескольких хорошо контролируемых местах. Более того, код управления потоками не должен делать ничего другого. Почему? Да хотя бы потому, что отслеживать проблемы многопоточности достаточно сложно и без параллельного отслеживания других проблем, не имеющих ничего общего с многопоточностью.</p>
+
+    <p>Если создать отдельный класс для каждой из ответственностей, перечисленных выше (включая управление потоками), то последствия любых последующих изменений стратегии управления потоками затронут меньший объем кода и не будут загрязнять реализацию других обязанностей. Кроме того, такое разбиение упростит тестирование других модулей, так как вам не придется отвлекаться на многопоточные аспекты. Обновленная версия кода:</p>
+
+    <p class="listing-body">public void run() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;while (keepProcessing) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;ClientConnection clientConnection = connectionManager.awaitClient();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;ClientRequestProcessor requestProcessor</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= new ClientRequestProcessor(clientConnection);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;clientScheduler.schedule(requestProcessor);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;} catch (Exception e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;e.printStackTrace();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;connectionManager.shutdown();</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Все аспекты, относящиеся к многопоточности, теперь собраны в объекте <span class="command char-style-override-1">clientScheduler</span>. Если в приложении возникнут многопоточные проблемы, искать придется только в одном месте:</p>
+
+    <p class="listing-body">public interface ClientScheduler {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;void schedule(ClientRequestProcessor requestProcessor);</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Текущая политика реализуется легко:</p>
+
+    <p class="listing-body">public class ThreadPerRequestScheduler implements ClientScheduler {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public void schedule(final ClientRequestProcessor requestProcessor) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Runnable runnable = new Runnable() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void run() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;requestProcessor.process();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;};</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Thread thread = new Thread(runnable);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;thread.start();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Изоляция всего многопоточного кода существенно упрощает внесение любых изменений в политику управления потоками. Например, чтобы перейти на инфраструктуру Java 5 Executor, достаточно написать новый класс и подключить его к существующему коду (листинг А.1).</p>
+
+    <p class="Vrezka-head"><strong>Листинг А.1.</strong> ExecutorClientScheduler.java</p>
+
+    <p class="listing-body">import java.util.concurrent.Executor;</p>
+
+    <p class="listing-body">import java.util.concurrent.Executors;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class ExecutorClientScheduler implements ClientScheduler {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;Executor executor;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public ExecutorClientScheduler(int availableThreads) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;executor = Executors.newFixedThreadPool(availableThreads);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public void schedule(final ClientRequestProcessor requestProcessor) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Runnable runnable = new Runnable() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void run() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;requestProcessor.process();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;};</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;executor.execute(runnable);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <h3>Заключение</h3>
+
+    <p class="Normal0">Применение многопоточной модели в этом конкретном примере показывает, как повысить производительность системы, а также демонстрирует методологию проверки изменившейся производительности посредством тестовой инфраструктуры. Сосредоточение всего многопоточного кода в небольшом количестве классов – пример практического применения принципа единой ответственности. В случае многопоточного программирования это особенно важно из-за его нетривиальности.</p>
+
+    <h3>Возможные пути выполнения</h3>
+
+    <p class="Normal0">Рассмотрим код <span class="command char-style-override-1">incrementValue</span> однострочного метода Java, не содержащего циклов или ветвления:</p>
+
+    <p class="listing-body">public class IdGenerator {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;int lastIdUsed;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public int incrementValue() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return ++lastIdUsed;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Забудем о возможности целочисленного переполнения. Будем считать, что только один программный поток имеет доступ к единственному экземпляру <span class="command char-style-override-1">IdGenerator</span>. В этом случае существует единственный путь выполнения с единственным гарантированным результатом:</p>
+
+    <p class="ListBulLast">• Возвращаемое значение равно значению <span class="command char-style-override-1">lastIdUsed</span>, и оба значения на одну единицу больше значения <span class="command char-style-override-1">lastIdUsed</span> непосредственно перед вызовом метода.</p>
+
+    <p>Что произойдет, если мы используем два программных потока, а метод останется неизменным? Какие возможны результаты, если каждый поток вызовет <span class="command char-style-override-1">incrementValue</span> по одному разу? Сколько существует возможных путей вы­полнения? Начнем с результатов (допустим, <span class="command char-style-override-1">lastIdUsed</span> начинается со значения 93):</p>
+
+    <p class="ListBul">• Поток 1 получает значение 94, поток 2 получает значение 95, значение last­IdUsed равно 95.</p>
+
+    <p class="ListBul">• Поток 1 получает значение 95, поток 2 получает значение 94, значение lastIdUsed равно 95.</p>
+
+    <p class="ListBulLast">• Поток 1 получает значение 94, поток 2 получает значение 94, значение last­IdUsed равно 94.</p>
+
+    <p>Последний результат выглядит удивительно, но он возможен. Чтобы понять, как образуются эти разные результаты, необходимо разобраться в количестве возможных путей выполнения и в том, как они исполняются виртуальной машиной Java.</p>
+
+    <h3>Количество путей</h3>
+
+    <p class="Normal0">Чтобы вычислить количество возможных путей выполнения, начнем со сгенерированного байт-кода. Одна строка кода Java (<span class="command char-style-override-1">return</span> <span class="command char-style-override-1">++</span><span class="command char-style-override-1">lastIdUsed</span><span class="command char-style-override-1">;</span>) преобразуется в восемь инструкций байт-кода. Выполнение этих восьми инструкций двумя потоками может перемежаться подобно тому, как перемежаются карты в тасуемой колоде<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-78" id="footnote-319-78-backlink">78</a></span>. Хотя в каждой руке вы держите всего восемь карт, количество всевозможных перетасованных комбинаций чрезвычайно велико.</p>
+
+    <p>В простом случае последовательности из <em>N</em> команд, без циклов и условных переходов, и <em>T</em> потоков, общее количество возможных путей выполнения будет равно</p>
+
+    <p class="Pic-yakor"><span><img alt="10611.png" class="frame-25" src="../Images/10611.png"/></span>.</p>
+
+    <p class="Vrezka-head">Вычисление возможных вариантов упорядочения</p>
+
+    <p class="Vrezka-body">Из сообщения электронной почты, отправленного Дядюшкой Бобом Бретту:</p>
+
+    <p class="Vrezka-body">При <em>N</em> шагов и <em>T</em> потоков общее количество в итоговой последовательности шагов равно <em>T</em> * <em>N</em>. Перед каждым шагом происходит переключение контекста, в ходе которого производится выбор между <em>T</em> потоками. Каждый путь может быть представлен в виде последовательности цифр, обозначающей переключение контекстов. Так, для шагов A и B с потоками 1 и 2 возможны шесть путей: 1122, 1212, 1221, 2112, 2121 и 2211. Если использовать в записи обозначения шагов, мы получаем A1B1A2B2, A1A2B1B2, A1A2B2B1, A2A1B1B2, A2A1B2B1 и A2B2A1B1. Для трех потоков последовательность вариантов имеет вид 112233, 112323, 113223, 113232, 112233, 121233, 121323, 121332, 123132, 123123, . . . .</p>
+
+    <p class="Vrezka-body">Одно из свойств этих строк заключается в том, что каждый поток должен присутствовать в строке в <em>N</em> экземплярах. Таким образом, строка 111111 невозможна, потому что она содержит шесть экземпляров 1 и нуль экземпляров 2 и 3.</p>
+
+    <p class="Vrezka-body">Итак, нам нужно сгенерировать перестановки из <em>N</em> цифр 1, <em>N</em> цифр 2… и <em>N</em> цифр <em>T</em>. Искомое число равно числу перестановок из <em>N</em> * <em>T</em> объектов, то есть (<em>N</em> * <em>T</em>)!, но с удалением всех дубликатов. Таким образом, задача заключается в том, чтобы подсчитать дубликаты и вычесть их количество из (<em>N</em> * <em>T</em> )!.</p>
+
+    <p class="Vrezka-body">Сколько дубликатов содержит серия для двух шагов и двух потоков? Каждая строка из четырех цифр состоит из двух 1 и двух 2. Цифры каждой пары можно поменять местами без изменения смысла строки. Мы можем переставить две цифры 1 и/или две цифры 2. Таким образом, каждая строка существует в четырех изоморфных версиях; это означает, что у каждой строки имеются три дубликата. Три варианта из четырех повторяются, то есть только одна перестановка из четырех НЕ ЯВЛЯЕТСЯ дубликатом. 4! * 0.25 = 6. Похоже, наша схема рассуждений работает.</p>
+
+    <p class="Vrezka-body">Как вычислить количество дубликатов в общем случае? Для <em>N</em> = 2 и <em>T</em> = 2 можно переставить 1 и/или 2. Для <em>N</em> = 2 и <em>T</em> = 3 можно переставить 1, 2, 3, 1 и 2, 1 и 3 или 2 и 3. Количество вариантов равно количеству перестановок N. Допустим, существует P разных перестановок N. Количество разных вариантов размещения этих перестановок равно <em>P</em>**<em>T</em>.</p>
+
+    <p class="Vrezka-body">Таким образом, количество возможных изоморфных версий равно <em>N</em>!**<em>T</em>. Соответственно, количество путей равно (<em>T</em>*<em>N</em>)!/(<em>N</em>!**<em>T</em>). Для исходного случая <em>T</em> = 2, <em>N</em> = 2 мы получаем 6 (24/4).</p>
+
+    <p class="Vrezka-body">Для <em>N</em> = 2 и <em>T</em> = 3 количество путей равно 720/8 = 90.</p>
+
+    <p class="Vrezka-body">Для <em>N</em> = 3 и <em>T</em> = 3 получается 9!/6^3 = 1680.</p>
+
+    <p>В простейшем случае с одной строкой кода Java, эквивалентной восьми инструкциям байт-кода, и двумя программными потоками общее количество возможных путей выполнения равно 12 870. Если переменная <span class="command char-style-override-1">lastIdUsed</span> будет относиться к типу <span class="command char-style-override-1">long</span>, то каждая операция чтения/записи преобразуется в две инструкции вместо одной, а количество путей выполнения достигает 2,704,156.</p>
+
+    <p>Что произойдет, если внести в метод единственное одно изменение?</p>
+
+    <p class="listing-body">public <strong>synchronized</strong> void incrementValue() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;++lastIdUsed;</p>
+
+    <p class="listing-body">}</p>
+
+    <p>В этом случае количество возможных путей выполнения сократится до 2 для 2 потоков или до N! в общем случае.</p>
+
+    <h3>Копаем глубже</h3>
+
+    <p class="Normal0">А как же удивительный результат, когда два потока вызывают метод по одному разу (до добавления <span class="command char-style-override-1">synchronized</span>), получая одинаковое число? Как такое возможно? Начнем с начала.</p>
+
+    <p><em>Атомарной операцией</em> называется операция, выполнение которой не может быть прервано. Например, в следующем коде строка 5, где переменной <span class="command char-style-override-1">lastid</span> при­сваивается значение 0, является атомарной операцией, поскольку в соответствии с моделью памяти Java присваивание 32-разрядного значения прерываться не может.</p>
+
+    <p class="listing-body">01: public class Example {</p>
+
+    <p class="listing-body">02:&nbsp;&nbsp;&nbsp;&nbsp;int lastId;</p>
+
+    <p class="listing-body">03:</p>
+
+    <p class="listing-body">04:&nbsp;&nbsp;&nbsp;&nbsp;public void resetId() {</p>
+
+    <p class="listing-body">05:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;value = 0;</p>
+
+    <p class="listing-body">06:&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">07:</p>
+
+    <p class="listing-body">08:&nbsp;&nbsp;&nbsp;&nbsp;public int getNextId() {</p>
+
+    <p class="listing-body">09:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;++value;</p>
+
+    <p class="listing-body">10:&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">11:}</p>
+
+    <p>Что произойдет, если изменить тип <span class="command char-style-override-1">lastId</span> с <span class="command char-style-override-1">int</span> на <span class="command char-style-override-1">long</span>? Останется ли строка 5 атомарной? В соответствии со спецификацией JVM – нет. Она может выполняться как атомарная операция на конкретном процессоре, но по спецификации JVM присваивание 64-разрядной величины требует двух 32-разрядных присваивания. Это означает, что между первым и вторым 32-разрядным присваиванием другой поток может вмешаться и изменить одно из значений.</p>
+
+    <p>А оператор префиксного увеличения <span class="command char-style-override-1">++</span> в строке 9? Выполнение этого оператора может быть прервано, поэтому данная операция&nbsp;&nbsp;не является атомарной. Чтобы понять, как это происходит, мы подробно проанализируем байт-код обоих методов.</p>
+
+    <p>Прежде чем двигаться дальше, необходимо усвоить ряд важных определений:</p>
+
+    <p><em>Кадр</em> (frame) – для каждого вызова метода создается кадр с адресом возврата, значениями всех передаваемых параметров и локальных переменных, определяемых в методе. Это стандартный способ реализации стека вызовов, используемого в современных языках для вызова функций/методов – как обычного, так и рекурсивного.</p>
+
+    <p><em>Локальная переменная</em> – любая переменная, определяемая в области видимости метода. Все нестатические методы содержат как минимум одну переменную <span class="command char-style-override-1">this</span>, которая представляет текущий объект, то есть объект, получивший последнее сообщение (в текущем потоке), инициировавшее вызов метода.</p>
+
+    <p><em>Стек операндов</em> – многим инструкциям JVM передаются параметры. Их значения размещаются в стеке операндов, реализованном в виде стандартной структуры данных LIFO (Last-In, First-Out, то есть «последним пришел, первым вышел»).</p>
+
+    <p>Байт-код, сгенерированный для <span class="command char-style-override-1">resetId</span><span class="command char-style-override-1">()</span>, выглядит так.</p>
+
+    <table class="No-Table-Style table-style-override-1" id="table-3">
+      <colgroup>
+        <col/>
+        <col/>
+        <col/>
+      </colgroup>
+
+      <tbody>
+        <tr>
+          <td class="cell-style-override-1">
+            <p class="Tabl-head">Мнемоника</p>
+          </td>
+
+          <td class="cell-style-override-1">
+            <p class="Tabl-head">Описание</p>
+          </td>
+
+          <td class="cell-style-override-1">
+            <p class="Tabl-head">Состояние стека&nbsp;&nbsp;операндов после выполнения</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-1">
+            <p class="Tabl-body">ALOAD 0</p>
+          </td>
+
+          <td class="cell-style-override-1">
+            <p class="Tabl-body">Загрузка «нулевой» переменной в стек операндов. Что такое «нулевая» переменная? Это <span xml:lang="en-US">this</span>, текущий объект. При вызове метода получатель сообщения, экземпляр <span xml:lang="en-US">Example</span>, сохраняется в массиве локальных переменных кадра, созданного для вызова метода. Текущий объект всегда является первой сохраняемой переменной для каждого метода экземпляра</p>
+          </td>
+
+          <td class="cell-style-override-1">
+            <p class="Tabl-body">this</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-1">
+            <p class="Tabl-body"><span xml:lang="en-US">ICONST_0</span></p>
+          </td>
+
+          <td class="cell-style-override-1">
+            <p class="Tabl-body">Занесение константы 0 в стек операндов</p>
+          </td>
+
+          <td class="cell-style-override-1">
+            <p class="Tabl-body">this, 0</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-1">
+            <p class="Tabl-body"><span xml:lang="en-US">PUTFIELD lastId</span></p>
+          </td>
+
+          <td class="cell-style-override-1">
+            <p class="Tabl-body">Сохранение верхнего значения из стека (0) в поле объекта, который задается ссылкой, хранящейся на один элемент ниже вершины стека (<span xml:lang="en-US">this</span>)</p>
+          </td>
+
+          <td class="cell-style-override-1">
+            <p class="Tabl-body"><span xml:lang="en-US">&lt;</span>пусто<span xml:lang="en-US">&gt;</span></p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="No-Paragraph-Style"></p>
+
+    <p>Эти три инструкции заведомо атомарны. Хотя программный поток, в котором они выполняются, может быть прерван после выполнения любой инструкции, данные инструкции PUTFIELD (константа 0 на вершине стека и ссылка на <span class="command char-style-override-1">this</span> в следующем элементе, вместе со значением поля <span class="command char-style-override-1">value</span>) не могут быть изменены другим потоком. Таким образом, при выполнении присваивания в поле <span class="command char-style-override-1">value</span> будет гарантированно сохранено значение 0. Операция является атомарной. Все операнды относятся к информации, локальной для данного метода, что исключает нежелательное вмешательство со стороны других потоков.</p>
+
+    <p>Итак, если эти три инструкции выполняются десятью потоками, существует 4.38679733629e+24 возможных путей выполнения. Так как в данном случае возможен только один результат, различия в порядке выполнения несущественны. Так уж вышло, что одинаковый результат гарантирован в этой ситуации и для <span class="command char-style-override-1">long</span>. Почему? Потому что все десять потоков присваивают одну и ту же константу. Даже если их выполнение будет чередоваться, результат не изменится.</p>
+
+    <p>Но с операцией <span class="command char-style-override-1">++</span> в методе <span class="command char-style-override-1">getNextId</span> возникают проблемы. Допустим, в начале метода поле <span class="command char-style-override-1">lastId</span> содержит значение 42. Байт-код нового метода выглядит так.</p>
+
+    <table class="No-Table-Style table-style-override-1" id="table-4">
+      <colgroup>
+        <col/>
+        <col/>
+        <col/>
+      </colgroup>
+
+      <tbody>
+        <tr>
+          <td class="cell-style-override-1">
+            <p class="Tabl-head">Мнемоника</p>
+          </td>
+
+          <td class="cell-style-override-1">
+            <p class="Tabl-head">Описание</p>
+          </td>
+
+          <td class="cell-style-override-1">
+            <p class="Tabl-head">Состояние стека&nbsp;&nbsp;операндов после выполнения</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-1">
+            <p class="Tabl-body">ALOAD 0</p>
+          </td>
+
+          <td class="cell-style-override-1">
+            <p class="Tabl-body">Загрузка <span xml:lang="en-US">this</span> в стек операндов</p>
+          </td>
+
+          <td class="cell-style-override-1">
+            <p class="Tabl-body">this</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-1">
+            <p class="Tabl-body"><span xml:lang="en-US">DUP</span></p>
+          </td>
+
+          <td class="cell-style-override-1">
+            <p class="Tabl-body">Копирование вершины стека. Теперь в стеке операндов хранятся две копии <span xml:lang="en-US">this</span></p>
+          </td>
+
+          <td class="cell-style-override-1">
+            <p class="Tabl-body">this, this</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-1">
+            <p class="Tabl-body"><span xml:lang="en-US">GETFIELD lastID</span></p>
+          </td>
+
+          <td class="cell-style-override-1">
+            <p class="Tabl-body">Загрузка значения поля <span xml:lang="en-US">lastId</span> объекта, ссылка на который хранится в вершине стека (<span xml:lang="en-US">this</span>), и занесение загруженного значения в стек</p>
+          </td>
+
+          <td class="cell-style-override-1">
+            <p class="Tabl-body">this, 42</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-1">
+            <p class="Tabl-body"><span xml:lang="en-US">ICONST</span>_1</p>
+          </td>
+
+          <td class="cell-style-override-1">
+            <p class="Tabl-body">Занесение константы 1 в стек</p>
+          </td>
+
+          <td class="cell-style-override-1">
+            <p class="Tabl-body"><span xml:lang="en-US">this</span>, 42, 1</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-1">
+            <p class="Tabl-body">IADD</p>
+          </td>
+
+          <td class="cell-style-override-1">
+            <p class="Tabl-body">Целочисленное сложение двух верхних значений в стеке операндов. Результат сложения также сохраняется в стеке операндов</p>
+          </td>
+
+          <td class="cell-style-override-1">
+            <p class="Tabl-body">this, 43</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-1">
+            <p class="Tabl-body"><span xml:lang="en-US">DUP_X1</span></p>
+          </td>
+
+          <td class="cell-style-override-1">
+            <p class="Tabl-body">Копирование значения 43 и сохранение копии в стеке перед <span xml:lang="en-US">this</span></p>
+          </td>
+
+          <td class="cell-style-override-1">
+            <p class="Tabl-body">43, this, 43</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-1">
+            <p class="Tabl-body"><span xml:lang="en-US">PUTFIELD value</span></p>
+          </td>
+
+          <td class="cell-style-override-1">
+            <p class="Tabl-body">Сохранение верхнего значения из стека (43) в поле <span xml:lang="en-US">value</span> текущего объекта, который задается ссылкой, хранящейся на один элемент ниже вершины стека (<span xml:lang="en-US">this</span>)</p>
+          </td>
+
+          <td class="cell-style-override-1">
+            <p class="Tabl-body">43</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-1">
+            <p class="Tabl-body">IRETURN</p>
+          </td>
+
+          <td class="cell-style-override-1">
+            <p class="Tabl-body">Возвращение верхнего (и единственного) элемента стека</p>
+          </td>
+
+          <td class="cell-style-override-1">
+            <p class="Tabl-body"><span xml:lang="en-US">&lt;</span>пусто<span xml:lang="en-US">&gt;</span></p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="No-Paragraph-Style"></p>
+
+    <p>Представьте, что первый поток выполняет первые три инструкции (до <span class="command char-style-override-1">GETFIELD</span> включительно), а потом прерывается. Второй поток получает управление и выполняет весь метод, увеличивая <span class="command char-style-override-1">lastId</span> на 1; он получает значение 43. Затем первый поток продолжает работу с того места, на котором она была прервана; значение 42 все еще хранится в стеке операндов, потому что поле <span class="command char-style-override-1">lastId</span> в момент выполнения <span class="command char-style-override-1">GETFIELD</span> содержало именно это число. Поток увеличивает его на 1, снова получает 43 и сохраняет результат. В итоге первый поток также получает значение 43. В результате одно из двух увеличений теряется, так как первый поток «перекрыл» результат второго потока (после того как второй поток прервал выполнение первого потока).</p>
+
+    <p>Проблема решается объявлением метода <span class="command char-style-override-1">getNexId()</span> с ключевым словом <span class="command char-style-override-1">synchronized</span>.</p>
+
+    <h3>Заключение</h3>
+
+    <p class="Normal0">Чтобы понять, как потоки могут «перебегать дорогу» друг другу, не обязательно разбираться во всех тонкостях байт-кода. Приведенный пример наглядно показывает, что программные потоки могут вмешиваться в работу друг друга, и этого вполне достаточно.</p>
+
+    <p>Впрочем, даже этот тривиальный пример убеждает в необходимости хорошего понимания модели памяти, чтобы вы знали, какие операции безопасны, а какие – нет. Скажем, существует распространенное заблуждение по поводу атомарности оператора <span class="command char-style-override-1">++</span> (в префиксной или постфиксной форме), тогда как этот оператор атомарным не является. Следовательно, вы должны знать:</p>
+
+    <p class="ListBul">• где присутствуют общие объекты/значения;</p>
+
+    <p class="ListBul">• какой код может создать проблемы многопоточного чтения/обновления;</p>
+
+    <p class="ListBulLast">• как защититься от возможных проблем многопоточности.</p>
+
+    <h2 id="toc_marker-20-2">Знайте свои библиотеки</h2>
+
+    <h3>Executor Framework</h3>
+
+    <p class="Normal0">Как демонстрирует пример ExecutorClientScheduler.java на с. 361, представленная в Java 5 библиотека <span class="command char-style-override-1">Executor</span> предоставляет расширенные средства управления выполнением программ с использованием пулов программных потоков. Библиотека реализована в виде класса в пакете <em>java.util.concurrent</em>.</p>
+
+    <p>Если вы создаете потоки, не используя пулы, <em>или</em> используете ручную реализацию пулов, возможно, вам стоит воспользоваться <span class="command char-style-override-1">Executor</span>. От этого ваш код станет более чистым, понятным и компактным.</p>
+
+    <p>Инфраструктура <span class="command char-style-override-1">Executor</span> создает пул потоков с автоматическим изменением размера и повторным созданием потоков при необходимости. Также поддерживаются <em>фьючерсы</em> – стандартная конструкция многопоточного программирования. Библиотека <span class="command char-style-override-1">Executor</span> работает как с классами, реализующими интерфейс <span class="command char-style-override-1">Runnable</span>, так и с классами, реализующими интерфейс&nbsp;&nbsp;<span class="command char-style-override-1">Callable</span>. Интерфейс <span class="command char-style-override-1">Callable</span> похож на <span class="command char-style-override-1">Runnable</span>, но может возвращать результат, а это стандартная потребность в многопоточных решениях.</p>
+
+    <p>Фьючерсы удобны в тех ситуациях, когда код должен выполнить несколько независимых операций и дождаться их завершения:</p>
+
+    <p class="listing-body">public String processRequest(String message) throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;Callable&lt;String&gt; makeExternalCall = new Callable&lt;String&gt;() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public String call() throws Exception {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String result = "";</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Внешний запрос</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return result;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;};</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;Future&lt;String&gt; result = executorService.submit(makeExternalCall);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;String partialResult = doSomeLocalProcessing();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return result.get() + partialResult;</p>
+
+    <p class="listing-body">}</p>
+
+    <p>В этом примере метод запускает на выполнение объект <span class="command char-style-override-1">makeExternalCall</span>, после чего переходит к выполнению других действий. Последняя строка содержит вызов <span class="command char-style-override-1">result</span><span class="command char-style-override-1">.</span><span class="command char-style-override-1">get</span><span class="command char-style-override-1">()</span>, который блокирует выполнение вплоть до завершения фьючерса.</p>
+
+    <h3>Неблокирующие решения</h3>
+
+    <p class="Normal0">Виртуальная машина Java 5 пользуется особенностями архитектуры современных процессоров, поддерживающих надежное неблокирующее обновление. Для примера возьмем класс, использующий синхронизацию (а следовательно, блокировку) для реализации потоково-безопасного обновления <span class="command char-style-override-1">value</span>,</p>
+
+    <p class="listing-body">public class ObjectWithValue {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;private int value;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public void synchronized incrementValue() { ++value; }</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public int getValue() { return value; }</p>
+
+    <p class="listing-body">}</p>
+
+    <p>В Java 5 для этой цели появился ряд новых классов. <span class="command char-style-override-1">AtomicBoolean</span>, <span class="command char-style-override-1">AtomicInteger</span> и <span class="command char-style-override-1">AtomicReference</span> – всего лишь три примера; есть и другие. Приведенный выше фрагмент можно переписать без использования блокировки в следующем виде:</p>
+
+    <p class="listing-body">public class ObjectWithValue {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;private AtomicInteger value = new AtomicInteger(0);</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public void incrementValue() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;value.incrementAndGet();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public int getValue() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return value.get();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Хотя эта реализация использует объект вместо примитива и отправляет сообщения (например, <span class="command char-style-override-1">incrementAndGet</span><span class="command char-style-override-1">()</span>) вместо <span class="command char-style-override-1">++</span>, по своей производительности этот класс почти всегда превосходит предыдущую версию. Иногда приращение скорости незначительно, но ситуации, в которых он бы работал медленнее, практически не встречаются.</p>
+
+    <p>Как такое возможно? Современные процессоры поддерживают операцию, которая обычно называется <em>CAS</em> (Compare and Swap). Эта операция является аналогом оптимистичной блокировки из теории баз данных, тогда как синхронизированная версия является аналогом пессимистичной блокировки.</p>
+
+    <p>Ключевое слово <span class="command char-style-override-1">synchronized</span> всегда устанавливает блокировку, даже если второй поток не пытается обновлять то же значение. Хотя производительность встроенных блокировок улучшается от версии к версии, они по-прежнему обходятся недешево.</p>
+
+    <p>Неблокирующая версия изначально предполагает, что ситуация с обновлением одного значения множественными потоками обычно возникает недостаточно часто для возникновения проблем. Вместо этого она эффективно обнаруживает возникновение таких ситуаций и продолжает повторные попытки до тех пор, пока обновление не пройдет успешно. Обнаружение конфликта почти всегда обходится дешевле установления блокировки, даже в ситуациях с умеренной и высокой конкуренцией.</p>
+
+    <p>Как VM решает эту задачу? CAS является атомарной операцией. На логическом уровне CAS выглядит примерно так:</p>
+
+    <p class="listing-body">int variableBeingSet;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">void simulateNonBlockingSet(int newValue) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int currentValue;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;do {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;currentValue = variableBeingSet</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;} while(currentValue != compareAndSwap(currentValue, newValue));</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">int synchronized compareAndSwap(int currentValue, int newValue) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if(variableBeingSet == currentValue) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;variableBeingSet = newValue;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return currentValue;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return variableBeingSet;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Когда метод пытается обновить общую переменную, операция CAS проверяет, что изменяемая переменная все еще имеет последнее известное значение. Если условие соблюдается, то переменная изменяется. Если нет, то обновление не выполняется, потому что другой поток успел ему «помешать». Метод, пытавшийся выполнить обновление (с использованием операции CAS), видит, что изменение не состоялось, и делает повторную попытку.</p>
+
+    <h3>Потоково-небезопасные классы</h3>
+
+    <p class="Normal0">Некоторые классы в принципе не обладают потоковой безопасностью. Несколько примеров:</p>
+
+    <p class="ListBul"><span class="command char-style-override-1">• SimpleDateF</span><span class="command char-style-override-1">ormat</span></p>
+
+    <p class="ListBul">• Подключения к базам данных.</p>
+
+    <p class="ListBul">• Контейнеры из <em>java.util</em>.</p>
+
+    <p class="ListBulLast">• Сервлеты.</p>
+
+    <p>Некоторые классы коллекций содержат отдельные потоково-безопасные методы. Однако любая операция, связанная с вызовом более одного метода, потоково-безопасной не является. Например, если вы не хотите заменять уже существующий элемент <span class="command char-style-override-1">HashTable</span>, можно было бы написать следующий код:</p>
+
+    <p class="listing-body">if(!hashTable.containsKey(someKey)) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;hashTable.put(someKey, new SomeValue());</p>
+
+    <p class="listing-body">}</p>
+
+    <p>По отдельности каждый метод потоково-безопасен, однако другой программный поток может добавить значение между вызовами <span class="command char-style-override-1">containsKey</span> и <span class="command char-style-override-1">put</span>. У проблемы есть несколько решений:</p>
+
+    <p class="ListBulLast">• Установите блокировку <span class="command char-style-override-1">HashTable</span> и проследите за тем, чтобы остальные пользователи <span class="command char-style-override-1">HashTable</span> делали то же самое (клиентская блокировка):</p>
+
+    <p class="listing-body">synchronized(map) {</p>
+
+    <p class="listing-body">if(!map.conainsKey(key))</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;map.put(key,value);</p>
+
+    <p class="ListBulLast">• Инкапсулируйте <span class="command char-style-override-1">HashTable</span> в собственном объекте и используйте другой API (серверная блокировка с применением паттерна АДАПТЕР):</p>
+
+    <p class="listing-body">public class WrappedHashtable&lt;K, V&gt; {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;private Map&lt;K, V&gt; map = new Hashtable&lt;K, V&gt;();</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public synchronized void putIfAbsent(K key, V value) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (map.containsKey(key))</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;map.put(key, value);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="ListBulLast">• Используйте потоково-безопасные коллекции:</p>
+
+    <p class="listing-body">ConcurrentHashMap&lt;Integer, String&gt; map = new ConcurrentHashMap&lt;Integer,</p>
+
+    <p class="listing-body">String&gt;();</p>
+
+    <p class="listing-body">map.putIfAbsent(key, value);</p>
+
+    <p>Для выполнения подобных операций в коллекциях пакета <em>java</em><em>.</em><em>util</em><em>.</em><em>concurrent</em> предусмотрены такие методы, как <span class="command char-style-override-1">putIfAbsent</span><span class="command char-style-override-1">()</span>.</p>
+
+    <h2 id="toc_marker-20-3">Зависимости между методами могут нарушить работу многопоточного кода</h2>
+
+    <p class="Normal0">Тривиальный пример введения зависимостей между методами:</p>
+
+    <p class="listing-body">public class IntegerIterator implements Iterator&lt;Integer&gt;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;private Integer nextValue = 0;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public synchronized boolean hasNext() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return nextValue &lt; 100000;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public synchronized Integer next() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (nextValue == 100000)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throw new IteratorPastEndException();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return nextValue++;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public synchronized Integer getNextValue() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return nextValue;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Код, использующий <span class="command char-style-override-1">IntegerIterator</span>:</p>
+
+    <p class="listing-body">IntegerIterator iterator = new IntegerIterator();</p>
+
+    <p class="listing-body">while(iterator.hasNext()) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;int nextValue = iterator.next();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;// Действия с nextValue</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Если этот код выполняется одним потоком, проблем не будет. Но что произойдет, если два потока попытаются одновременно использовать общий экземпляр <span class="command char-style-override-1">IngeterIterator</span> в предположении, что каждый поток будет обрабатывать полученные значения, но каждый элемент списка обрабатывается только один раз? В большинстве случаев ничего плохого не произойдет; потоки будут совместно обращаться к списку, обрабатывая элементы, полученные от итератора, и завершат работу при завершении перебора. Но существует небольшая вероятность того, что в конце итерации два потока помешают работе друг друга, один поток выйдет за конечную позицию итератора, и произойдет исключение.</p>
+
+    <p>Проблема заключается в следующем: поток 1 проверяет наличие следующего элемента методом <span class="command char-style-override-1">hasNext</span><span class="command char-style-override-1">()</span>, который возвращает <span class="command char-style-override-1">true</span>. Поток 1 вытесняется потоком 2; последний выдает тот же запрос, и получает тот же ответ <span class="command char-style-override-1">true</span>. Поток 2 вызывает метод <span class="command char-style-override-1">next()</span>, который возвращает значение, но с побочным эффектом: после него вызов <span class="command char-style-override-1">hasNext</span><span class="command char-style-override-1">()</span> возвращает <span class="command char-style-override-1">false</span>. Поток 1 продолжает работу. Полагая, что <span class="command char-style-override-1">hasNext</span><span class="command char-style-override-1">()</span> до сих пор возвращает <span class="command char-style-override-1">true</span>, он вызывает <span class="command char-style-override-1">next()</span>. Хотя каждый из отдельных методов синхронизирован, клиент использовал <em>два</em> метода.</p>
+
+    <p>Проблемы такого рода очень часто встречаются в многопоточном коде. В нашей конкретной ситуации проблема особенно нетривиальна, потому что она приводит к сбою только при завершающей итерации. Если передача управления между потоками произойдет в строго определенной последовательности, то один из потоков сможет выйти за конечную позицию итератора. Подобные ошибки часто проявляются уже после того, как система пойдет в эксплуатацию, и обнаружить их весьма нелегко.</p>
+
+    <p>У вас три варианта:</p>
+
+    <p class="ListBul">• Перенести сбои.</p>
+
+    <p class="ListBul">• Решить проблему, внося изменения на стороне клиента (клиентская блокировка).</p>
+
+    <p class="ListBulLast">• Решить проблему, внося изменения на стороне сервера, что приводит к дополнительному изменению клиента (серверная блокировка).</p>
+
+    <h3>Перенесение сбоев</h3>
+
+    <p class="Normal0">Иногда все удается устроить так, что сбой не приносит вреда. Например, клиент может перехватить исключение и выполнить необходимые действия для восстановления. Откровенно говоря, такое решение выглядит неуклюже. Оно напоминает полуночные перезагрузки, исправляющие последствия утечки памяти.</p>
+
+    <h3>Клиентская блокировка</h3>
+
+    <p class="Normal0">Чтобы класс I<span class="command char-style-override-1">ntegerIterator</span> корректно работал в многопоточных условиях, измените приведенного выше клиента (а также всех остальных клиентов) следующим образом:</p>
+
+    <p class="listing-body">IntegerIterator iterator = new IntegerIterator();</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;while (true) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int nextValue;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;synchronized (iterator) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (!iterator.hasNext())</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nextValue = iterator.next();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;doSometingWith(nextValue);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p>Каждый клиент устанавливает блокировку при помощи ключевого слова <span class="command char-style-override-1">synchronized</span>. Дублирование нарушает принцип DRY, но оно может оказаться необходимым, если в коде используются инструменты сторонних разработчиков, не обладающие потоковой безопасностью.</p>
+
+    <p>Данная стратегия сопряжена с определенным риском. Все программисты, использующие сервер, должны помнить об установлении блокировки перед ­использованием и ее снятии после использования. Много (очень много!) лет назад я работал над системой, в которой использовалась клиентская блокировка общего ресурса. Ресурс использовался в сотне разных мест по всей кодовой базе. Один несчастный программист забыл установить блокировку в одном из таких мест.</p>
+
+    <p>Это была многотерминальная система с разделением времени, на которой выполнялись бухгалтерские программы профсоюза транспортных перевозок Local 705. Компьютер находился в зале с фальшполом и кондиционером за 50 миль к северу от управления Local 705. В управлении десятки операторов вводили данные на терминалах. Терминалы были подключены к компьютеру по выделенным телефонным линиям с полудуплексными модемами на скорости 600 бит/с (это было очень, очень давно).</p>
+
+    <p>Примерно раз в день один из терминалов «зависал». Никакие закономерности в сбоях не прослеживались. Зависания не были привязаны ни к конкретным терминалам, ни к конкретному времени. Все выглядело так, словно время зависания и терминал выбирались броском кубика. Иногда целые дни проходили без зависаний.</p>
+
+    <p>Поначалу проблема решалась только перезагрузкой, но перезагрузки было трудно координировать. Нам приходилось звонить в управление и просить всех операторов завершить текущую работу на всех терминалах. После этого мы могли отключить питание и перезагрузить систему. Если кто-то выполнял важную работу, занимавшую час или два, зависший терминал попросту простаивал.</p>
+
+    <p>Через несколько недель отладки мы обнаружили, что причиной зависания была десинхронизация между счетчиком кольцевого буфера и его указателем. Буфер управлял выводом на терминал. Значение указателя говорило о том, что буфер был пуст, а счетчик утверждал, что буфер полон. Так как буфер был пуст, выводить было нечего; но так как одновременно он был полон, в экранный буфер нельзя было ничего добавить для вывода на экран.</p>
+
+    <p>Итак, мы знали, почему зависали терминалы, но было неясно, из-за чего возникает десинхронизация кольцевого буфера. Поэтому мы реализовали обходное решение. Программный код мог прочитать состояние тумблеров на передней панели компьютера (это было очень, очень, очень давно). Мы написали небольшую функцию, которая обнаруживала переключение одного из тумблеров и искала кольцевой буфер, одновременно пустой и заполненный. Обнаружив такой буфер, функция сбрасывала его в пустое состояние. <em>Voila!</em> Зависший терминал снова начинал выводить информацию.</p>
+
+    <p>Теперь нам не приходилось перезагружать систему при зависании терминала. Когда нам звонили из управления и сообщали о зависании, мы шли в машинный зал и переключали тумблер.</p>
+
+    <p>Конечно, иногда управление работало по выходным, а мы – нет. Поэтому в планировщик была включена функция, которая раз в минуту проверяла состояние всех кольцевых буферов и сбрасывала те из них, которые были одновременно пустыми и заполненными. Зависший терминал начинал работать даже до того, как операторы успевали подойти к телефону.</p>
+
+    <p>Прошло несколько недель кропотливого просеивания монолитного ассемблерного кода, прежде чем была обнаружена причина. Мы занялись вычислениями и определили, что частота зависаний статистически соответствует одному незащищенному использованию кольцевого буфера. Оставалось только найти это одно использование. К сожалению, все это было очень давно. В те времена у нас не было функций поиска, перекрестных ссылок или других средств автоматизации. Нам просто приходилось просматривать листинги.</p>
+
+    <p>Тогда, холодной зимой 1971 года в Чикаго, я узнал важный урок. Клиентская блокировка — полный отстой.</p>
+
+    <h3>Серверная блокировка</h3>
+
+    <p class="Normal0">Дублирование можно устранить внесением следующих изменений в <span class="command char-style-override-1">Integer­Iterator</span>:</p>
+
+    <p class="listing-body">public class IntegerIteratorServerLocked {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;private Integer nextValue = 0;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public synchronized Integer getNextOrNull() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (nextValue &lt; 100000)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return nextValue++;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return null;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>В клиентском коде также вносятся изменения:</p>
+
+    <p class="listing-body">while (true) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;Integer nextValue = iterator.getNextOrNull();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (next == null)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;// Действия с nextValue</p>
+
+    <p class="listing-body">}</p>
+
+    <p>В этом случае мы изменяем API своего класса, чтобы он обладал многопоточной поддержкой<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-79" id="footnote-319-79-backlink">79</a></span>. Вместо проверки <span class="command char-style-override-1">hasNext()</span> клиент должен выполнить проверку <span class="command char-style-override-1">null</span>.</p>
+
+    <p>В общем случае серверная блокировка предпочтительна по следующим причинам:</p>
+
+    <p class="ListBul">• Она сокращает дублирование кода – клиентская блокировка заставляет каждого клиента устанавливать соответствующую блокировку сервера. Если код блокировки размещается на сервере, клиенты могут использовать объект, не беспокоясь о написании дополнительного кода блокировки.</p>
+
+    <p class="ListBul">• Она обеспечивает более высокую производительность – в случае однопоточного развертывания потоково-безопасный сервер можно заменить потоково-небезопасным, устраняя все дополнительные затраты.</p>
+
+    <p class="ListBul">• Она снижает вероятность ошибок – в случае клиентской блокировки достаточно всего одному программисту забыть установить блокировку, и работа системы будет нарушена.</p>
+
+    <p class="ListBulLast">• Она определяет единую политику использования – политика сосредоточена в одном месте (на сервере), а не во множестве разных мест (то есть у каждого клиента).</p>
+
+    <p>Она сокращает область видимости общих переменных — клиент не знает ни о переменных, ни о том, как они блокируются. Все подробности скрыты на стороне сервера. Если что-то сломается, то количество мест, в которых следует искать причину, сокращается.</p>
+
+    <p>Что делать, если серверный код вам неподконтролен?</p>
+
+    <p class="ListBulLast">• Используйте паттерн АДАПТЕР, чтобы изменить API и добавить блокировку:</p>
+
+    <p class="listing-body">public class ThreadSafeIntegerIterator {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;private IntegerIterator iterator = new IntegerIterator();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public synchronized Integer getNextOrNull() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if(iterator.hasNext())</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return iterator.next();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return null;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="ListBulLast">• ИЛИ еще лучше – используйте потоково-безопасные коллекции с расширенными интерфейсами.</p>
+
+    <h2 id="toc_marker-20-4">Повышение производительности</h2>
+
+    <p class="Normal0">Допустим, вы хотите выйти в сеть и прочитать содержимое группы страниц по списку URL-адресов. По мере чтения страницы обрабатываются для накоп­ления некоторой статистики. После чтения всех страниц выводится сводный отчет.</p>
+
+    <p>Следующий класс возвращает содержимое одной страницы по URL-адресу.</p>
+
+    <p class="listing-body">public class PageReader {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;//...</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public String getPageFor(String url) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;HttpMethod method = new GetMethod(url);</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="http://httpClient.executeMethod(method">httpClient.executeMethod(method</a>);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String response = method.getResponseBodyAsString();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return response;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;} catch (Exception e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;handle(e);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;} finally {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;method.releaseConnection();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Следующий класс – итератор, предоставляющий содержимое страниц на основании итератора URL-адресов:</p>
+
+    <p class="listing-body">public class PageIterator {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private PageReader reader;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;private URLIterator urls;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public PageIterator(PageReader reader, URLIterator urls) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;this.urls = urls;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;this.reader = reader;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public synchronized String getNextPageOrNull() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (urls.hasNext())</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;getPageFor(urls.next());</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;else</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return null;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;public String getPageFor(String url) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;return reader.getPageFor(url);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p>Экземпляр <span class="command char-style-override-1">PageIterator</span> может совместно использоваться разными потоками, каждый из которых использует собственный экземпляр <span class="command char-style-override-1">PageReader</span> для чтения и обработки страниц, полученных от итератора.</p>
+
+    <p>Обратите внимание: блок <span class="command char-style-override-1">synchronized</span> очень мал. Он содержит только критическую секцию, расположенную глубоко внутри <span class="command char-style-override-1">PageIterator</span>. Старайтесь синхронизировать как можно меньший объем кода.</p>
+
+    <h3>Вычисление производительности&nbsp;&nbsp;в однопоточной модели</h3>
+
+    <p class="Normal0">Выполним некоторые простые вычисления. Для наглядности возьмем следующие показатели:</p>
+
+    <p class="ListBul">• Время ввода/вывода для получения страницы (в среднем): 1 секунда.</p>
+
+    <p class="ListBul">• Время обработки страницы (в среднем): 0,5 секунды.</p>
+
+    <p class="ListBulLast">• Во время операций ввода/вывода процессор загружен на 0%, а во время обработки – на 100%.</p>
+
+    <p>При обработке N страниц в однопоточной модели общее время выполнения составляет 1,5 секунды * N. На рис. А.1 изображен график обработки 13 страниц примерно за 19,5 секунды.</p>
+
+    <p class="Pic-yakor"><span><img alt="23410.png" class="frame-26" src="../Images/23410.png"/></span>&nbsp;</p>
+
+    <p class="Pic-nazv"><strong>Рис. А.1.</strong> Обработка страниц в однопоточной модели</p>
+
+    <h3>Вычисление производительности в многопоточной модели</h3>
+
+    <p class="Normal0">Если страницы могут загружаться в произвольном порядке и обрабатываться независимо друг от друга, то для повышения производительности можно вос­пользоваться многопоточной моделью. Что произойдет, если обработка будет производиться тремя потоками? Сколько страниц удастся обработать за то же время?</p>
+
+    <p>Как видно из рис. А.2, многопоточное решение позволяет совмещать процессорно-ориентированную обработку страниц с операциями чтения страниц, ориентированными на ввод/вывод. В идеальном случае это обеспечивало бы полную загрузку процессора: каждое чтение страницы продолжительностью в одну секунду перекрывается с обработкой двух страниц. Таким образом, многопоточная модель обрабатывает две страницы в секунду, что втрое превышает производительность однопоточной модели.</p>
+
+    <p class="Pic-yakor"><span><img alt="23417.png" class="frame-23" src="../Images/23417.png"/></span>&nbsp;</p>
+
+    <p class="Pic-nazv"><strong>Рис. А.2.</strong> Обработка тремя параллельными потоками</p>
+
+    <h2 id="toc_marker-20-5">Взаимная блокировка</h2>
+
+    <p class="Normal0">Допустим, у нас имеется веб-приложение с двумя общими пулами ресурсов конечного размера:</p>
+
+    <p class="ListBul">• Пул подключений к базе данных для локальной обработки в памяти процесса.</p>
+
+    <p class="ListBulLast">• Пул подключений MQ к главному хранилищу.</p>
+
+    <p>В работе приложения используются две операции, создание и обновление:</p>
+
+    <p class="ListBul">• Создание – получение подключений к главному хранилищу и базе данных. Взаимодействие с главным хранилищем и локальное сохранение данных в базе данных процесса.</p>
+
+    <p class="ListBulLast">• Обновление – получение подключений к базе данных, а затем к главному хранилищу. Чтение данных из базы данных процесса и их последующая передача в главное хранилище.</p>
+
+    <p>Что произойдет, если количество пользователей превышает размеры пулов? Допустим, каждый пул содержит десять подключений.</p>
+
+    <p class="ListBul">• Десять пользователей пытаются использовать операцию создания. Они захватывают все десять подключений к базе данных. Выполнение каждого потока прерывается после захвата подключения к базе данных, но до захвата подключения к главному хранилищу.</p>
+
+    <p class="ListBul">• Десять пользователей пытаются использовать операцию обновления. Они захватывают все десять подключений к главному хранилищу. Выполнение каждого потока прерывается после захвата подключения к главному хранилищу, но до захвата подключения к базе данных.</p>
+
+    <p class="ListBul">• Десять потоков, выполняющих операцию создания, ожидают подключений к главному хранилищу, а десять потоков, выполняющих операцию обновления, ожидают подключений к базе данных.</p>
+
+    <p class="ListBulLast">• Возникает взаимная блокировка. Продолжение работы системы невозможно.</p>
+
+    <p>На первый взгляд такая ситуация выглядит маловероятной, но кому нужна система, которая гарантированно зависает каждую неделю? Кому захочется отлаживать систему с такими трудновоспроизводимыми симптомами? Когда такие проблемы возникают в эксплуатируемой системе, на их решение уходят целые недели.</p>
+
+    <p>Типичное «решение» основано на включении отладочных команд для получения дополнительной информации о происходящем. Конечно, отладочные команды достаточно сильно изменяют код, взаимная блокировка возникает в другой ситуации, и на повторение ошибки могут потребоваться целые месяцы<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-80" id="footnote-319-80-backlink">80</a></span>.</p>
+
+    <p>Чтобы действительно решить проблему взаимной блокировки, необходимо понять, из-за чего она возникает. Для возникновения взаимной блокировки необходимы четыре условия:</p>
+
+    <p class="ListBul">• Взаимное исключение.</p>
+
+    <p class="ListBul">• Блокировка с ожиданием.</p>
+
+    <p class="ListBul">• Отсутствие вытеснения.</p>
+
+    <p class="ListBulLast">• Циклическое ожидание.</p>
+
+    <h3>Взаимное исключение</h3>
+
+    <p class="Normal0">Взаимное исключение возникает в том случае, когда несколько потоков должны использовать одни и те же ресурсы, и эти ресурсы:</p>
+
+    <p class="ListBul">• не могут использоваться несколькими потоками одновременно;</p>
+
+    <p class="ListBulLast">• существуют в ограниченном количестве.</p>
+
+    <p>Типичный пример ресурсов такого рода – подключения к базам данных, открытые для записи файлы, блокировки записей, семафоры.</p>
+
+    <h3>Блокировка с ожиданием</h3>
+
+    <p class="Normal0">Когда один поток захватывает ресурс, он не освобождает его до тех пор, пока не захватит все остальные необходимые ресурсы и не завершит свою работу.</p>
+
+    <h3>Отсутствие вытеснения</h3>
+
+    <p class="Normal0">Один поток не может отнимать ресурсы у другого потока. Если поток захватил ресурс, то другой поток сможет получить захваченный ресурс только в одном случае: если первый поток его освободит.</p>
+
+    <h3>Циклическое ожидание</h3>
+
+    <p class="Normal0">Допустим, имеются два потока T1 и T2 и два ресурса R1 и R2. Поток T1 захватил R1, поток T2 захватил R2. Потоку T1 также необходим ресурс R2, а потоку T2 также необходим ресурс R1. Ситуация выглядит так, как показано на рис. А.3.</p>
+
+    <p class="Pic-yakor"><span><img alt="23429.png" class="frame-27" src="../Images/23429.png"/></span>&nbsp;</p>
+
+    <p class="Pic-nazv"><strong>Рис. А.3.</strong> Циклическое ожидание</p>
+
+    <p>Взаимная блокировка возможна только при соблюдении всех четырех условий. Стоит хотя бы одному из них нарушиться, и взаимная блокировка исчезнет.</p>
+
+    <h3>Нарушение взаимного исключения</h3>
+
+    <p class="Normal0">Одна из стратегий предотвращения взаимной блокировки основана на предотвращении состояния взаимного исключения.</p>
+
+    <p class="ListBul">• Использование ресурсов, поддерживающих многопоточный доступ (например, <span class="command char-style-override-1">AtomicInteger</span>).</p>
+
+    <p class="ListBul">• Увеличение количества ресурсов, чтобы оно достигло или превосходило количество конкурирующих потоков.</p>
+
+    <p class="ListBulLast">• Проверка наличия всех свободных ресурсов перед попытками захвата.</p>
+
+    <p>К сожалению, большинство ресурсов существует в ограниченном количестве и не поддерживает многопоточное использование. Кроме того, второй ресурс нередко определяется только по результатам обработки первого ресурса. Но не огорчайтесь – остаются еще три условия.</p>
+
+    <h3>Нарушение блокировки с ожиданием</h3>
+
+    <p class="Normal0">Вы также можете нарушить взаимную блокировку, если откажетесь ждать. Проверяйте каждый ресурс, прежде чем захватывать его; если какой-либо ресурс занят, освободите все захваченные ресурсы и начните все заново.</p>
+
+    <p>При таком подходе возможны следующие потенциальные проблемы:</p>
+
+    <p class="ListBul"><em>• Истощение</em> – один поток стабильно не может захватить все необходимые ему ресурсы (уникальная комбинация, в которой все ресурсы одновременно оказываются свободными крайне редко).</p>
+
+    <p class="ListBulLast"><em>• Обратимая блокировка</em> – несколько потоков «входят в клинч»: все они захватывают один ресурс, затем освобождают один ресурс… снова и снова. Такая ситуация особенно вероятна при использовании тривиальных алгоритмов планирования процессорного времени (встроенные системы; простейшие, написанные вручную алгоритмы балансировки потоков).</p>
+
+    <p>Обе ситуации могут привести к снижению производительности. Первая ситуация оборачивается недостаточным, а вторая – завышенным и малоэффективным использованием процессора.</p>
+
+    <p>Какой бы неэффективной ни казалась эта стратегия, она все же лучше, чем ничего. По крайней мере, вы всегда можете реализовать ее, если все остальные меры не дают результата.</p>
+
+    <h3>Нарушение отсутствия вытеснения</h3>
+
+    <p class="Normal0">Другая стратегия предотвращения взаимных блокировок основана на том, чтобы потоки могли отнимать ресурсы у других потоков. Обычно вытеснение реализуется на основе простого механизма запросов. Когда поток обнаруживает, что ресурс занят, он обращается к владельцу с запросом на его освобождение. Если владелец также ожидает другого ресурса, он освобождает все удерживаемые ресурсы и начинает захватывать их заново.</p>
+
+    <p>Данное решение сходно с предыдущим, но имеет дополнительное преимущество: поток может ожидать освобождения ресурса. Это снижает количество освобождений и повторных захватов. Но учтите, что правильно реализовать управление запросами весьма непросто.</p>
+
+    <h3>Нарушение циклического ожидания</h3>
+
+    <p class="Normal0">Это самая распространенная стратегия предотвращения взаимных блокировок. В большинстве систем она не требует ничего, кроме системы простых правил, соблюдаемых всеми сторонами.</p>
+
+    <p>Вспомните приведенный ранее пример с потоком 1, которому необходимы ресурс 1 и ресурс 2, и потоком 2, которому необходимы ресурс 2 и ресурс 1. Заставьте поток 1 и поток 2 выделять ресурсы в постоянном порядке, при котором циклическое ожидание станет невозможным.</p>
+
+    <p>В более общем виде, если все потоки согласуют единый глобальный порядок и будут захватывать ресурсы только в указанном порядке, то взаимная блокировка станет невозможной. Эта стратегия, как и все остальные, может создавать проблемы:</p>
+
+    <p class="ListBul">• Порядок захвата может не соответствовать порядку использования; таким ­образом, ресурс, захваченный в начале, может не использоваться до самого конца. В результате ресурсы остаются заблокированными дольше необходимого.</p>
+
+    <p class="ListBulLast">• Соблюдение фиксированного порядка захвата ресурсов возможно не всегда. Если идентификатор второго ресурса определяется на основании операций, выполняемых с первым ресурсом, то эта стратегия становится невозможной.</p>
+
+    <p>Итак, существует много разных способов предотвращения взаимных блокировок. Одни приводят к истощению потоков, другие – к интенсивному использованию процессора и ухудшению времени отклика. Бесплатный сыр бывает только в мышеловке!</p>
+
+    <p>Изоляция потокового кода вашего решения упрощает настройку и эксперименты; к тому же это действенный способ сбора информации, необходимой для определения оптимальных стратегий.</p>
+
+    <h2 id="toc_marker-20-6">Тестирование многопоточного кода</h2>
+
+    <p class="Normal0">Как написать тест, демонстрирующий некорректность многопоточного кода?</p>
+
+    <p class="listing-body">01: public class ClassWithThreadingProblem {</p>
+
+    <p class="listing-body">02:&nbsp;&nbsp;&nbsp;&nbsp;int nextId;</p>
+
+    <p class="listing-body">03:</p>
+
+    <p class="listing-body">04:&nbsp;&nbsp;&nbsp;&nbsp;public int takeNextId() {</p>
+
+    <p class="listing-body">05:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return nextId++;</p>
+
+    <p class="listing-body">06:&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">07:}</p>
+
+    <p>Тест, доказывающий некорректность, может выглядеть так:</p>
+
+    <p class="ListBul">• Запомнить текущее значение <span class="command char-style-override-1">nextId</span>.</p>
+
+    <p class="ListBul">• Создать два потока, каждый из которых вызывает <span class="command char-style-override-1">takeNextId()</span> по одному разу.</p>
+
+    <p class="ListBul">• Убедиться в том, что значение <span class="command char-style-override-1">nextId</span> на 2 больше исходного.</p>
+
+    <p class="ListBulLast">• Выполнять тест до тех пор, пока в ходе очередного теста <span class="command char-style-override-1">nextId</span> не увеличится только на 1 вместо 2.</p>
+
+    <p>Код такого теста представлен в листинге А.2.</p>
+
+    <p class="Vrezka-head"><strong>Листинг А.2.</strong> ClassWithThreadingProblemTest.java</p>
+
+    <p class="listing-body">01: package example;</p>
+
+    <p class="listing-body">02:</p>
+
+    <p class="listing-body">03: import static org.junit.Assert.fail;</p>
+
+    <p class="listing-body">04:</p>
+
+    <p class="listing-body">05: import org.junit.Test;</p>
+
+    <p class="listing-body">06:</p>
+
+    <p class="listing-body">07: public class ClassWithThreadingProblemTest {</p>
+
+    <p class="listing-body">08:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@Test</p>
+
+    <p class="listing-body">09:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void twoThreadsShouldFailEventually() throws Exception {</p>
+
+    <p class="listing-body">10:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;final ClassWithThreadingProblem classWithThreadingProblem</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= new ClassWithThreadingProblem();</p>
+
+    <p class="listing-body">11:</p>
+
+    <p class="listing-body">12:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Runnable runnable = new Runnable() {</p>
+
+    <p class="Vrezka-head"><strong>Листинг А.2</strong> (продолжение)</p>
+
+    <p class="listing-body">13:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void run() {</p>
+
+    <p class="listing-body">14:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;classWithThreadingProblem.takeNextId();</p>
+
+    <p class="listing-body">15:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">16:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;};</p>
+
+    <p class="listing-body">17:</p>
+
+    <p class="listing-body">18:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (int i = 0; i &lt; 50000; ++i) {</p>
+
+    <p class="listing-body">19:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int startingId = classWithThreadingProblem.lastId;</p>
+
+    <p class="listing-body">20:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int expectedResult = 2 + startingId;</p>
+
+    <p class="listing-body">21:</p>
+
+    <p class="listing-body">22:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Thread t1 = new Thread(runnable);</p>
+
+    <p class="listing-body">23:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Thread t2 = new Thread(runnable);</p>
+
+    <p class="listing-body">24:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;t1.start();</p>
+
+    <p class="listing-body">25:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;t2.start();</p>
+
+    <p class="listing-body">26:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;t1.join();</p>
+
+    <p class="listing-body">27:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;t2.join();</p>
+
+    <p class="listing-body">28:</p>
+
+    <p class="listing-body">29:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int endingId = classWithThreadingProblem.lastId;</p>
+
+    <p class="listing-body">30:</p>
+
+    <p class="listing-body">31:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (endingId != expectedResult)</p>
+
+    <p class="listing-body">32:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return;</p>
+
+    <p class="listing-body">33:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">34:</p>
+
+    <p class="listing-body">35:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fail("Should have exposed a threading issue but it did not.");</p>
+
+    <p class="listing-body">36:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">37: }</p>
+
+    <table class="No-Table-Style table-style-override-1" id="table-5">
+      <colgroup>
+        <col/>
+        <col/>
+      </colgroup>
+
+      <thead>
+        <tr>
+          <td class="cell-style-override-2">
+            <p class="Tabl-head">Строка</p>
+          </td>
+
+          <td class="cell-style-override-2">
+            <p class="Tabl-head">Описание</p>
+          </td>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr>
+          <td class="cell-style-override-2">
+            <p class="Tabl-body para-style-override-3">10</p>
+          </td>
+
+          <td class="cell-style-override-2">
+            <p class="Tabl-body">Создание экземпляра <span xml:lang="en-US">ClassWithThreadingProblem.</span> Обратите внимание на необходимость использования ключевого слова <span xml:lang="en-US">final</span>, так как ниже объект используется в анонимном внутреннем классе</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-2">
+            <p class="Tabl-body para-style-override-3">12–16</p>
+          </td>
+
+          <td class="cell-style-override-2">
+            <p class="Tabl-body">Создание анонимного внутреннего класса, использующего экземпляр <span xml:lang="en-US">ClassWithThreadingProblem</span></p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-2">
+            <p class="Tabl-body para-style-override-3">18</p>
+          </td>
+
+          <td class="cell-style-override-2">
+            <p class="Tabl-body">Код выполняется количество раз, достаточное для демонстрации его некорректности, но так, чтобы он не выполнялся «слишком долго». Необходимо выдержать баланс между двумя целями; сбои должны выявляться за разумное время. Подобрать нужное число непросто, хотя, как мы вскоре увидим, его можно заметно сократить</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-2">
+            <p class="Tabl-body para-style-override-3">19</p>
+          </td>
+
+          <td class="cell-style-override-2">
+            <p class="Tabl-body">Сохранение начального значения<span xml:lang="en-US">.</span> Мы пытаемся доказать, что код <span xml:lang="en-US">ClassWithThreadingProblem</span> некорректен. Если тест проходит, то он доказывает, что код некорректен. Если тест не проходит, то он не доказывает ничего</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-2">
+            <p class="Tabl-body para-style-override-3">20</p>
+          </td>
+
+          <td class="cell-style-override-2">
+            <p class="Tabl-body">Итоговое значение должно быть на два больше текущего</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-2">
+            <p class="Tabl-body para-style-override-3">22–23</p>
+          </td>
+
+          <td class="cell-style-override-2">
+            <p class="Tabl-body">Создание двух потоков, использующих объект, который был создан в строках 12–16. Два потока, пытающихся использовать один экземпляр <span xml:lang="en-US">ClassWithThreadingProblem</span>, могут помешать друг другу; эту ситуацию мы и пытаемся воспроизвести.</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-2">
+            <p class="Tabl-body para-style-override-3">24–25</p>
+          </td>
+
+          <td class="cell-style-override-2">
+            <p class="Tabl-body">Запуск двух потоков</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-2">
+            <p class="Tabl-body para-style-override-3">26–27</p>
+          </td>
+
+          <td class="cell-style-override-2">
+            <p class="Tabl-body">Ожидание завершения обоих потоков с последующей проверкой результатов</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-2">
+            <p class="Tabl-body para-style-override-3">29</p>
+          </td>
+
+          <td class="cell-style-override-2">
+            <p class="Tabl-body">Сохранение итогового значения</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-2">
+            <p class="Tabl-body para-style-override-3">31–32</p>
+          </td>
+
+          <td class="cell-style-override-2">
+            <p class="Tabl-body">Отличается ли значение <span xml:lang="en-US">endingId</span> от ожидаемого? Если отличается, вернуть признак завершения теста – доказано, что код работает некорректно. Если нет, попробовать еще раз</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="cell-style-override-2">
+            <p class="Tabl-body para-style-override-3">35</p>
+          </td>
+
+          <td class="cell-style-override-2">
+            <p class="Tabl-body">Если управление передано в эту точку, нашим тестам не удалось доказать некорректность кода за «разумное» время. Либо код работает корректно, либо количество итераций было недостаточным для возникновения сбойной комбинации</p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="No-Paragraph-Style"></p>
+
+    <p>Бесспорно, этот тест создает условия для выявления проблем многопоточного обновления. Но проблема встречается настолько редко, что в подавляющем большинстве случаев тестирование ее попросту не выявит. В самом деле, для сколько-нибудь статистически значимого выявления проблемы количество итераций должно превышать миллион. Несмотря на это, за десять выполнений цикла из 1 000 000 итераций проблема была обнаружена всего один раз. Это означает, что для надежного выявления сбоев количество итераций должно составлять около 100 миллионов. Как долго вы готовы ждать?</p>
+
+    <p>Даже если тест будет надежно выявлять сбои на одном компьютере, вероятно, его придется заново настраивать с другими параметрами для выявления сбоев на другом компьютере, операционной системе или версии JVM.</p>
+
+    <p>А ведь мы взяли очень простую задачу. Если нам не удается легко продемонстрировать некорректность кода в тривиальной ситуации, как обнаружить по-настоящему сложную проблему?</p>
+
+    <p>Как ускорить выявление этого простейшего сбоя? И что еще важнее, как написать тесты, демонстрирующие сбои в более сложном коде? Как узнать, что код некорректен, если мы даже не знаем, где искать? Несколько возможных идей.</p>
+
+    <p><strong>Тестирование методом Монте-Карло</strong>. Сделайте тесты достаточно гибкими, чтобы вы могли легко вносить изменения в их конфигурацию. Повторяйте тесты снова и снова (скажем, на тестовом сервере) со случайным изменением параметров. Если в ходе тестирования будет обнаружена ошибка, значит, код некорректен. Начните писать эти тесты на ранней стадии, чтобы как можно ранее начать их выполнение на сервере непрерывной интеграции. Не забудьте сохранить набор условий, при котором был выявлен сбой.</p>
+
+    <p class="ListBulLast">• Выполняйте тесты на каждой целевой платформе разработки. Многократно. Непрерывно. Чем продолжительнее тесты работают без сбоев, тем выше вероятность, что:</p>
+
+    <p class="ListBul2">• код продукта корректен, либо</p>
+
+    <p class="ListBul2">• тестирования недостаточно для выявления проблем.</p>
+
+    <p>Запускайте тесты на машинах с разной нагрузкой. Если вы сможете имитировать нагрузку, близкую к среде реальной эксплуатации, сделайте это.</p>
+
+    <p>Но даже после выполнения всех этих действий вероятность обнаружения многопоточных проблем в вашем коде оставляет желать лучшего. Самыми коваными оказываются проблемы, возникающие при определенных комбинациях условий, встречающихся один раз на миллиард. Такие проблемы – настоящий бич сложных систем.</p>
+
+    <h2 id="toc_marker-20-7">Средства тестирования&nbsp;&nbsp;многопоточного кода</h2>
+
+    <p class="Normal0">Компания IBM создала программу ConTest<span class="Superscript" xml:lang="en-US"><a class="footnote-link" href="#footnote-319-81" id="footnote-319-81-backlink">81</a></span>, которая особым образом готовит классы для повышения вероятности сбоев в потоково-небезопасном коде.</p>
+
+    <p>Мы не связаны ни с IBM, ни с группой разработки ConTest. Об этой программе нам рассказал один из коллег. Оказалось, что всего несколько минут использования ConTest радикально повышают вероятность выявления многопоточных сбоев.</p>
+
+    <p>Тестирование с использованием ConTest проходит по следующей схеме:</p>
+
+    <p class="ListBul">• Напишите тесты и код продукта. Проследите за тем, чтобы тесты были специально спроектированы для имитации обращений от многих пользователей при переменной нагрузке, как упоминалось ранее.</p>
+
+    <p class="ListBul">• Проведите инструментовку кода тестов и продукта при помощи ConTest.</p>
+
+    <p class="ListBulLast">• Выполните тесты.</p>
+
+    <p>Если вы помните, ранее сбой выявлялся примерно один раз за десять миллионов запусков. После инструментовки кода в ConTest сбои стали выявляться один раз за <em>тридцать</em> запусков. Таким образом, сбои в адаптированных классах стали выявляться намного быстрее и надежнее.</p>
+
+    <h3>Заключение</h3>
+
+    <p class="Normal0">В этой главе мы предприняли очень краткое путешествие по огромной, ненадежной территории многопоточного программирования. Наше знакомство с этой темой нельзя назвать даже поверхностным. Основное внимание уделялось методам поддержания чистоты многопоточного кода, но если вы собираетесь писать многопоточные системы, вам придется еще многому научиться. Мы рекомендуем начать с замечательной книги Дуга Ли «Concurrent Programming in Java: Design Principles and Patterns» [Lea99, p. 191].</p>
+
+    <p>В этой главе рассматривались опасности многопоточного обновления, а также методы чистой синхронизации и блокировки, которые могут их предотвратить. Мы обсудили, как потоки могут повысить производительность систем с интенсивным вводом/выводом, а также конкретные приемы повышения производительности. Также была рассмотрена взаимная блокировка и чистые способы ее предотвращения. Приложение завершается описанием стратегий выявления многопоточных проблем посредством инструментовки кода.</p>
+
+    <h2 id="toc_marker-20-8">Полные примеры кода</h2>
+
+    <h3>Однопоточная реализация архитектуры&nbsp;&nbsp;«клиент/сервер»</h3>
+
+    <p class="Vrezka-head"><strong>Листинг А.3.</strong> Server.java</p>
+
+    <p class="listing-body">package com.objectmentor.clientserver.nonthreaded;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">import java.io.IOException;</p>
+
+    <p class="listing-body">import java.net.ServerSocket;</p>
+
+    <p class="listing-body">import java.net.Socket;</p>
+
+    <p class="listing-body">import java.net.SocketException;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">import common.MessageUtils;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class Server implements Runnable {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;ServerSocket serverSocket;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;volatile boolean keepProcessing = true;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public Server(int port, int millisecondsTimeout) throws IOException {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;serverSocket = new ServerSocket(port);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;serverSocket.setSoTimeout(millisecondsTimeout);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public void run() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.printf("Server Starting\n");</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;while (keepProcessing) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.printf("accepting client\n");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Socket socket = serverSocket.accept();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.printf("got client\n");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;process(socket);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} catch (Exception e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;handle(e);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="Vrezka-head"><strong>Листинг А.3</strong> (продолжение)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;private void handle(Exception e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (!(e instanceof SocketException)) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;e.printStackTrace();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public void stopProcessing() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;keepProcessing = false;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;closeIgnoringException(serverSocket);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;void process(Socket socket) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (socket == null)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.printf("Server: getting message\n");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String message = MessageUtils.getMessage(socket);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.printf("Server: got message: %s\n", message);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Thread.sleep(1000);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.printf("Server: sending reply: %s\n", message);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;MessageUtils.sendMessage(socket, "Processed: " + message);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.printf("Server: sent\n");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;closeIgnoringException(socket);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} catch (Exception e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;e.printStackTrace();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;private void closeIgnoringException(Socket socket) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (socket != null)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;socket.close();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} catch (IOException ignore) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;private void closeIgnoringException(ServerSocket serverSocket) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (serverSocket != null)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;serverSocket.close();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} catch (IOException ignore) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="Vrezka-head"><strong>Листинг А.4.</strong> ClientTest.java</p>
+
+    <p class="listing-body">package com.objectmentor.clientserver.nonthreaded;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">import java.io.IOException;</p>
+
+    <p class="listing-body">import java.net.ServerSocket;</p>
+
+    <p class="listing-body">import java.net.Socket;</p>
+
+    <p class="listing-body">import java.net.SocketException;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">import common.MessageUtils;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class Server implements Runnable {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;ServerSocket serverSocket;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;volatile boolean keepProcessing = true;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public Server(int port, int millisecondsTimeout) throws IOException {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;serverSocket = new ServerSocket(port);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;serverSocket.setSoTimeout(millisecondsTimeout);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public void run() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.printf("Server Starting\n");</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;while (keepProcessing) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.printf("accepting client\n");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Socket socket = serverSocket.accept();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.printf("got client\n");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;process(socket);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} catch (Exception e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;handle(e);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;private void handle(Exception e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (!(e instanceof SocketException)) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;e.printStackTrace();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public void stopProcessing() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;keepProcessing = false;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;closeIgnoringException(serverSocket);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;void process(Socket socket) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (socket == null)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="Vrezka-head"><strong>Листинг А.4</strong> (продолжение)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.printf("Server: getting message\n");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String message = MessageUtils.getMessage(socket);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.printf("Server: got message: %s\n", message);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Thread.sleep(1000);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.printf("Server: sending reply: %s\n", message);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;MessageUtils.sendMessage(socket, "Processed: " + message);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.printf("Server: sent\n");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;closeIgnoringException(socket);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} catch (Exception e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;e.printStackTrace();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;private void closeIgnoringException(Socket socket) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (socket != null)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;socket.close();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} catch (IOException ignore) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;private void closeIgnoringException(ServerSocket serverSocket) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (serverSocket != null)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;serverSocket.close();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} catch (IOException ignore) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <p class="Vrezka-head"><strong>Листинг А.5.</strong> MessageUtils.java</p>
+
+    <p class="listing-body">package common;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">import java.io.IOException;</p>
+
+    <p class="listing-body">import java.io.InputStream;</p>
+
+    <p class="listing-body">import java.io.ObjectInputStream;</p>
+
+    <p class="listing-body">import java.io.ObjectOutputStream;</p>
+
+    <p class="listing-body">import java.io.OutputStream;</p>
+
+    <p class="listing-body">import java.net.Socket;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body">public class MessageUtils {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public static void sendMessage(Socket socket, String message)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throws IOException {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;OutputStream stream = socket.getOutputStream();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ObjectOutputStream oos = new ObjectOutputStream(stream);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;oos.writeUTF(message);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;oos.flush();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;public static String getMessage(Socket socket) throws IOException {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;InputStream stream = socket.getInputStream();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ObjectInputStream ois = new ObjectInputStream(stream);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return ois.readUTF();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">}</p>
+
+    <h3>Архитектура «клиент/сервер»&nbsp;&nbsp;с использованием потоков</h3>
+
+    <p class="Normal0">Перевод сервера на многопоточную архитектуру сводится к простому изменению функции <span class="command char-style-override-1">process</span> (новые строки выделены жирным шрифтом):</p>
+
+    <p>&nbsp;</p>
+
+    <p class="listing-body">void process(final Socket socket) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;if (socket == null)</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return;</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;&nbsp;&nbsp;Runnable clientHandler = new Runnable() {</strong></p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void run() {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;try {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.printf("Server: getting message\n");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String message = MessageUtils.getMessage(socket);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.printf("Server: got message: %s\n", message);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Thread.sleep(1000);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.printf("Server: sending reply: %s\n", message);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;MessageUtils.sendMessage(socket, "Processed: " + message);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.printf("Server: sent\n");</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;closeIgnoringException(socket);</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} catch (Exception e) {</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;e.printStackTrace();</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+    <p class="listing-body">&nbsp;&nbsp;&nbsp;&nbsp;};</p>
+
+    <p class="listing-body">&nbsp;</p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;&nbsp;&nbsp;Thread clientConnection = new Thread(clientHandler);</strong></p>
+
+    <p class="listing-body"><strong>&nbsp;&nbsp;&nbsp;&nbsp;clientConnection.start();</strong></p>
+
+    <p class="listing-body">}</p>
+
+    <div class="footnotes">
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-77-backlink" id="footnote-319-77">77</a> Вы можете убедиться в этом сами, тестируя код до и после внесения изменений. Однопоточный код приведен на с. 385, а многопоточный – на с. 389.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-78-backlink" id="footnote-319-78">78</a> Это несколько упрощенное объяснение. Впрочем, для целей нашего обсуждения мы воспользуемся этой упрощенной моделью.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-79-backlink" id="footnote-319-79">79</a> На самом деле интерфейс <span xml:lang="en-US">Iterator</span> в принципе не обладает потоковой безопасностью. Он не проектировался с расчетом на многопоточное использование, так что этот факт не вызывает удивления.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-80-backlink" id="footnote-319-80">80</a> Кто-то добавляет отладочный вывод, и проблема «исчезает». Отладочный код «решил» проблему, поэтому он остается в системе.</p>
+      </div>
+
+      <div class="footnote">
+        <p class="Snoska"><a class="footnote-anchor" href="#footnote-319-81-backlink" id="footnote-319-81">81</a> <a href="http://www.haifa.ibm.com/projects/veri%EF%AC%81cation/contest/index.html">http://www.haifa.ibm.com/projects/veriﬁcation/contest/index.html</a></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
